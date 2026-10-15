@@ -34,12 +34,23 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
     if sync_token:
         headers['X-Sync-Token'] = sync_token
 
-    print(f"\n[PHASE 1] Checking PythonAnywhere Web App: {webapp_url}")
+    # Phase 0: Wake up web service if sleeping (e.g. Render free tier cold start)
+    print(f"\n[PHASE 0] Waking up Web Service if asleep (Render / Cloud container)...")
+    try:
+        wake_resp = requests.get(f"{webapp_url}/api/health", headers={'User-Agent': 'RGU-Notice-Engine/2.0'}, timeout=75)
+        if wake_resp.status_code == 200:
+            print(f" -> Web server is active and awake (Status: 200 OK).")
+        else:
+            print(f" -> Web server responded with HTTP {wake_resp.status_code}.")
+    except Exception as wake_err:
+        print(f" -> Wakeup ping note: {wake_err}")
+
+    print(f"\n[PHASE 1] Checking Web App Status: {webapp_url}")
     seen_ids = set()
     unmailed_from_server = []
 
     try:
-        status_resp = requests.get(f"{webapp_url}/api/sync/status", headers=headers, timeout=25)
+        status_resp = requests.get(f"{webapp_url}/api/sync/status", headers=headers, timeout=30)
         if status_resp.status_code == 200:
             status_data = status_resp.json()
             seen_ids = set(str(i) for i in status_data.get('seen_ids', []))
