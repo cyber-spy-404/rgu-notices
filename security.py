@@ -132,3 +132,52 @@ def mask_credential(value: str, prefix_len=0, suffix_len=0) -> str:
     if prefix_len > 0 and suffix_len > 0 and n > (prefix_len + suffix_len + 2):
         return actual[:prefix_len] + "••••••••" + actual[-suffix_len:]
     return "••••••••••••••••"
+
+def update_env_file(key: str, value: str):
+    """
+    Safely writes or updates a key in .env file, keeping comments and structure intact.
+    Also updates os.environ in the active runtime.
+    """
+    import dotenv
+    try:
+        if not ENV_PATH.exists():
+            with open(ENV_PATH, 'w', encoding='utf-8') as f:
+                f.write("# Raiganj University Notice & SMTP Dispatcher - Active Environment Config\n")
+        
+        val_str = str(value).strip() if value is not None else ""
+        dotenv.set_key(str(ENV_PATH), key, val_str, quote_mode="never")
+        os.environ[key] = val_str
+    except Exception as e:
+        print(f"Error syncing {key} to .env: {e}")
+
+def sync_all_to_env(config: dict):
+    """
+    Syncs configured credentials from web app to local .env file.
+    """
+    if not config or not isinstance(config, dict):
+        return
+
+    mapping = {
+        'google_group_email': 'GOOGLE_GROUP_EMAIL',
+        'sender_email': 'SENDER_EMAIL',
+        'custom_username': 'SMTP_USER',
+        'custom_password': 'SMTP_PASS',
+        'gemini_api_key': 'GEMINI_API_KEY',
+        'custom_host': 'SMTP_HOST',
+        'custom_port': 'SMTP_PORT'
+    }
+
+    for cfg_key, env_var in mapping.items():
+        val = config.get(cfg_key)
+        if val is None:
+            continue
+        # Decrypt if encrypted before writing to .env
+        if isinstance(val, str) and val.startswith("enc:"):
+            val = decrypt_credential(val)
+        # Skip masked placeholders
+        if isinstance(val, str) and '••••' in val:
+            continue
+        
+        # Only write if val has content or if it's a primary field
+        if val or env_var in ['GOOGLE_GROUP_EMAIL', 'SENDER_EMAIL', 'SMTP_USER']:
+            update_env_file(env_var, str(val))

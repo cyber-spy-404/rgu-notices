@@ -367,15 +367,33 @@ def get_smtp_config():
     cursor.execute('SELECT * FROM smtp_config WHERE id = 1')
     row = cursor.fetchone()
     conn.close()
-    if row:
-        cfg = dict(row)
-        import security
-        if cfg.get('custom_password'):
-            cfg['custom_password'] = security.decrypt_credential(cfg['custom_password'])
-        if cfg.get('gemini_api_key'):
-            cfg['gemini_api_key'] = security.decrypt_credential(cfg['gemini_api_key'])
-        return cfg
-    return {}
+    cfg = dict(row) if row else {}
+
+    import security
+    if cfg.get('custom_password'):
+        cfg['custom_password'] = security.decrypt_credential(cfg['custom_password'])
+    if cfg.get('gemini_api_key'):
+        cfg['gemini_api_key'] = security.decrypt_credential(cfg['gemini_api_key'])
+
+    # Merge any environment variables from .env
+    env_group = os.getenv('GOOGLE_GROUP_EMAIL')
+    if env_group:
+        cfg['google_group_email'] = env_group
+    
+    env_sender = os.getenv('SENDER_EMAIL') or os.getenv('SMTP_USER')
+    if env_sender:
+        cfg['sender_email'] = env_sender
+        cfg['custom_username'] = env_sender
+        
+    env_pass = os.getenv('SMTP_PASS') or os.getenv('SMTP_PASSWORD')
+    if env_pass:
+        cfg['custom_password'] = env_pass
+        
+    env_gemini = os.getenv('GEMINI_API_KEY')
+    if env_gemini:
+        cfg['gemini_api_key'] = env_gemini
+
+    return cfg
 
 def save_smtp_config(data):
     import security
@@ -422,7 +440,17 @@ def save_smtp_config(data):
     ))
     conn.commit()
     conn.close()
-    log_event('SUCCESS', 'SMTP', 'Dispatch settings updated successfully (encrypted at rest)')
+
+    # Automatically sync to local .env file
+    try:
+        sync_payload = dict(data)
+        sync_payload['custom_password'] = raw_pass
+        sync_payload['gemini_api_key'] = raw_gemini
+        security.sync_all_to_env(sync_payload)
+    except Exception as env_err:
+        print(f"Warning: .env sync notice: {env_err}")
+
+    log_event('SUCCESS', 'SMTP', 'Dispatch settings updated successfully (encrypted at rest & synced to .env)')
     return True
 
 # ----------------- Local SMTP Inbox ----------------- #
