@@ -25,6 +25,11 @@ jobs:
         run: |
           pip install requests beautifulsoup4
 
+      - name: Test Connection to Raiganj University
+        run: |
+          curl -Iv --connect-timeout 10 https://raiganjuniversity.ac.in/ || true
+          curl -Iv --connect-timeout 10 http://raiganjuniversity.ac.in/ || true
+
       - name: Run 00:00 Notice Scraper & Dispatcher
         env:
           GOOGLE_GROUP_EMAIL: ${{ secrets.GOOGLE_GROUP_EMAIL }}
