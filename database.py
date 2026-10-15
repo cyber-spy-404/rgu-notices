@@ -78,6 +78,19 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    # Migration: Add AI and markdown columns to notices table
+    for col, col_type in [
+        ('raw_markdown', "TEXT DEFAULT ''"),
+        ('polished_markdown', "TEXT DEFAULT ''"),
+        ('polished_html', "TEXT DEFAULT ''"),
+        ('attachment_path', "TEXT DEFAULT ''"),
+        ('has_gemini_polish', "INTEGER DEFAULT 0")
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE notices ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass
+
     # Local SMTP inbox to inspect captured emails
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS smtp_inbox (
@@ -281,6 +294,36 @@ def mark_notice_emailed(notice_id, status='sent'):
     ''', (status, str(notice_id)))
     conn.commit()
     conn.close()
+
+def update_notice_ai(notice_id, raw_md='', polished_md='', polished_html='', attachment_path='', has_gemini=0):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    UPDATE notices 
+    SET raw_markdown = ?,
+        polished_markdown = ?,
+        polished_html = ?,
+        attachment_path = ?,
+        has_gemini_polish = ?
+    WHERE id = ?
+    ''', (raw_md, polished_md, polished_html, attachment_path, int(has_gemini), str(notice_id)))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_recent_ai_notice():
+    """Returns the most recent notice with markdown/AI content, or the latest notice."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT * FROM notices 
+    ORDER BY CASE WHEN (raw_markdown IS NOT NULL AND raw_markdown != '') OR (polished_markdown IS NOT NULL AND polished_markdown != '') THEN 0 ELSE 1 END,
+             discovered_at DESC, id DESC
+    LIMIT 1
+    ''')
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 # ----------------- SMTP Config ----------------- #
 

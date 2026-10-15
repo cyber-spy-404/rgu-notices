@@ -174,6 +174,94 @@ def api_resend_notice(notice_id):
     db.mark_notice_emailed(notice_id, 'sent' if res.get('success') else 'failed')
     return jsonify(res)
 
+@app.route('/api/notices/recent-md', methods=['GET'])
+def api_recent_md():
+    """
+    Returns the most recent notice that has .md and/or Gemini AI content.
+    If none processed yet, processes the latest notice on the fly.
+    """
+    import gemini_polisher
+    notice = db.get_recent_ai_notice()
+    if not notice:
+        notices = db.get_notices(limit=1)
+        notice = notices[0] if notices else None
+
+    if not notice:
+        return jsonify({'success': False, 'message': 'No notices found'})
+
+    if not notice.get('raw_markdown') or not notice.get('polished_markdown'):
+        gemini_polisher.process_notice_complete(notice)
+        notice = db.get_notice_by_id(notice['id'])
+
+    att_path = notice.get('attachment_path', '')
+    att_name = os.path.basename(att_path) if att_path and os.path.exists(att_path) else None
+
+    return jsonify({
+        'success': True,
+        'notice': notice,
+        'attachment_name': att_name,
+        'attachment_url': f"/notices-files/{att_name}" if att_name else None
+    })
+
+@app.route('/api/notices/<notice_id>/ai-content', methods=['GET'])
+def api_notice_ai_content(notice_id):
+    """
+    Returns the markdown and Gemini AI content for a specific notice.
+    Generates on the fly if not already generated.
+    """
+    import gemini_polisher
+    notice = db.get_notice_by_id(notice_id)
+    if not notice:
+        return jsonify({'success': False, 'message': 'Notice not found in database'}), 404
+
+    if not notice.get('raw_markdown') or not notice.get('polished_markdown'):
+        gemini_polisher.process_notice_complete(notice)
+        notice = db.get_notice_by_id(notice_id)
+
+    att_path = notice.get('attachment_path', '')
+    att_name = os.path.basename(att_path) if att_path and os.path.exists(att_path) else None
+
+    return jsonify({
+        'success': True,
+        'notice': notice,
+        'attachment_name': att_name,
+        'attachment_url': f"/notices-files/{att_name}" if att_name else None
+    })
+
+@app.route('/api/notices/<notice_id>/generate-polish', methods=['POST'])
+def api_generate_polish(notice_id):
+    """
+    Forces fresh extraction and Gemini AI polishing for a specific notice.
+    """
+    import gemini_polisher
+    notice = db.get_notice_by_id(notice_id)
+    if not notice:
+        return jsonify({'success': False, 'message': 'Notice not found'}), 404
+
+    gemini_polisher.process_notice_complete(notice, force_ai=True)
+    updated = db.get_notice_by_id(notice_id)
+    att_path = updated.get('attachment_path', '')
+    att_name = os.path.basename(att_path) if att_path and os.path.exists(att_path) else None
+
+    return jsonify({
+        'success': True,
+        'notice': updated,
+        'attachment_name': att_name,
+        'attachment_url': f"/notices-files/{att_name}" if att_name else None
+    })
+
+@app.route('/notices-files/<path:filename>')
+def serve_notice_file(filename):
+    import gemini_polisher
+    from flask import send_from_directory
+    return send_from_directory(gemini_polisher.NOTICES_FILES_DIR, filename)
+
+@app.route('/notices-md/<path:filename>')
+def serve_notice_md(filename):
+    import gemini_polisher
+    from flask import send_from_directory
+    return send_from_directory(gemini_polisher.NOTICES_MD_DIR, filename)
+
 # ----------------- SMTP Server & Settings API ----------------- #
 
 @app.route('/api/smtp/config', methods=['GET'])

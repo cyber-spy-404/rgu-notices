@@ -349,14 +349,13 @@ def dispatch_notice_to_students(notice):
     saved_filepath = None
     attachment_name = None
     try:
-        raw_md, md_path, saved_filepath, mime_type, file_bytes = gemini_polisher.grab_notice_file_and_text(notice)
-        db.log_event('INFO', 'DISPATCH', f"Saved notice #{notice.get('id')} to Markdown: {md_path}")
-        if saved_filepath:
-            attachment_name = os.path.basename(saved_filepath)
-            db.log_event('INFO', 'DISPATCH', f"Saved notice file ({mime_type}): {saved_filepath}")
-
-        polished_md = gemini_polisher.polish_with_gemini(raw_md, notice, file_bytes=file_bytes, mime_type=mime_type)
-        polished_html = gemini_polisher.convert_md_to_html(polished_md)
+        proc = gemini_polisher.process_notice_complete(notice)
+        raw_md = proc.get('raw_md')
+        polished_md = proc.get('polished_md')
+        polished_html = proc.get('polished_html')
+        saved_filepath = proc.get('saved_filepath')
+        attachment_name = proc.get('attachment_name')
+        db.log_event('INFO', 'DISPATCH', f"Prepared notice #{notice.get('id')} with AI/MD (Attachment: {attachment_name or 'None'})")
     except Exception as prep_err:
         db.log_event('WARNING', 'AI', f"AI processing error ({prep_err}), proceeding with default layout.")
         polished_html = None

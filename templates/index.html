@@ -271,53 +271,97 @@
           <!-- Right Column: Live Email Preview & Quick Actions -->
           <div class="dash-col-side">
             
-            <!-- Email Preview Mockup -->
+            <!-- Latest Notice AI Breakdown & Markdown Showcase -->
             <div class="panel-card preview-card">
-              <div class="panel-header">
+              <div class="panel-header flex-between">
                 <div class="panel-title">
-                  <i class="fa-solid fa-envelope-open-text"></i>
-                  <span>Student Email Preview</span>
+                  <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
+                  <span>Latest Notice: AI Polish &amp; Markdown</span>
                 </div>
-                <span class="badge badge-info">Responsive HTML</span>
-              </div>
-              <div class="preview-mockup-wrapper">
-                <div class="mockup-chrome">
-                  <div class="mockup-dots">
-                    <span></span><span></span><span></span>
-                  </div>
-                  <div class="mockup-subject" id="mockupSubject">
-                    Subject: [RGU Notice #79] Holiday Notice
-                  </div>
-                </div>
-                <div class="mockup-mail-content">
-                  <div class="mail-header-mini">
-                    <div class="mail-uni-icon">🏛️</div>
-                    <div class="mail-uni-name">Raiganj University</div>
-                    <div class="mail-uni-sub">Official Notice Alert &bull; রায়গঞ্জ বিশ্ববিদ্যালয়</div>
-                  </div>
-                  <div class="mail-body-mini">
-                    <p class="mail-greeting">Dear Student,</p>
-                    <p class="mail-p">A new official announcement has been published on the Raiganj University website:</p>
-                    <div class="mail-notice-box">
-                      <div class="mail-badges">
-                        <span class="m-badge" id="mockupCategory">Holiday</span>
-                        <span class="m-badge-id" id="mockupId">Notice #79</span>
-                      </div>
-                      <h4 class="mail-title-text" id="mockupTitle">Holiday Notice</h4>
-                      <div class="mail-meta">
-                        <span>📅 <strong id="mockupDate">Oct 13, 2026</strong></span>
-                        <span>🏛️ Raiganj University</span>
-                      </div>
-                    </div>
-                    <div class="mail-btn-wrap">
-                      <span class="mail-fake-btn">📄 View Official Notice &amp; Download PDF</span>
-                    </div>
-                  </div>
-                  <div class="mail-footer-mini">
-                    Automated daily notification by RGU SMTP Dispatcher (00:00:00 Daily Check)
-                  </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <span class="badge badge-info" id="liveNoticeId">Notice #--</span>
+                  <span class="badge badge-success" id="liveAiBadge">✨ AI Ready</span>
                 </div>
               </div>
+
+              <!-- Mode Switcher Tabs -->
+              <div class="preview-mode-bar">
+                <button class="preview-tab active" id="btnModeAi" onclick="setDashboardPreviewMode('ai')">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini AI Polish
+                </button>
+                <button class="preview-tab" id="btnModeMd" onclick="setDashboardPreviewMode('md')">
+                  <i class="fa-solid fa-file-code"></i> 📝 Raw Markdown (.md)
+                </button>
+                <button class="preview-tab" id="btnModeEmail" onclick="setDashboardPreviewMode('email')">
+                  <i class="fa-solid fa-envelope"></i> ✉️ Email View
+                </button>
+              </div>
+
+              <!-- Live Card Body -->
+              <div class="preview-live-container">
+                
+                <!-- Notice Meta Header -->
+                <div class="live-notice-header">
+                  <h4 id="liveNoticeTitle" class="live-notice-heading">Loading latest notice...</h4>
+                  <div class="live-notice-meta">
+                    <span>📅 Published: <strong id="liveNoticeDate">—</strong></span>
+                    <span>🏷️ Category: <span class="badge badge-neutral" id="liveNoticeCategory">General</span></span>
+                    <a href="#" id="liveNoticeOfficialLink" target="_blank" class="accent-link" style="font-size: 11.5px;">Portal Link &nearr;</a>
+                  </div>
+                </div>
+
+                <!-- View 1: Gemini AI Polished Content -->
+                <div id="viewAiContent" class="preview-view active">
+                  <div class="gemini-polish-box" id="livePolishedHtml">
+                    <div class="loading-placeholder">
+                      <i class="fa-solid fa-spinner fa-spin"></i> Loading Gemini AI breakdown...
+                    </div>
+                  </div>
+                </div>
+
+                <!-- View 2: Raw Markdown (.md) -->
+                <div id="viewMdContent" class="preview-view" style="display: none;">
+                  <div class="md-toolbar">
+                    <span class="md-filename" id="liveMdFilename">notice.md</span>
+                    <button class="btn btn-ghost btn-xs" onclick="copyLiveMarkdown()"><i class="fa-regular fa-copy"></i> Copy Markdown</button>
+                  </div>
+                  <pre class="md-pre" id="liveRawMd">Loading raw extracted markdown...</pre>
+                </div>
+
+                <!-- View 3: Email Preview -->
+                <div id="viewEmailContent" class="preview-view" style="display: none;">
+                  <div class="mockup-chrome">
+                    <div class="mockup-dots"><span></span><span></span><span></span></div>
+                    <div class="mockup-subject" id="mockupSubject">Subject: Raiganj University Notice</div>
+                  </div>
+                  <div class="mockup-mail-content">
+                    <div class="mail-header-mini">
+                      <div class="mail-uni-icon">🏛️</div>
+                      <div class="mail-uni-name">Raiganj University</div>
+                      <div class="mail-uni-sub">Official Notice Alert &bull; রায়গঞ্জ বিশ্ববিদ্যালয়</div>
+                    </div>
+                    <div class="mail-body-mini" id="mockupMailBody">
+                      <p class="mail-greeting">Dear Student,</p>
+                      <div id="mockupInnerContent"></div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Footer Quick Actions -->
+              <div class="preview-actions-footer">
+                <button class="btn btn-secondary btn-xs" id="btnLiveRegenAi" onclick="regenerateLiveAi()" title="Refresh with Gemini AI">
+                  <i class="fa-solid fa-arrows-rotate"></i> Regenerate AI Polish
+                </button>
+                <a href="#" id="btnLiveDownloadFile" target="_blank" class="btn btn-secondary btn-xs" style="display: none;">
+                  <i class="fa-solid fa-file-arrow-down"></i> <span id="liveFileBtnLabel">Download File</span>
+                </a>
+                <button class="btn btn-primary btn-xs" id="btnLiveBroadcast" onclick="broadcastLiveNotice()">
+                  <i class="fa-solid fa-paper-plane"></i> Broadcast
+                </button>
+              </div>
+
             </div>
 
             <!-- Recent Dispatch History -->
@@ -830,6 +874,86 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" onclick="closeModal('viewEmailModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Notice AI Breakdown & Markdown Viewer -->
+  <div class="modal-overlay" id="noticeAiModal">
+    <div class="modal-card modal-xl">
+      <div class="modal-header flex-between">
+        <div>
+          <h3 class="modal-title" id="modalNoticeAiTitle">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
+            <span>Notice AI &amp; Markdown Inspector</span>
+          </h3>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <span class="badge badge-info" id="modalNoticeIdBadge">Notice #--</span>
+            <span class="badge badge-neutral" id="modalNoticeCatBadge">General</span>
+            <span class="badge badge-success" id="modalNoticeAiBadge">✨ Gemini Polished</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('noticeAiModal')">&times;</button>
+      </div>
+
+      <!-- Mode switcher inside modal -->
+      <div class="preview-mode-bar" style="margin: 0; border-radius: 0; border-left: none; border-right: none;">
+        <button class="preview-tab active" id="modalTabAi" onclick="setModalTab('ai')">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini AI Breakdown
+        </button>
+        <button class="preview-tab" id="modalTabMd" onclick="setModalTab('md')">
+          <i class="fa-solid fa-file-code"></i> 📝 Raw Markdown (.md)
+        </button>
+        <button class="preview-tab" id="modalTabAttachment" onclick="setModalTab('att')">
+          <i class="fa-solid fa-paperclip"></i> 📎 Attached Document
+        </button>
+      </div>
+
+      <div class="modal-body" style="max-height: 520px; overflow-y: auto; padding: 20px;">
+        <!-- Tab 1: AI Polish -->
+        <div id="modalViewAi" class="modal-tab-content">
+          <div class="gemini-polish-box" id="modalPolishedHtml">
+            <div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> Loading AI breakdown...</div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Raw Markdown -->
+        <div id="modalViewMd" class="modal-tab-content" style="display: none;">
+          <div class="md-toolbar">
+            <span class="md-filename" id="modalMdFilename">notice.md</span>
+            <button class="btn btn-ghost btn-xs" onclick="copyModalMarkdown()"><i class="fa-regular fa-copy"></i> Copy Markdown</button>
+          </div>
+          <pre class="md-pre" id="modalRawMd">Loading raw markdown...</pre>
+        </div>
+
+        <!-- Tab 3: Attachment -->
+        <div id="modalViewAtt" class="modal-tab-content" style="display: none;">
+          <div class="attachment-preview-box" id="modalAttachmentBox">
+            <i class="fa-solid fa-file-pdf" style="font-size: 38px; color: #f43f5e; margin-bottom: 12px; display: block;"></i>
+            <h4 id="modalAttFilename" style="color: #fff; margin-bottom: 8px;">document.pdf</h4>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">Official university circular file downloaded by the dispatcher.</p>
+            <a href="#" id="modalAttDownloadLink" target="_blank" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-download"></i> Open / Download File
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer flex-between">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnModalRegen" onclick="regenerateModalAi()">
+            <i class="fa-solid fa-arrows-rotate"></i> Regenerate with Gemini
+          </button>
+          <a href="#" id="modalOfficialPortalLink" target="_blank" class="btn btn-ghost btn-sm">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open RGU Portal
+          </a>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('noticeAiModal')">Close</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnModalDispatch" onclick="dispatchModalNotice()">
+            <i class="fa-solid fa-paper-plane"></i> Dispatch to Google Group
+          </button>
+        </div>
       </div>
     </div>
   </div>

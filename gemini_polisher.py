@@ -275,3 +275,143 @@ def convert_md_to_html(md_text):
         md_text,
         extensions=['extra', 'nl2br', 'sane_lists']
     )
+
+def generate_structured_fallback_md(notice, raw_extracted_text=""):
+    """
+    Creates a clean, structured student announcement markdown when Gemini API is not yet configured.
+    """
+    title = notice.get('title', 'Official University Notice')
+    pub_date = notice.get('published_on', 'Recent')
+    category = notice.get('category', 'General')
+    link = notice.get('link', 'https://raiganjuniversity.ac.in/')
+    notice_id = str(notice.get('id', 'N/A'))
+
+    return f"""### 📌 Executive Summary
+Official notice announcement published by **Raiganj University** under the **{category}** section regarding **{title}**.
+
+### 👥 Who is Affected?
+All students and researchers enrolled in or associated with **{category}** programs.
+
+### ⚡ Key Information & Instructions
+- **Official Reference:** Notice #{notice_id}
+- **Publication Date:** {pub_date}
+- Detailed circular document has been downloaded and attached.
+- Read through the full circular text and follow the directives of the Registrar/Controller.
+
+### 📅 Important Dates & Deadlines
+- **Published On:** {pub_date}
+
+### 🔗 Portal Link & Document Access
+- Official University Source Link: [{link}]({link})
+"""
+
+def process_notice_complete(notice, force_ai=False):
+    """
+    Ensures notice file is grabbed, raw markdown is generated, and Gemini AI polish is run.
+    Saves to disk and updates SQLite database.
+    """
+    notice_id = str(notice.get('id', 'notice')).replace('/', '_')
+    md_filepath = os.path.join(NOTICES_MD_DIR, f"{notice_id}.md")
+    polished_filepath = os.path.join(NOTICES_MD_DIR, f"{notice_id}_polished.md")
+
+    raw_md = ""
+    saved_filepath = None
+    mime_type = "text/html"
+    file_bytes = None
+    attachment_name = None
+
+    # Step 1: Check existing raw markdown on disk
+    if os.path.exists(md_filepath) and not force_ai:
+        try:
+            with open(md_filepath, 'r', encoding='utf-8') as f:
+                raw_md = f.read()
+        except Exception:
+            pass
+
+    # Check existing attached file in notices_files/
+    if os.path.exists(NOTICES_FILES_DIR):
+        for fname in os.listdir(NOTICES_FILES_DIR):
+            if fname.startswith(f"{notice_id}."):
+                saved_filepath = os.path.join(NOTICES_FILES_DIR, fname)
+                attachment_name = fname
+                try:
+                    with open(saved_filepath, 'rb') as f:
+                        file_bytes = f.read()
+                    mime_type = 'application/pdf' if fname.endswith('.pdf') else 'application/octet-stream'
+                except Exception:
+                    pass
+                break
+
+    if not raw_md or (not saved_filepath and force_ai):
+        try:
+            raw_md, md_filepath, saved_filepath, mime_type, file_bytes = grab_notice_file_and_text(notice)
+            if saved_filepath:
+                attachment_name = os.path.basename(saved_filepath)
+        except Exception as e:
+            raw_md = f"# Notice #{notice_id}: {notice.get('title')}\n\n(Could not retrieve file: {str(e)})"
+
+    # Step 2: Check or run Gemini Polish
+    has_gemini = False
+    polished_md = ""
+
+    if os.path.exists(polished_filepath) and not force_ai:
+        try:
+            with open(polished_filepath, 'r', encoding='utf-8') as f:
+                polished_md = f.read()
+                has_gemini = True
+        except Exception:
+            pass
+
+    if not polished_md or force_ai:
+        cfg = db.get_smtp_config()
+        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or cfg.get('gemini_api_key', '').strip()
+
+        if api_key:
+            res = polish_with_gemini(raw_md, notice, file_bytes=file_bytes, mime_type=mime_type)
+            if res and res != raw_md:
+                polished_md = res
+                has_gemini = True
+
+        if not polished_md:
+            polished_md = generate_structured_fallback_md(notice, raw_md)
+
+    polished_html = convert_md_to_html(polished_md)
+
+    # Save files to disk cache
+    try:
+        if raw_md and not os.path.exists(md_filepath):
+            with open(md_filepath, 'w', encoding='utf-8') as f:
+                f.write(raw_md)
+        if polished_md:
+            with open(polished_filepath, 'w', encoding='utf-8') as f:
+                f.write(polished_md)
+    except Exception as e:
+        print(f"Error persisting markdown to disk: {e}")
+
+    # Step 3: Update SQLite database with content
+    try:
+        db.update_notice_ai(
+            notice_id=notice_id,
+            raw_md=raw_md,
+            polished_md=polished_md,
+            polished_html=polished_html,
+            attachment_path=saved_filepath or '',
+            has_gemini=1 if has_gemini else 0
+        )
+    except Exception as e:
+        print(f"Database update notice AI note: {e}")
+
+    return {
+        'id': notice_id,
+        'title': notice.get('title', ''),
+        'link': notice.get('link', ''),
+        'published_on': notice.get('published_on', ''),
+        'category': notice.get('category', 'General'),
+        'raw_md': raw_md,
+        'md_path': md_filepath,
+        'polished_md': polished_md,
+        'polished_html': polished_html,
+        'saved_filepath': saved_filepath,
+        'attachment_name': attachment_name,
+        'has_gemini': has_gemini
+    }

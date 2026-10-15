@@ -104,6 +104,12 @@ def fetch_rgu_notices():
                 title = a.get_text(strip=True)
                 if not title or len(title) < 5:
                     continue
+
+                # Filter out generic navigation links
+                if title.lower() in ['view all notices', 'all notices', 'more notices', 'view all', 'notices']:
+                    continue
+                if 'allnotices' in href.lower():
+                    continue
                 
                 # Check for refno in query or path
                 ref_match = re.search(r'refno=([0-9A-Za-z]+)', href) or re.search(r'ViewNotice/([0-9A-Za-z]+)', href)

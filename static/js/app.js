@@ -9,6 +9,8 @@ let currentCategoryFilter = 'ALL';
 let currentLogLevelFilter = 'ALL';
 let countdownInterval = null;
 let currentCountdownSeconds = 0;
+let currentLiveNotice = null;
+let currentModalNoticeId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
@@ -16,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initApp() {
   await fetchSystemStatus();
+  await loadRecentAiNotice();
   await loadStudents();
   await loadNotices();
   await loadSmtpConfig();
@@ -149,6 +152,7 @@ async function triggerScanNow() {
     }
 
     await fetchSystemStatus();
+    await loadRecentAiNotice();
     await loadNotices();
     await loadLocalInbox();
     await loadLogs();
@@ -383,10 +387,13 @@ function renderNoticesTable(notices) {
         </td>
         <td>
           <div style="display: flex; gap: 6px;">
+            <button class="btn btn-icon btn-ai" title="View Markdown & Gemini AI Breakdown" onclick="openNoticeAiModal('${n.id}')">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
             <a href="${escapeHtml(n.link)}" target="_blank" class="btn btn-icon" title="Open on Raiganj University Portal">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
             </a>
-            <button class="btn btn-icon" title="Email this notice to all students right now" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
+            <button class="btn btn-icon" title="Broadcast notice to Google Group" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
               <i class="fa-solid fa-paper-plane"></i>
             </button>
           </div>
@@ -418,9 +425,14 @@ function renderDashboardNotices(notices) {
       <td><span class="badge badge-neutral">${escapeHtml(n.category || 'General')}</span></td>
       <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(n.published_on || '—')}</td>
       <td>
-        <button class="btn btn-secondary btn-xs" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
-          <i class="fa-solid fa-paper-plane"></i> Send
-        </button>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-secondary btn-xs btn-ai" onclick="openNoticeAiModal('${n.id}')" title="Inspect AI Breakdown & Markdown">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> AI/MD
+          </button>
+          <button class="btn btn-secondary btn-xs" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
+            <i class="fa-solid fa-paper-plane"></i> Send
+          </button>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -811,4 +823,262 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// ----------------- Live Notice AI & Markdown Showcase Controller ----------------- //
+
+async function loadRecentAiNotice() {
+  try {
+    const res = await fetch('/api/notices/recent-md');
+    const data = await res.json();
+    if (!data.success || !data.notice) return;
+
+    currentLiveNotice = data.notice;
+    const n = data.notice;
+
+    // Badges & Meta
+    const noticeIdElem = document.getElementById('liveNoticeId');
+    if (noticeIdElem) noticeIdElem.innerText = `Notice #${n.id}`;
+
+    const aiBadge = document.getElementById('liveAiBadge');
+    if (aiBadge) {
+      if (n.has_gemini_polish) {
+        aiBadge.className = 'badge badge-success';
+        aiBadge.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini Polished`;
+      } else {
+        aiBadge.className = 'badge badge-info';
+        aiBadge.innerHTML = `<i class="fa-solid fa-file-lines"></i> 📝 Markdown Extracted`;
+      }
+    }
+
+    const titleElem = document.getElementById('liveNoticeTitle');
+    if (titleElem) titleElem.innerText = n.title;
+
+    const dateElem = document.getElementById('liveNoticeDate');
+    if (dateElem) dateElem.innerText = n.published_on || 'Recent';
+
+    const catElem = document.getElementById('liveNoticeCategory');
+    if (catElem) catElem.innerText = n.category || 'General';
+
+    const linkElem = document.getElementById('liveNoticeOfficialLink');
+    if (linkElem) linkElem.href = n.link;
+
+    // View 1: Gemini Polish HTML
+    const htmlElem = document.getElementById('livePolishedHtml');
+    if (htmlElem) {
+      htmlElem.innerHTML = n.polished_html || `<p>${escapeHtml(n.polished_markdown || n.raw_markdown)}</p>`;
+    }
+
+    // View 2: Raw Markdown
+    const fnElem = document.getElementById('liveMdFilename');
+    if (fnElem) fnElem.innerText = `${n.id}.md`;
+
+    const mdElem = document.getElementById('liveRawMd');
+    if (mdElem) mdElem.innerText = n.raw_markdown || '# No markdown extracted yet';
+
+    // View 3: Email Preview
+    const subjElem = document.getElementById('mockupSubject');
+    if (subjElem) subjElem.innerText = `Subject: [RGU Notice #${n.id}] ${n.title}`;
+
+    const mailBodyElem = document.getElementById('mockupInnerContent');
+    if (mailBodyElem) {
+      mailBodyElem.innerHTML = `
+        <div class="mail-notice-box">
+          <div class="mail-badges">
+            <span class="m-badge">${escapeHtml(n.category || 'General')}</span>
+            <span class="m-badge-id">Notice #${escapeHtml(n.id)}</span>
+          </div>
+          <h4 class="mail-title-text">${escapeHtml(n.title)}</h4>
+          <div class="mail-meta">
+            <span>📅 <strong>${escapeHtml(n.published_on || 'Recent')}</strong></span>
+            <span>🏛️ Raiganj University</span>
+          </div>
+        </div>
+        <div class="gemini-polish-box" style="margin-bottom: 16px; font-size: 12.5px;">
+          ${n.polished_html || ''}
+        </div>
+        <div class="mail-btn-wrap">
+          <a href="${escapeHtml(n.link)}" target="_blank" class="mail-fake-btn">📄 View Official Notice &amp; Download PDF</a>
+        </div>
+      `;
+    }
+
+    // Download PDF Button
+    const btnFile = document.getElementById('btnLiveDownloadFile');
+    if (btnFile) {
+      if (data.attachment_url) {
+        btnFile.style.display = 'inline-flex';
+        btnFile.href = data.attachment_url;
+        const lbl = document.getElementById('liveFileBtnLabel');
+        if (lbl) lbl.innerText = `Download ${data.attachment_name || 'File'}`;
+      } else {
+        btnFile.style.display = 'none';
+      }
+    }
+  } catch (err) {
+    console.warn('Error loading recent AI notice:', err);
+  }
+}
+
+function setDashboardPreviewMode(mode) {
+  document.getElementById('btnModeAi')?.classList.toggle('active', mode === 'ai');
+  document.getElementById('btnModeMd')?.classList.toggle('active', mode === 'md');
+  document.getElementById('btnModeEmail')?.classList.toggle('active', mode === 'email');
+
+  const viewAi = document.getElementById('viewAiContent');
+  const viewMd = document.getElementById('viewMdContent');
+  const viewEmail = document.getElementById('viewEmailContent');
+
+  if (viewAi) viewAi.style.display = mode === 'ai' ? 'block' : 'none';
+  if (viewMd) viewMd.style.display = mode === 'md' ? 'block' : 'none';
+  if (viewEmail) viewEmail.style.display = mode === 'email' ? 'block' : 'none';
+}
+
+function copyLiveMarkdown() {
+  const text = document.getElementById('liveRawMd')?.innerText || '';
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Markdown (.md) copied to clipboard!', 'success');
+  }).catch(() => {
+    showToast('Failed to copy to clipboard', 'error');
+  });
+}
+
+async function regenerateLiveAi() {
+  if (!currentLiveNotice) return;
+  const btn = document.getElementById('btnLiveRegenAi');
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Polishing with Gemini...`;
+  showToast(`Polishing Notice #${currentLiveNotice.id} with Gemini AI...`, 'info');
+
+  try {
+    const res = await fetch(`/api/notices/${currentLiveNotice.id}/generate-polish`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Gemini AI polish refreshed!', 'success');
+      await loadRecentAiNotice();
+      await loadLogs();
+    } else {
+      showToast(data.message || 'Polishing failed', 'error');
+    }
+  } catch (err) {
+    showToast('Polishing error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
+function broadcastLiveNotice() {
+  if (!currentLiveNotice) return;
+  resendNotice(currentLiveNotice.id, currentLiveNotice.title);
+}
+
+// ----------------- Notice AI Modal Controller ----------------- //
+
+async function openNoticeAiModal(noticeId) {
+  currentModalNoticeId = noticeId;
+  openModal('noticeAiModal');
+
+  document.getElementById('modalNoticeAiTitle').innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading Notice #${noticeId}...`;
+  document.getElementById('modalPolishedHtml').innerHTML = `<div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> Extracting Markdown and Gemini Polish...</div>`;
+  document.getElementById('modalRawMd').innerText = 'Loading...';
+
+  try {
+    const res = await fetch(`/api/notices/${noticeId}/ai-content`);
+    const data = await res.json();
+    if (!data.success || !data.notice) {
+      showToast('Could not load notice AI details', 'error');
+      return;
+    }
+
+    const n = data.notice;
+    document.getElementById('modalNoticeAiTitle').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> <span>${escapeHtml(n.title)}</span>`;
+    document.getElementById('modalNoticeIdBadge').innerText = `Notice #${n.id}`;
+    document.getElementById('modalNoticeCatBadge').innerText = n.category || 'General';
+    
+    const aiBadge = document.getElementById('modalNoticeAiBadge');
+    if (n.has_gemini_polish) {
+      aiBadge.className = 'badge badge-success';
+      aiBadge.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini Polished`;
+    } else {
+      aiBadge.className = 'badge badge-info';
+      aiBadge.innerHTML = `<i class="fa-solid fa-file-lines"></i> 📝 Markdown Extracted`;
+    }
+
+    document.getElementById('modalPolishedHtml').innerHTML = n.polished_html || `<p>${escapeHtml(n.polished_markdown || n.raw_markdown)}</p>`;
+    document.getElementById('modalMdFilename').innerText = `${n.id}.md`;
+    document.getElementById('modalRawMd').innerText = n.raw_markdown || '# No markdown available';
+    document.getElementById('modalOfficialPortalLink').href = n.link;
+
+    // Attachment tab
+    const attFilename = data.attachment_name;
+    if (attFilename) {
+      document.getElementById('modalAttFilename').innerText = attFilename;
+      document.getElementById('modalAttDownloadLink').href = data.attachment_url;
+      document.getElementById('modalAttDownloadLink').style.display = 'inline-flex';
+    } else {
+      document.getElementById('modalAttFilename').innerText = 'No file attachment captured for this notice';
+      document.getElementById('modalAttDownloadLink').style.display = 'none';
+    }
+
+    setModalTab('ai');
+  } catch (err) {
+    showToast('Failed to load AI details: ' + err.message, 'error');
+  }
+}
+
+function setModalTab(tab) {
+  document.getElementById('modalTabAi')?.classList.toggle('active', tab === 'ai');
+  document.getElementById('modalTabMd')?.classList.toggle('active', tab === 'md');
+  document.getElementById('modalTabAttachment')?.classList.toggle('active', tab === 'att');
+
+  const vAi = document.getElementById('modalViewAi');
+  const vMd = document.getElementById('modalViewMd');
+  const vAtt = document.getElementById('modalViewAtt');
+
+  if (vAi) vAi.style.display = tab === 'ai' ? 'block' : 'none';
+  if (vMd) vMd.style.display = tab === 'md' ? 'block' : 'none';
+  if (vAtt) vAtt.style.display = tab === 'att' ? 'block' : 'none';
+}
+
+function copyModalMarkdown() {
+  const text = document.getElementById('modalRawMd')?.innerText || '';
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Markdown (.md) copied to clipboard!', 'success');
+  }).catch(() => {
+    showToast('Failed to copy to clipboard', 'error');
+  });
+}
+
+async function regenerateModalAi() {
+  if (!currentModalNoticeId) return;
+  const btn = document.getElementById('btnModalRegen');
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Polishing with Gemini...`;
+
+  try {
+    const res = await fetch(`/api/notices/${currentModalNoticeId}/generate-polish`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Gemini AI polish refreshed!', 'success');
+      await openNoticeAiModal(currentModalNoticeId);
+      await loadRecentAiNotice();
+      await loadLogs();
+    } else {
+      showToast(data.message || 'Polishing failed', 'error');
+    }
+  } catch (err) {
+    showToast('Polishing error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
+function dispatchModalNotice() {
+  if (!currentModalNoticeId) return;
+  const title = document.getElementById('modalNoticeAiTitle')?.innerText || 'Notice';
+  resendNotice(currentModalNoticeId, title);
 }
