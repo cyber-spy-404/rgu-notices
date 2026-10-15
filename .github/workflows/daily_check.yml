@@ -27,6 +27,8 @@ jobs:
 
       - name: Run 00:00 Notice Scraper & Dispatcher
         env:
+          WEBAPP_URL: ${{ secrets.WEBAPP_URL }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
           GOOGLE_GROUP_EMAIL: ${{ secrets.GOOGLE_GROUP_EMAIL }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}

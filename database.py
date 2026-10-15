@@ -329,6 +329,84 @@ def mark_notice_emailed(notice_id, status='sent'):
     conn.commit()
     conn.close()
 
+def get_unmailed_notices(limit=50):
+    """Returns notices pending dispatch or marked failed/pending."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT * FROM notices 
+    WHERE email_status != 'sent' AND email_status != 'synced'
+    ORDER BY id DESC LIMIT ?
+    ''', (limit,))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+def get_all_notice_ids():
+    """Returns list of all notice IDs present in the database."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM notices')
+    rows = [str(r[0]) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+def upsert_notice(n):
+    """
+    Inserts or updates a notice in database (used for sync from GitHub Actions to PythonAnywhere).
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    notice_id = str(n.get('id', '')).strip()
+    if not notice_id:
+        conn.close()
+        return False
+
+    cursor.execute('''
+    INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, raw_markdown, polished_markdown, polished_html, has_gemini_polish)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        link = excluded.link,
+        published_on = excluded.published_on,
+        category = excluded.category,
+        email_status = excluded.email_status,
+        raw_markdown = CASE WHEN excluded.raw_markdown != '' THEN excluded.raw_markdown ELSE notices.raw_markdown END,
+        polished_markdown = CASE WHEN excluded.polished_markdown != '' THEN excluded.polished_markdown ELSE notices.polished_markdown END,
+        polished_html = CASE WHEN excluded.polished_html != '' THEN excluded.polished_html ELSE notices.polished_html END,
+        has_gemini_polish = CASE WHEN excluded.has_gemini_polish = 1 THEN 1 ELSE notices.has_gemini_polish END
+    ''', (
+        notice_id,
+        n.get('title', '').strip(),
+        n.get('link', '').strip(),
+        n.get('published_on', ''),
+        n.get('category', 'General'),
+        int(n.get('is_new', 0)),
+        n.get('email_status', 'pending'),
+        n.get('raw_markdown', ''),
+        n.get('polished_markdown', ''),
+        n.get('polished_html', ''),
+        int(n.get('has_gemini_polish', 0))
+    ))
+    conn.commit()
+    conn.close()
+
+    # Append to seen_ids cache
+    try:
+        os.makedirs(os.path.dirname(SEEN_IDS_PATH), exist_ok=True)
+        already_present = False
+        if os.path.exists(SEEN_IDS_PATH):
+            with open(SEEN_IDS_PATH, 'r', encoding='utf-8') as f:
+                if notice_id in [l.strip() for l in f if l.strip()]:
+                    already_present = True
+        if not already_present:
+            with open(SEEN_IDS_PATH, 'a', encoding='utf-8') as f:
+                f.write(f"{notice_id}\n")
+    except Exception:
+        pass
+
+    return True
+
 def update_notice_ai(notice_id, raw_md='', polished_md='', polished_html='', attachment_path='', has_gemini=0):
     conn = get_db()
     cursor = conn.cursor()

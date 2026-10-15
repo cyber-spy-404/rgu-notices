@@ -202,6 +202,109 @@ def api_health():
         'service': 'Raiganj University Notice Dispatcher'
     })
 
+def check_sync_auth():
+    """
+    Validates sync token if configured in environment (SYNC_TOKEN or CRON_SECRET).
+    Supports 'X-Sync-Token', 'Authorization: Bearer <token>', or '?token=' query param.
+    """
+    expected_token = os.getenv('SYNC_TOKEN') or os.getenv('CRON_SECRET')
+    if not expected_token:
+        # Permit sync if no token configured
+        return True
+
+    provided = (
+        request.headers.get('X-Sync-Token') or 
+        request.args.get('token') or 
+        (request.headers.get('Authorization', '').startswith('Bearer ') and request.headers.get('Authorization', '')[7:].strip())
+    )
+    return provided == expected_token
+
+# ----------------- Cloud / GitHub Actions Sync API ----------------- #
+
+@app.route('/api/sync/status', methods=['GET'])
+def api_sync_status():
+    """
+    Returns seen notice IDs and unmailed notices to GitHub Actions runner.
+    """
+    if not check_sync_auth():
+        return jsonify({'success': False, 'error': 'Unauthorized: Invalid SYNC_TOKEN'}), 401
+
+    seen_ids = db.get_all_notice_ids()
+    unmailed = db.get_unmailed_notices(limit=100)
+    db.log_event('INFO', 'SYNC', f'Sync status queried: {len(seen_ids)} tracked IDs, {len(unmailed)} unmailed notices.')
+    return jsonify({
+        'success': True,
+        'seen_ids': seen_ids,
+        'unmailed_notices': unmailed,
+        'unmailed_count': len(unmailed),
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+@app.route('/api/sync/push-notices', methods=['POST'])
+def api_sync_push_notices():
+    """
+    Receives newly discovered notices and their Gemini polish from GitHub Actions.
+    Upserts into the local PythonAnywhere database so the web dashboard updates instantly.
+    """
+    if not check_sync_auth():
+        return jsonify({'success': False, 'error': 'Unauthorized: Invalid SYNC_TOKEN'}), 401
+
+    data = request.get_json() or {}
+    notices = data.get('notices', [])
+    if not isinstance(notices, list):
+        return jsonify({'success': False, 'error': 'Invalid payload format: notices must be an array'}), 400
+
+    saved_count = 0
+    for n in notices:
+        if db.upsert_notice(n):
+            saved_count += 1
+
+    db.log_event('SUCCESS', 'SYNC', f'GitHub Actions pushed {saved_count} new/updated notices with Gemini breakdowns to database.')
+    return jsonify({
+        'success': True,
+        'saved_count': saved_count,
+        'message': f'Synced {saved_count} notice(s) to PythonAnywhere database.'
+    })
+
+@app.route('/api/sync/mark-sent', methods=['POST'])
+def api_sync_mark_sent():
+    """
+    Marks notices as emailed and records dispatch events after GitHub Actions completes sending emails.
+    """
+    if not check_sync_auth():
+        return jsonify({'success': False, 'error': 'Unauthorized: Invalid SYNC_TOKEN'}), 401
+
+    data = request.get_json() or {}
+    sent_notices = data.get('sent_notices', [])
+    if not isinstance(sent_notices, list):
+        return jsonify({'success': False, 'error': 'Invalid payload: sent_notices must be an array'}), 400
+
+    updated_count = 0
+    for item in sent_notices:
+        notice_id = str(item.get('id', '')).strip()
+        if not notice_id:
+            continue
+        status = item.get('status', 'sent')
+        title = item.get('title', f'Notice #{notice_id}')
+        recipient = item.get('recipient', 'Google Group')
+        error = item.get('error', '')
+        sent_count = int(item.get('sent_count', 1 if status == 'sent' else 0))
+
+        db.mark_notice_emailed(notice_id, status=status)
+        if status == 'sent':
+            db.add_dispatch_record(notice_id, title, sent_count, 'SUCCESS', f'Delivered via GitHub Actions: {recipient}')
+            db.log_event('SUCCESS', 'DISPATCH', f'Notice #{notice_id} marked as sent via GitHub Actions to {recipient}.')
+        else:
+            db.add_dispatch_record(notice_id, title, 0, 'FAILED', f'GitHub Actions dispatch failure: {error}')
+            db.log_event('WARNING', 'DISPATCH', f'Notice #{notice_id} dispatch failed in GitHub Actions: {error}')
+        updated_count += 1
+
+    return jsonify({
+        'success': True,
+        'updated_count': updated_count,
+        'message': f'Updated status for {updated_count} notice(s).'
+    })
+
 @app.route('/api/notices/<notice_id>/resend', methods=['POST'])
 def api_resend_notice(notice_id):
     notice = db.get_notice_by_id(notice_id)
