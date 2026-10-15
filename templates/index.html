@@ -312,10 +312,23 @@
 
                 <!-- View 1: Gemini AI Polished Content -->
                 <div id="viewAiContent" class="preview-view active">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> <strong>AI Structured Announcement:</strong></span>
+                    <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()"><i class="fa-regular fa-copy"></i> Copy Text</button>
+                  </div>
                   <div class="gemini-polish-box" id="livePolishedHtml">
                     <div class="loading-placeholder">
                       <i class="fa-solid fa-spinner fa-spin"></i> Loading Gemini AI breakdown...
                     </div>
+                  </div>
+
+                  <!-- Dedicated Message Text Field -->
+                  <div class="gemini-message-field-wrap">
+                    <div class="gemini-field-header">
+                      <span><i class="fa-solid fa-align-left"></i> <strong>Message Text Field (Ready to copy/send):</strong></span>
+                      <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()"><i class="fa-regular fa-copy"></i> Copy Field</button>
+                    </div>
+                    <textarea id="livePolishedTextarea" class="gemini-message-textarea" readonly placeholder="Gemini polished announcement text field..."></textarea>
                   </div>
                 </div>
 
@@ -912,8 +925,26 @@
       <div class="modal-body" style="max-height: 520px; overflow-y: auto; padding: 20px;">
         <!-- Tab 1: AI Polish -->
         <div id="modalViewAi" class="modal-tab-content">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 13px; color: #fff; font-weight: 600;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini Polished Student Announcement
+            </span>
+            <button class="btn btn-ghost btn-xs" onclick="copyModalPolishedText()">
+              <i class="fa-regular fa-copy"></i> Copy Polished Text
+            </button>
+          </div>
+
           <div class="gemini-polish-box" id="modalPolishedHtml">
             <div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> Loading AI breakdown...</div>
+          </div>
+
+          <!-- Dedicated Viewable / Copyable Message Text Field -->
+          <div class="gemini-message-field-wrap">
+            <div class="gemini-field-header">
+              <span><i class="fa-solid fa-code"></i> <strong>Polished Message Text Field (Direct Copy / Share):</strong></span>
+              <button class="btn btn-ghost btn-xs" onclick="copyModalPolishedText()"><i class="fa-regular fa-copy"></i> Copy Field Text</button>
+            </div>
+            <textarea id="modalPolishedTextarea" class="gemini-message-textarea" readonly placeholder="Gemini polished announcement text field..."></textarea>
           </div>
         </div>
 

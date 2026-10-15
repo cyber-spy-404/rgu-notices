@@ -387,8 +387,8 @@ function renderNoticesTable(notices) {
         </td>
         <td>
           <div style="display: flex; gap: 6px;">
-            <button class="btn btn-icon btn-ai" title="View Markdown & Gemini AI Breakdown" onclick="openNoticeAiModal('${n.id}')">
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <button class="btn btn-secondary btn-xs btn-ai" title="View Gemini Polished Announcement & Markdown" onclick="openNoticeAiModal('${n.id}')">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> View Polish
             </button>
             <a href="${escapeHtml(n.link)}" target="_blank" class="btn btn-icon" title="Open on Raiganj University Portal">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -426,8 +426,8 @@ function renderDashboardNotices(notices) {
       <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(n.published_on || '—')}</td>
       <td>
         <div style="display: flex; gap: 6px;">
-          <button class="btn btn-secondary btn-xs btn-ai" onclick="openNoticeAiModal('${n.id}')" title="Inspect AI Breakdown & Markdown">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> AI/MD
+          <button class="btn btn-secondary btn-xs btn-ai" onclick="openNoticeAiModal('${n.id}')" title="Inspect Gemini Polish">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> View Polish
           </button>
           <button class="btn btn-secondary btn-xs" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
             <i class="fa-solid fa-paper-plane"></i> Send
@@ -863,10 +863,14 @@ async function loadRecentAiNotice() {
     const linkElem = document.getElementById('liveNoticeOfficialLink');
     if (linkElem) linkElem.href = n.link;
 
-    // View 1: Gemini Polish HTML
+    // View 1: Gemini Polish HTML & Dedicated Text Field
     const htmlElem = document.getElementById('livePolishedHtml');
     if (htmlElem) {
       htmlElem.innerHTML = n.polished_html || `<p>${escapeHtml(n.polished_markdown || n.raw_markdown)}</p>`;
+    }
+    const liveTa = document.getElementById('livePolishedTextarea');
+    if (liveTa) {
+      liveTa.value = n.polished_markdown || n.raw_markdown || '';
     }
 
     // View 2: Raw Markdown
@@ -932,6 +936,20 @@ function setDashboardPreviewMode(mode) {
   if (viewAi) viewAi.style.display = mode === 'ai' ? 'block' : 'none';
   if (viewMd) viewMd.style.display = mode === 'md' ? 'block' : 'none';
   if (viewEmail) viewEmail.style.display = mode === 'email' ? 'block' : 'none';
+}
+
+function copyLivePolishedText() {
+  const ta = document.getElementById('livePolishedTextarea');
+  const text = ta ? ta.value : (currentLiveNotice ? (currentLiveNotice.polished_markdown || currentLiveNotice.raw_markdown) : '');
+  if (!text) {
+    showToast('No polished text available to copy', 'info');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Gemini polished message copied to clipboard!', 'success');
+  }).catch(() => {
+    showToast('Failed to copy to clipboard', 'error');
+  });
 }
 
 function copyLiveMarkdown() {
@@ -1007,6 +1025,11 @@ async function openNoticeAiModal(noticeId) {
     }
 
     document.getElementById('modalPolishedHtml').innerHTML = n.polished_html || `<p>${escapeHtml(n.polished_markdown || n.raw_markdown)}</p>`;
+    const modalTa = document.getElementById('modalPolishedTextarea');
+    if (modalTa) {
+      modalTa.value = n.polished_markdown || n.raw_markdown || '';
+    }
+
     document.getElementById('modalMdFilename').innerText = `${n.id}.md`;
     document.getElementById('modalRawMd').innerText = n.raw_markdown || '# No markdown available';
     document.getElementById('modalOfficialPortalLink').href = n.link;
@@ -1026,6 +1049,20 @@ async function openNoticeAiModal(noticeId) {
   } catch (err) {
     showToast('Failed to load AI details: ' + err.message, 'error');
   }
+}
+
+function copyModalPolishedText() {
+  const ta = document.getElementById('modalPolishedTextarea');
+  const text = ta ? ta.value : '';
+  if (!text) {
+    showToast('No polished text available to copy', 'info');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Gemini polished announcement copied to clipboard!', 'success');
+  }).catch(() => {
+    showToast('Failed to copy to clipboard', 'error');
+  });
 }
 
 function setModalTab(tab) {

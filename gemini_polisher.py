@@ -227,7 +227,14 @@ Guidelines:
     else:
         parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
 
-    models_to_try = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+    models_to_try = [
+        'gemini-2.5-flash',
+        'gemini-flash-latest',
+        'gemini-2.5-pro',
+        'gemini-pro-latest',
+        'gemini-1.5-flash',
+        'gemini-2.0-flash'
+    ]
     polished_text = None
 
     for model in models_to_try:
@@ -236,18 +243,19 @@ Guidelines:
             "contents": [{"parts": parts}],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": 1200
+                "maxOutputTokens": 4096
             }
         }
         try:
-            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=35)
+            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=45)
             if r.status_code == 200:
                 data = r.json()
                 candidates = data.get('candidates', [])
                 if candidates:
                     resp_parts = candidates[0].get('content', {}).get('parts', [])
-                    if resp_parts and 'text' in resp_parts[0]:
-                        polished_text = resp_parts[0]['text'].strip()
+                    text_parts = [p['text'] for p in resp_parts if 'text' in p and not p.get('thought')]
+                    if text_parts:
+                        polished_text = "\n\n".join(text_parts).strip()
                         db.log_event('SUCCESS', 'AI', f"Gemini ({model}) successfully polished Notice #{notice_id} (multimodal)!")
                         break
             else:
