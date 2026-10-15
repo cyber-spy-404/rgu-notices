@@ -176,6 +176,32 @@ def api_scan_now():
     res = scraper.run_notice_check()
     return jsonify(res)
 
+@app.route('/api/cron/trigger', methods=['GET', 'POST'])
+def api_cron_trigger():
+    """
+    Webhook trigger endpoint for GitHub Actions or external cron services.
+    Validates optional CRON_SECRET if configured.
+    """
+    cron_key = os.getenv('CRON_SECRET')
+    provided_key = request.args.get('key') or request.headers.get('X-Cron-Key')
+    if cron_key and provided_key != cron_key:
+        return jsonify({'success': False, 'error': 'Unauthorized: Invalid cron key'}), 401
+
+    db.log_event('INFO', 'WEBHOOK', 'External cron webhook triggered notice scan.')
+    res = scraper.run_notice_check()
+    return jsonify({'success': True, 'result': res})
+
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    """
+    Lightweight keep-alive ping endpoint to wake sleeping cloud containers (e.g. Render/Railway).
+    """
+    return jsonify({
+        'status': 'awake',
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'service': 'Raiganj University Notice Dispatcher'
+    })
+
 @app.route('/api/notices/<notice_id>/resend', methods=['POST'])
 def api_resend_notice(notice_id):
     notice = db.get_notice_by_id(notice_id)
