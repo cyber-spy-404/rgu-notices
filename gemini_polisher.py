@@ -171,7 +171,8 @@ def polish_with_gemini(raw_md, notice, file_bytes=None, mime_type=None):
     title = notice.get('title', 'Official Notice')
     link = notice.get('link', 'https://raiganjuniversity.ac.in/')
     
-    api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+    cfg = db.get_smtp_config()
+    api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or cfg.get('gemini_api_key', '').strip()
     
     if not api_key:
         db.log_event('INFO', 'AI', f"No GEMINI_API_KEY configured. Using raw notice markdown for Notice #{notice_id}.")

@@ -108,12 +108,12 @@
 
       <div class="metric-card">
         <div class="metric-icon outbox-icon">
-          <i class="fa-solid fa-inbox"></i>
+          <i class="fa-solid fa-users"></i>
         </div>
         <div class="metric-content">
-          <div class="metric-label">Captured In SMTP</div>
-          <div class="metric-val" id="metricCapturedEmails">0</div>
-          <div class="metric-sub"><a href="#" onclick="switchTab('smtp'); return false;" class="accent-link">View in local inbox</a></div>
+          <div class="metric-label">Target Audience</div>
+          <div class="metric-val" id="metricGroupAudience">1,000+</div>
+          <div class="metric-sub"><a href="#" onclick="switchTab('smtp'); return false;" class="accent-link" id="metricGroupEmailLink">Google Group Broadcast</a></div>
         </div>
       </div>
     </section>
@@ -135,8 +135,8 @@
         <span class="badge-count" id="navNoticeCount">0</span>
       </button>
       <button class="nav-tab" data-tab="smtp" onclick="switchTab('smtp')">
-        <i class="fa-solid fa-server"></i>
-        <span>SMTP Server &amp; Mailbox</span>
+        <i class="fa-solid fa-people-group"></i>
+        <span>Google Group Settings</span>
       </button>
       <button class="nav-tab" data-tab="logs" onclick="switchTab('logs')">
         <i class="fa-solid fa-terminal"></i>
@@ -210,12 +210,12 @@
                     <strong id="dashNextRun">Tomorrow at 00:00:00</strong>
                   </div>
                   <div class="detail-row">
-                    <span><i class="fa-solid fa-paper-plane"></i> Outbound SMTP Channel:</span>
-                    <strong id="dashSmtpChannel">Local Server (127.0.0.1:2525)</strong>
+                    <span><i class="fa-solid fa-paper-plane"></i> Outbound Channel:</span>
+                    <strong id="dashSmtpChannel">Google Groups Broadcast (1,000+ Students)</strong>
                   </div>
                   <div class="detail-row">
-                    <span><i class="fa-solid fa-users"></i> Target Email Audience:</span>
-                    <strong id="dashStudentAudience">0 active enrolled students</strong>
+                    <span><i class="fa-solid fa-users"></i> Target Audience:</span>
+                    <strong id="dashStudentAudience">All students in Google Group</strong>
                   </div>
                 </div>
 
@@ -460,114 +460,127 @@
         </div>
       </section>
 
-      <!-- ================= TAB 4: SMTP CONFIG & INBOX ================= -->
+      <!-- ================= TAB 4: GOOGLE GROUP & DISPATCH ================= -->
       <section class="tab-pane" id="tab-smtp">
         <div class="smtp-grid">
           
-          <!-- SMTP Settings Form -->
+          <!-- Google Group Settings Form -->
           <div class="panel-card">
-            <div class="panel-header">
+            <div class="panel-header flex-between">
               <div class="panel-title">
-                <i class="fa-solid fa-sliders"></i>
-                <span>SMTP Server Configuration</span>
+                <i class="fa-brands fa-google" style="color: #4285F4;"></i>
+                <span>Google Group Broadcast Configuration</span>
               </div>
-              <span class="badge badge-info" id="currentSmtpModeBadge">Mode: Local</span>
+              <span class="badge badge-success" id="currentSmtpModeBadge"><i class="fa-solid fa-users"></i> Google Groups Broadcast</span>
             </div>
             <div class="panel-body">
               <form id="smtpConfigForm" onsubmit="saveSmtpConfig(event)">
                 
-                <!-- Mode Toggle -->
-                <div class="form-group">
-                  <label class="form-label">SMTP Dispatch Engine</label>
-                  <div class="mode-selector">
-                    <label class="mode-option">
-                      <input type="radio" name="smtp_mode" value="local" checked onchange="toggleSmtpModeFields()">
-                      <div class="mode-box">
-                        <div class="mode-icon"><i class="fa-solid fa-server"></i></div>
-                        <div class="mode-title">Built-in Local SMTP Server</div>
-                        <div class="mode-desc">Zero configuration required. Runs on 127.0.0.1:2525. Captures and views emails in the local inbox below.</div>
-                      </div>
-                    </label>
-
-                    <label class="mode-option">
-                      <input type="radio" name="smtp_mode" value="custom" onchange="toggleSmtpModeFields()">
-                      <div class="mode-box">
-                        <div class="mode-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
-                        <div class="mode-title">Custom / External SMTP</div>
-                        <div class="mode-desc">Connect Gmail (App Password), Outlook, Amazon SES, Brevo, or university relay for real student delivery.</div>
-                      </div>
-                    </label>
+                <!-- Google Group Hero Highlight -->
+                <div class="google-group-hero">
+                  <div class="hero-icon">
+                    <i class="fa-solid fa-people-group"></i>
                   </div>
+                  <div class="hero-content">
+                    <h4>Direct Broadcast to 1,000+ Students via Google Groups</h4>
+                    <p>When new notices are found, the system sends <strong>1 single email</strong> to your Google Group. Google immediately fans out the message and downloadable PDF attachments to all enrolled students with zero rate limits or Gmail daily caps.</p>
+                  </div>
+                </div>
+
+                <!-- Google Group Email Input -->
+                <div class="form-group">
+                  <label class="form-label" for="smtpGoogleGroupEmail">
+                    <i class="fa-solid fa-users" style="color: #38bdf8;"></i> Target Google Group Email Address <span class="text-danger">*</span>
+                  </label>
+                  <input type="email" id="smtpGoogleGroupEmail" class="form-input" placeholder="e.g. rgu-students-notices@googlegroups.com" required>
+                  <div class="form-help">Enter your Google Group address. All students in this group receive new notices and PDF attachments automatically.</div>
                 </div>
 
                 <!-- Sender info -->
                 <div class="form-row">
                   <div class="form-group col-6">
-                    <label class="form-label">Sender Email Address</label>
-                    <input type="email" id="smtpSenderEmail" class="form-input" required value="notices@raiganjuniversity.ac.in">
+                    <label class="form-label" for="smtpSenderEmail">
+                      <i class="fa-solid fa-at" style="color: #a78bfa;"></i> Sender / Dispatcher Gmail <span class="text-danger">*</span>
+                    </label>
+                    <input type="email" id="smtpSenderEmail" class="form-input" required placeholder="e.g. your-department@gmail.com">
+                    <div class="form-help">The Gmail account authorized to post to the Google Group.</div>
                   </div>
                   <div class="form-group col-6">
-                    <label class="form-label">Sender Display Name</label>
+                    <label class="form-label" for="smtpSenderName">
+                      <i class="fa-solid fa-signature" style="color: #34d399;"></i> Sender Display Name <span class="text-danger">*</span>
+                    </label>
                     <input type="text" id="smtpSenderName" class="form-input" required value="Raiganj University Notice Board">
+                    <div class="form-help">Name displayed in students' inboxes.</div>
                   </div>
                 </div>
 
-                <!-- Local Server Fields -->
-                <div id="localSmtpFields">
-                  <div class="form-row">
-                    <div class="form-group col-6">
-                      <label class="form-label">Local Host Bind</label>
-                      <input type="text" id="smtpLocalHost" class="form-input" value="127.0.0.1">
-                    </div>
-                    <div class="form-group col-6">
-                      <label class="form-label">Local Port</label>
-                      <input type="number" id="smtpLocalPort" class="form-input" value="2525">
-                    </div>
+                <!-- Gmail App Password -->
+                <div class="form-group">
+                  <label class="form-label" for="smtpCustomPass">
+                    <i class="fa-solid fa-key" style="color: #fbbf24;"></i> Gmail App Password (16 Characters) <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-with-toggle">
+                    <input type="password" id="smtpCustomPass" class="form-input" placeholder="•••• •••• •••• ••••" autocomplete="new-password">
+                    <button type="button" class="btn-pw-toggle" onclick="togglePasswordVisibility('smtpCustomPass', this)" title="Show/Hide Password">
+                      <i class="fa-regular fa-eye"></i>
+                    </button>
+                  </div>
+                  <div class="form-help">
+                    Generated in your Google Account: <a href="https://myaccount.google.com/apppasswords" target="_blank" class="accent-link">Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords</a>.
                   </div>
                 </div>
 
-                <!-- Custom SMTP Fields -->
-                <div id="customSmtpFields" style="display: none;">
-                  <div class="form-row">
-                    <div class="form-group col-8">
-                      <label class="form-label">SMTP Host</label>
-                      <input type="text" id="smtpCustomHost" class="form-input" placeholder="smtp.gmail.com">
-                    </div>
-                    <div class="form-group col-4">
-                      <label class="form-label">SMTP Port</label>
-                      <input type="number" id="smtpCustomPort" class="form-input" placeholder="587">
-                    </div>
+                <!-- Gemini API Key (Optional AI Polish Engine) -->
+                <div class="form-group">
+                  <label class="form-label" for="smtpGeminiKey">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini AI API Key (Optional AI OCR &amp; Polisher)
+                  </label>
+                  <div class="input-with-toggle">
+                    <input type="password" id="smtpGeminiKey" class="form-input" placeholder="AIzaSy..." autocomplete="off">
+                    <button type="button" class="btn-pw-toggle" onclick="togglePasswordVisibility('smtpGeminiKey', this)" title="Show/Hide Key">
+                      <i class="fa-regular fa-eye"></i>
+                    </button>
                   </div>
-
-                  <div class="form-row">
-                    <div class="form-group col-6">
-                      <label class="form-label">SMTP Username / Email</label>
-                      <input type="text" id="smtpCustomUser" class="form-input" placeholder="your-email@gmail.com">
-                    </div>
-                    <div class="form-group col-6">
-                      <label class="form-label">SMTP Password / App Password</label>
-                      <input type="password" id="smtpCustomPass" class="form-input" placeholder="••••••••">
-                    </div>
-                  </div>
-
-                  <div class="form-checkbox-row">
-                    <label class="checkbox-label">
-                      <input type="checkbox" id="smtpCustomTls" checked>
-                      <span>Enable STARTTLS (Port 587)</span>
-                    </label>
-                    <label class="checkbox-label">
-                      <input type="checkbox" id="smtpCustomSsl">
-                      <span>Enable SSL (Port 465)</span>
-                    </label>
+                  <div class="form-help">
+                    Enables OCR for scanned PDF tables and converts notices into readable Markdown. Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="accent-link">Google AI Studio</a>.
                   </div>
                 </div>
+
+                <!-- Advanced SMTP Settings (Collapsible) -->
+                <details class="advanced-settings-accordion">
+                  <summary class="advanced-toggle">
+                    <i class="fa-solid fa-sliders"></i> Advanced SMTP Host &amp; Port Settings (Optional)
+                  </summary>
+                  <div class="advanced-settings-body">
+                    <div class="form-row">
+                      <div class="form-group col-8">
+                        <label class="form-label">Custom SMTP Host</label>
+                        <input type="text" id="smtpCustomHost" class="form-input" placeholder="smtp.gmail.com" value="smtp.gmail.com">
+                      </div>
+                      <div class="form-group col-4">
+                        <label class="form-label">Port</label>
+                        <input type="number" id="smtpCustomPort" class="form-input" placeholder="587" value="587">
+                      </div>
+                    </div>
+                    <div class="form-checkbox-row">
+                      <label class="checkbox-label">
+                        <input type="checkbox" id="smtpCustomTls" checked>
+                        <span>Enable STARTTLS (Port 587)</span>
+                      </label>
+                      <label class="checkbox-label">
+                        <input type="checkbox" id="smtpCustomSsl">
+                        <span>Enable SSL (Port 465)</span>
+                      </label>
+                    </div>
+                  </div>
+                </details>
 
                 <div class="form-footer">
                   <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Save SMTP Settings
+                    <i class="fa-solid fa-floppy-disk"></i> Save Google Group Settings
                   </button>
                   <button type="button" class="btn btn-secondary" onclick="openTestModal()">
-                    <i class="fa-solid fa-vial"></i> Test Connection
+                    <i class="fa-solid fa-paper-plane"></i> Send Test Notice to Group
                   </button>
                 </div>
 
@@ -575,38 +588,83 @@
             </div>
           </div>
 
-          <!-- Local Captured Emails (Inbox / Outbox) -->
-          <div class="panel-card">
-            <div class="panel-header flex-between">
-              <div>
+          <!-- Right Column: Setup Guide & Local Inbox -->
+          <div class="smtp-right-col">
+            <!-- Google Groups 4-Step Setup Guide Card -->
+            <div class="panel-card mb-4">
+              <div class="panel-header">
                 <div class="panel-title">
-                  <i class="fa-solid fa-inbox"></i>
-                  <span>Local SMTP Inbox / Outbox</span>
+                  <i class="fa-solid fa-circle-question"></i>
+                  <span>How Google Groups Broadcast Works</span>
                 </div>
-                <div class="panel-desc">Emails delivered to or intercepted by the built-in local SMTP server.</div>
               </div>
-              <button class="btn btn-ghost btn-xs text-danger" onclick="clearLocalInbox()">
-                <i class="fa-solid fa-trash"></i> Clear Inbox
-              </button>
+              <div class="panel-body">
+                <div class="setup-steps">
+                  <div class="setup-step">
+                    <div class="step-num">1</div>
+                    <div class="step-info">
+                      <strong>Create Google Group</strong>
+                      <span>Go to <a href="https://groups.google.com" target="_blank" class="accent-link">groups.google.com</a> &rarr; "Create group" (e.g. <code>rgu-dept@googlegroups.com</code>).</span>
+                    </div>
+                  </div>
+                  <div class="setup-step">
+                    <div class="step-num">2</div>
+                    <div class="step-info">
+                      <strong>Add Students</strong>
+                      <span>Invite or directly add all ~1,000 student email addresses. You can add or remove members anytime.</span>
+                    </div>
+                  </div>
+                  <div class="setup-step">
+                    <div class="step-num">3</div>
+                    <div class="step-info">
+                      <strong>Set Posting Permissions</strong>
+                      <span>In Group Settings &rarr; Posting permissions, allow your Dispatcher Gmail address to post messages.</span>
+                    </div>
+                  </div>
+                  <div class="setup-step">
+                    <div class="step-num">4</div>
+                    <div class="step-info">
+                      <strong>Enter Details &amp; Test</strong>
+                      <span>Paste your group email and Gmail App Password on the left, then click <strong>"Send Test Notice to Group"</strong>!</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="panel-body p-0">
-              <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>Recipient</th>
-                      <th>Subject</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody id="inboxTableBody">
-                    <tr>
-                      <td colspan="4" class="empty-cell">No emails captured yet.</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <!-- Outbox / Test Inbox -->
+            <div class="panel-card">
+              <div class="panel-header flex-between">
+                <div>
+                  <div class="panel-title">
+                    <i class="fa-solid fa-inbox"></i>
+                    <span>Captured Outbox &amp; Test Emails</span>
+                  </div>
+                  <div class="panel-desc">Emails delivered or intercepted for inspection.</div>
+                </div>
+                <button class="btn btn-ghost btn-xs text-danger" onclick="clearLocalInbox()">
+                  <i class="fa-solid fa-trash"></i> Clear
+                </button>
+              </div>
+
+              <div class="panel-body p-0">
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Recipient</th>
+                        <th>Subject</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="inboxTableBody">
+                      <tr>
+                        <td colspan="4" class="empty-cell">No emails captured yet.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -731,28 +789,29 @@
     </div>
   </div>
 
-  <!-- Modal 3: Test SMTP Connection -->
+  <!-- Modal 3: Test Broadcast Email -->
   <div class="modal-overlay" id="testSmtpModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 class="modal-title"><i class="fa-solid fa-vial"></i> Test SMTP Dispatcher</h3>
+        <h3 class="modal-title"><i class="fa-solid fa-paper-plane"></i> Test Notice Broadcast</h3>
         <button class="modal-close" onclick="closeModal('testSmtpModal')">&times;</button>
       </div>
       <form id="testSmtpForm" onsubmit="submitTestSmtp(event)">
         <div class="modal-body">
           <p class="modal-intro">
-            Verifies SMTP socket connection and sends a sample Raiganj University alert email.
+            Sends an official sample notice email with attachment indicators to verify your Google Group or email dispatcher.
           </p>
           <div class="form-group">
-            <label class="form-label">Send Test Email To (Optional)</label>
-            <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. student@example.com (or leave blank to verify socket only)">
+            <label class="form-label">Send Test Notice To</label>
+            <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. rgu-students@googlegroups.com">
+            <div class="form-help">Enter your Google Group email or your personal email to verify delivery.</div>
           </div>
           <div id="testResultBox" class="test-result-box" style="display: none;"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('testSmtpModal')">Close</button>
           <button type="submit" class="btn btn-primary" id="btnRunTest">
-            <i class="fa-solid fa-paper-plane"></i> Run Test &amp; Send
+            <i class="fa-solid fa-paper-plane"></i> Send Test Alert
           </button>
         </div>
       </form>

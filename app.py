@@ -53,10 +53,12 @@ def email_preview(msg_id):
 
 @app.route('/api/status', methods=['GET'])
 def api_status():
+    import os
     stats = db.get_stats()
     sched_status = scheduler_engine.get_scheduler_status()
     smtp_status = local_smtp_server.get_smtp_status()
     smtp_cfg = db.get_smtp_config()
+    group_email = os.getenv('GOOGLE_GROUP_EMAIL') or smtp_cfg.get('google_group_email', '')
 
     return jsonify({
         'status': 'ok',
@@ -64,8 +66,9 @@ def api_status():
         'stats': stats,
         'scheduler': sched_status,
         'smtp_server': smtp_status,
-        'smtp_mode': smtp_cfg.get('mode', 'local'),
-        'sender_email': smtp_cfg.get('sender_email')
+        'smtp_mode': smtp_cfg.get('mode', 'googlegroup'),
+        'sender_email': smtp_cfg.get('sender_email'),
+        'google_group_email': group_email
     })
 
 # ----------------- Student Management API ----------------- #
@@ -178,27 +181,36 @@ def api_get_smtp_config():
     cfg = db.get_smtp_config()
     # Mask password for security
     if cfg.get('custom_password'):
-        cfg['custom_password_masked'] = '••••••••'
+        cfg['custom_password_masked'] = '••••••••••••••••'
+    if cfg.get('gemini_api_key'):
+        key = cfg.get('gemini_api_key')
+        cfg['gemini_api_key_masked'] = key[:4] + '••••••••' + key[-4:] if len(key) > 8 else '••••••••'
     return jsonify(cfg)
 
 @app.route('/api/smtp/config', methods=['POST'])
 def api_save_smtp_config():
     data = request.get_json() or {}
-    # Retain existing password if user sends masked or blank
     existing = db.get_smtp_config()
-    if data.get('custom_password') == '••••••••' or not data.get('custom_password'):
+    
+    # Retain existing password if user sends masked or blank
+    if data.get('custom_password') in ['••••••••', '••••••••••••••••'] or not data.get('custom_password'):
         data['custom_password'] = existing.get('custom_password', '')
     
-    db.save_smtp_config(data)
+    # Retain existing gemini key if user sends masked or blank
+    if '••••' in str(data.get('gemini_api_key', '')) or not data.get('gemini_api_key'):
+        data['gemini_api_key'] = existing.get('gemini_api_key', '')
     
-    # If mode is local, ensure local server is running on desired port
-    if data.get('mode') == 'local':
-        port = int(data.get('local_port', 1025))
-        host = data.get('local_host', '127.0.0.1')
-        local_smtp_server.stop_local_smtp_server()
-        local_smtp_server.start_local_smtp_server(host=host, port=port)
+    data['mode'] = data.get('mode', 'googlegroup')
+    data['custom_host'] = data.get('custom_host') or 'smtp.gmail.com'
+    data['custom_port'] = int(data.get('custom_port') or 587)
+    data['custom_use_tls'] = 1
+    data['custom_use_ssl'] = 0
+    if not data.get('custom_username'):
+        data['custom_username'] = data.get('sender_email', '')
 
-    return jsonify({'success': True, 'message': 'SMTP settings saved successfully'})
+    db.save_smtp_config(data)
+
+    return jsonify({'success': True, 'message': 'Google Group & dispatch settings saved successfully'})
 
 @app.route('/api/smtp/test', methods=['POST'])
 def api_test_smtp():

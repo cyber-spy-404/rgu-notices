@@ -251,13 +251,14 @@ def get_smtp_connection():
         server.starttls()
         server.login(env_user.strip(), env_pass.strip())
         cfg_override = {
-            'mode': 'custom',
+            'mode': 'googlegroup',
             'sender_email': env_sender or env_user.strip(),
-            'sender_name': os.getenv('SENDER_NAME', 'Raiganj University Notice Board')
+            'sender_name': os.getenv('SENDER_NAME', 'Raiganj University Notice Board'),
+            'google_group_email': os.getenv('GOOGLE_GROUP_EMAIL') or cfg.get('google_group_email', '')
         }
         return server, cfg_override
 
-    mode = cfg.get('mode', 'local')
+    mode = cfg.get('mode', 'googlegroup')
 
     if mode == 'local':
         host = cfg.get('local_host', '127.0.0.1')
@@ -265,8 +266,9 @@ def get_smtp_connection():
         server = smtplib.SMTP(host, port, timeout=12)
         return server, cfg
     else:
-        host = cfg.get('custom_host', 'smtp.gmail.com')
-        port = int(cfg.get('custom_port', 587))
+        # googlegroup or custom
+        host = cfg.get('custom_host') or 'smtp.gmail.com'
+        port = int(cfg.get('custom_port') or 587)
         use_ssl = bool(cfg.get('custom_use_ssl', 0))
         use_tls = bool(cfg.get('custom_use_tls', 1))
 
@@ -277,7 +279,7 @@ def get_smtp_connection():
             if use_tls:
                 server.starttls()
 
-        user = cfg.get('custom_username', '').strip()
+        user = (cfg.get('sender_email') or cfg.get('custom_username', '')).strip()
         pwd = cfg.get('custom_password', '').strip()
         if user and pwd:
             server.login(user, pwd)
@@ -320,16 +322,17 @@ def send_single_email(recipient_email, recipient_name, subject, html_content, te
 
 def dispatch_notice_to_students(notice):
     """
-    Dispatches a new notice. If GOOGLE_GROUP_EMAIL is configured, dispatches 1 email
+    Dispatches a new notice. If GOOGLE_GROUP_EMAIL is configured (in env or database), dispatches 1 email
     to the Google Group (which automatically distributes to all 1000+ students).
     Otherwise, dispatches to active students in the database.
     """
     import os
-    group_email = os.getenv('GOOGLE_GROUP_EMAIL') or os.getenv('GROUP_EMAIL')
+    cfg = db.get_smtp_config()
+    group_email = os.getenv('GOOGLE_GROUP_EMAIL') or os.getenv('GROUP_EMAIL') or cfg.get('google_group_email', '').strip()
     students = db.get_students(active_only=True) if not group_email else []
 
     if not group_email and not students:
-        msg = f'No active student recipients enrolled and no GOOGLE_GROUP_EMAIL set. Notice #{notice.get("id")} logged but not mailed.'
+        msg = f'No active student recipients enrolled and no Google Group configured. Notice #{notice.get("id")} logged but not mailed.'
         db.log_event('WARNING', 'DISPATCH', msg)
         db.add_dispatch_record(notice.get('id'), notice.get('title'), 0, 'SKIPPED', 'No recipients')
         return {'success': False, 'message': msg, 'sent_count': 0}
@@ -460,45 +463,50 @@ def dispatch_notice_to_students(notice):
 
 def test_smtp_connection(test_email=None):
     """
-    Tests SMTP connection and optionally sends a verification test email.
+    Tests SMTP connection and sends a sample Raiganj University alert email
+    to verify Google Group or direct delivery.
     """
     try:
+        import os
         server, cfg = get_smtp_connection()
-        mode = cfg.get('mode', 'local')
-        host_info = f"{cfg.get('local_host', '127.0.0.1')}:{cfg.get('local_port', 1025)}" if mode == 'local' else f"{cfg.get('custom_host')}:{cfg.get('custom_port')}"
-        
+        group_email = os.getenv('GOOGLE_GROUP_EMAIL') or cfg.get('google_group_email', '').strip()
+        sender_email = (cfg.get('sender_email') or cfg.get('custom_username', '')).strip()
+        sender_name = cfg.get('sender_name', 'Raiganj University Notice Board')
+
+        target = test_email or group_email or sender_email
+        if not target:
+            return {
+                'success': False,
+                'message': 'Please enter a test email address or configure your Google Group email first.'
+            }
+
         server.noop()
 
-        if test_email:
-            sample_notice = {
-                'id': 'TEST-999',
-                'title': 'Raiganj University SMTP Test Alert: Connection Verified',
-                'link': 'https://raiganjuniversity.ac.in/',
-                'published_on': datetime.now().strftime('%b %d, %Y %I:%M %p'),
-                'category': 'System Verification'
-            }
-            html = generate_notice_html(sample_notice, student_name='Administrator')
-            sender_email = cfg.get('sender_email', 'notices@raiganjuniversity.ac.in')
-            sender_name = cfg.get('sender_name', 'Raiganj University Notice Board')
+        sample_notice = {
+            'id': 'TEST-999',
+            'title': 'Raiganj University Notice Dispatcher: Google Group Connection Verified',
+            'link': 'https://raiganjuniversity.ac.in/',
+            'published_on': datetime.now().strftime('%b %d, %Y %I:%M %p'),
+            'category': 'System Verification'
+        }
+        html = generate_notice_html(sample_notice, student_name='Administrator')
 
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = '[TEST] Raiganj University SMTP Connection Test'
-            msg['From'] = f'{sender_name} <{sender_email}>'
-            msg['To'] = test_email
-            msg['Date'] = formatdate(localtime=True)
-            msg.attach(MIMEText('This is a test notification confirming your Raiganj University SMTP Dispatcher is working.', 'plain'))
-            msg.attach(MIMEText(html, 'html'))
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = '[TEST] Raiganj University Notice Dispatcher: Test Alert'
+        msg['From'] = f'{sender_name} <{sender_email}>'
+        msg['To'] = f"Google Group <{target}>" if '@googlegroups.com' in target else target
+        msg['Date'] = formatdate(localtime=True)
+        msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
 
-            server.sendmail(sender_email, [test_email], msg.as_string())
-            server.quit()
-            
-            db.log_event('SUCCESS', 'SMTP', f'SMTP test successful. Email sent to {test_email} via {host_info} ({mode} mode)')
-            return {'success': True, 'message': f'SMTP connection verified and test email sent to {test_email} ({mode} mode via {host_info})'}
-        
+        msg.attach(MIMEText('This is a test notification confirming your Google Group notice broadcast system is fully active.', 'plain'))
+        msg.attach(MIMEText(html, 'html'))
+
+        server.sendmail(sender_email, [target], msg.as_string())
         server.quit()
-        db.log_event('SUCCESS', 'SMTP', f'SMTP connection verified successfully ({mode} mode on {host_info})')
-        return {'success': True, 'message': f'Connection established successfully to {host_info} ({mode} mode)'}
+        
+        db.log_event('SUCCESS', 'SMTP', f'Test email delivered to {target}')
+        return {'success': True, 'message': f'Connection verified and test alert delivered to {target}!'}
     except Exception as e:
         err = str(e)
-        db.log_event('ERROR', 'SMTP', f'SMTP Connection Test failed: {err}')
+        db.log_event('ERROR', 'SMTP', f'Connection Test failed: {err}')
         return {'success': False, 'message': f'SMTP Error: {err}'}

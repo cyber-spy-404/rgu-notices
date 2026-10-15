@@ -65,8 +65,18 @@ def init_db():
     # Insert default smtp config if not exists
     cursor.execute('''
     INSERT OR IGNORE INTO smtp_config (id, mode, local_host, local_port, custom_host, custom_port, custom_use_tls, custom_use_ssl, custom_username, custom_password, sender_email, sender_name)
-    VALUES (1, 'local', '127.0.0.1', 2525, 'smtp.gmail.com', 587, 1, 0, '', '', 'notices@raiganjuniversity.ac.in', 'Raiganj University Notice Board')
+    VALUES (1, 'googlegroup', '127.0.0.1', 2525, 'smtp.gmail.com', 587, 1, 0, '', '', 'notices@raiganjuniversity.ac.in', 'Raiganj University Notice Board')
     ''')
+
+    # Migration: Add google_group_email and gemini_api_key if not exists
+    try:
+        cursor.execute("ALTER TABLE smtp_config ADD COLUMN google_group_email TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE smtp_config ADD COLUMN gemini_api_key TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
 
     # Local SMTP inbox to inspect captured emails
     cursor.execute('''
@@ -300,24 +310,28 @@ def save_smtp_config(data):
         custom_password = ?,
         sender_email = ?,
         sender_name = ?,
+        google_group_email = ?,
+        gemini_api_key = ?,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = 1
     ''', (
-        data.get('mode', 'local'),
+        data.get('mode', 'googlegroup'),
         data.get('local_host', '127.0.0.1'),
-        int(data.get('local_port', 1025)),
+        int(data.get('local_port', 2525)),
         data.get('custom_host', 'smtp.gmail.com'),
         int(data.get('custom_port', 587)),
         1 if data.get('custom_use_tls') else 0,
         1 if data.get('custom_use_ssl') else 0,
         data.get('custom_username', ''),
         data.get('custom_password', ''),
-        data.get('sender_email', 'notices@raiganjuniversity.ac.in'),
-        data.get('sender_name', 'Raiganj University Notice Board')
+        data.get('sender_email', ''),
+        data.get('sender_name', 'Raiganj University Notice Board'),
+        data.get('google_group_email', ''),
+        data.get('gemini_api_key', '')
     ))
     conn.commit()
     conn.close()
-    log_event('SUCCESS', 'SMTP', 'SMTP settings updated successfully')
+    log_event('SUCCESS', 'SMTP', 'Dispatch settings updated successfully')
     return True
 
 # ----------------- Local SMTP Inbox ----------------- #

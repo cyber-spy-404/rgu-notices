@@ -56,28 +56,39 @@ async function fetchSystemStatus() {
     document.getElementById('metricTotalStudents').innerText = data.stats.total_students || 0;
     document.getElementById('metricActiveStudents').innerText = data.stats.active_students || 0;
     document.getElementById('metricTotalNotices').innerText = data.stats.total_notices || 0;
-    document.getElementById('metricCapturedEmails').innerText = data.stats.captured_emails || 0;
+
+    const audienceElem = document.getElementById('metricGroupAudience');
+    if (audienceElem) {
+      audienceElem.innerText = data.google_group_email ? '1,000+' : (data.stats.total_students || 0);
+    }
+    const groupLinkElem = document.getElementById('metricGroupEmailLink');
+    if (groupLinkElem && data.google_group_email) {
+      groupLinkElem.innerText = data.google_group_email;
+    }
 
     // Badges in header
     document.getElementById('navStudentCount').innerText = data.stats.total_students || 0;
     document.getElementById('navNoticeCount').innerText = data.stats.total_notices || 0;
 
-    // SMTP Badge
+    // Google Group Badge in header
     const smtpBadgeText = document.getElementById('smtpBadgeText');
-    if (data.smtp_mode === 'local') {
-      const isRunning = data.smtp_server.running;
-      smtpBadgeText.innerText = `SMTP: Local (${data.smtp_server.port}) ${isRunning ? 'Active' : 'Offline'}`;
-    } else {
-      smtpBadgeText.innerText = `SMTP: Custom (${data.sender_email || 'Configured'})`;
+    if (smtpBadgeText) {
+      if (data.google_group_email) {
+        smtpBadgeText.innerHTML = `<i class="fa-solid fa-users"></i> ${escapeHtml(data.google_group_email)}`;
+      } else {
+        smtpBadgeText.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Group Email Required`;
+      }
     }
 
     // Dashboard info card
     document.getElementById('dashLastRun').innerText = data.stats.last_scraped_at || 'Never executed yet';
     document.getElementById('dashNextRun').innerText = data.scheduler.next_run || 'Tomorrow at 00:00:00';
-    document.getElementById('dashSmtpChannel').innerText = data.smtp_mode === 'local' 
-      ? `Built-in Local SMTP Server (${data.smtp_server.host}:${data.smtp_server.port})` 
-      : `Custom SMTP Server`;
-    document.getElementById('dashStudentAudience').innerText = `${data.stats.active_students} active enrolled student(s)`;
+    document.getElementById('dashSmtpChannel').innerText = data.google_group_email 
+      ? `Google Groups Broadcast (${data.google_group_email})` 
+      : `Google Groups Broadcast (Setup Required)`;
+    document.getElementById('dashStudentAudience').innerText = data.google_group_email
+      ? `All 1,000+ members in Google Group`
+      : `${data.stats.active_students} active enrolled student(s)`;
     document.getElementById('metricNextRunText').innerText = `Next run: ${data.scheduler.next_run || '00:00:00'}`;
 
     // Update Countdown
@@ -459,55 +470,90 @@ async function resendNotice(noticeId, title) {
   }
 }
 
-// ----------------- SMTP Settings & Mailbox ----------------- //
+// ----------------- Google Group Broadcast & Settings ----------------- //
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+  }
+}
+
 async function loadSmtpConfig() {
   try {
     const res = await fetch('/api/smtp/config');
     const cfg = await res.json();
 
-    document.getElementById('smtpSenderEmail').value = cfg.sender_email || '';
-    document.getElementById('smtpSenderName').value = cfg.sender_name || '';
-    document.getElementById('smtpLocalHost').value = cfg.local_host || '127.0.0.1';
-    document.getElementById('smtpLocalPort').value = cfg.local_port || 1025;
-    document.getElementById('smtpCustomHost').value = cfg.custom_host || '';
-    document.getElementById('smtpCustomPort').value = cfg.custom_port || 587;
-    document.getElementById('smtpCustomUser').value = cfg.custom_username || '';
-    document.getElementById('smtpCustomPass').value = cfg.custom_password_masked || '';
-    document.getElementById('smtpCustomTls').checked = !!cfg.custom_use_tls;
-    document.getElementById('smtpCustomSsl').checked = !!cfg.custom_use_ssl;
+    if (document.getElementById('smtpGoogleGroupEmail')) {
+      document.getElementById('smtpGoogleGroupEmail').value = cfg.google_group_email || '';
+    }
+    if (document.getElementById('smtpSenderEmail')) {
+      document.getElementById('smtpSenderEmail').value = cfg.sender_email || cfg.custom_username || '';
+    }
+    if (document.getElementById('smtpSenderName')) {
+      document.getElementById('smtpSenderName').value = cfg.sender_name || 'Raiganj University Notice Board';
+    }
+    if (document.getElementById('smtpCustomPass')) {
+      document.getElementById('smtpCustomPass').value = cfg.custom_password_masked || '';
+    }
+    if (document.getElementById('smtpGeminiKey')) {
+      document.getElementById('smtpGeminiKey').value = cfg.gemini_api_key_masked || '';
+    }
+    if (document.getElementById('smtpCustomHost')) {
+      document.getElementById('smtpCustomHost').value = cfg.custom_host || 'smtp.gmail.com';
+    }
+    if (document.getElementById('smtpCustomPort')) {
+      document.getElementById('smtpCustomPort').value = cfg.custom_port || 587;
+    }
+    if (document.getElementById('smtpCustomTls')) {
+      document.getElementById('smtpCustomTls').checked = cfg.custom_use_tls !== 0;
+    }
+    if (document.getElementById('smtpCustomSsl')) {
+      document.getElementById('smtpCustomSsl').checked = !!cfg.custom_use_ssl;
+    }
 
-    const modeRadio = document.querySelector(`input[name="smtp_mode"][value="${cfg.mode || 'local'}"]`);
-    if (modeRadio) modeRadio.checked = true;
-
-    toggleSmtpModeFields();
-    document.getElementById('currentSmtpModeBadge').innerText = `Mode: ${cfg.mode === 'local' ? 'Built-in Local SMTP' : 'Custom SMTP'}`;
+    const badge = document.getElementById('currentSmtpModeBadge');
+    if (badge) {
+      if (cfg.google_group_email) {
+        badge.innerHTML = `<i class="fa-solid fa-users"></i> ${escapeHtml(cfg.google_group_email)}`;
+      } else {
+        badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Group Email Required`;
+      }
+    }
   } catch (err) {
-    console.error('Error loading SMTP config:', err);
+    console.error('Error loading Google Group / SMTP config:', err);
   }
-}
-
-function toggleSmtpModeFields() {
-  const selectedMode = document.querySelector('input[name="smtp_mode"]:checked')?.value || 'local';
-  document.getElementById('localSmtpFields').style.display = selectedMode === 'local' ? 'block' : 'none';
-  document.getElementById('customSmtpFields').style.display = selectedMode === 'custom' ? 'block' : 'none';
 }
 
 async function saveSmtpConfig(e) {
   e.preventDefault();
-  const selectedMode = document.querySelector('input[name="smtp_mode"]:checked').value;
+
+  const googleGroupEmail = document.getElementById('smtpGoogleGroupEmail')?.value.trim() || '';
+  const senderEmail = document.getElementById('smtpSenderEmail')?.value.trim() || '';
+  const senderName = document.getElementById('smtpSenderName')?.value.trim() || 'Raiganj University Notice Board';
+  const customPass = document.getElementById('smtpCustomPass')?.value.trim() || '';
+  const geminiKey = document.getElementById('smtpGeminiKey')?.value.trim() || '';
+  const customHost = document.getElementById('smtpCustomHost')?.value.trim() || 'smtp.gmail.com';
+  const customPort = parseInt(document.getElementById('smtpCustomPort')?.value || '587');
+  const customTls = document.getElementById('smtpCustomTls')?.checked ? 1 : 0;
+  const customSsl = document.getElementById('smtpCustomSsl')?.checked ? 1 : 0;
 
   const payload = {
-    mode: selectedMode,
-    sender_email: document.getElementById('smtpSenderEmail').value.trim(),
-    sender_name: document.getElementById('smtpSenderName').value.trim(),
-    local_host: document.getElementById('smtpLocalHost').value.trim(),
-    local_port: parseInt(document.getElementById('smtpLocalPort').value),
-    custom_host: document.getElementById('smtpCustomHost').value.trim(),
-    custom_port: parseInt(document.getElementById('smtpCustomPort').value),
-    custom_username: document.getElementById('smtpCustomUser').value.trim(),
-    custom_password: document.getElementById('smtpCustomPass').value.trim(),
-    custom_use_tls: document.getElementById('smtpCustomTls').checked ? 1 : 0,
-    custom_use_ssl: document.getElementById('smtpCustomSsl').checked ? 1 : 0
+    mode: 'googlegroup',
+    google_group_email: googleGroupEmail,
+    sender_email: senderEmail,
+    custom_username: senderEmail,
+    custom_password: customPass,
+    sender_name: senderName,
+    gemini_api_key: geminiKey,
+    custom_host: customHost,
+    custom_port: customPort,
+    custom_use_tls: customTls,
+    custom_use_ssl: customSsl
   };
 
   try {
@@ -518,12 +564,14 @@ async function saveSmtpConfig(e) {
     });
     const data = await res.json();
     if (data.success) {
-      showToast('SMTP settings updated successfully!', 'success');
+      showToast('Google Group & dispatch settings saved successfully!', 'success');
       loadSmtpConfig();
       fetchSystemStatus();
+    } else {
+      showToast(data.message || 'Failed to save settings', 'error');
     }
   } catch (err) {
-    showToast('Failed to save SMTP settings: ' + err.message, 'error');
+    showToast('Failed to save settings: ' + err.message, 'error');
   }
 }
 
@@ -584,9 +632,14 @@ async function clearLocalInbox() {
   }
 }
 
-// ----------------- SMTP Test Modal ----------------- //
+// ----------------- Broadcast Test Modal ----------------- //
 function openTestModal() {
   document.getElementById('testResultBox').style.display = 'none';
+  const groupEmail = document.getElementById('smtpGoogleGroupEmail')?.value.trim() || '';
+  const testInput = document.getElementById('testEmailRecipient');
+  if (testInput && groupEmail && !testInput.value) {
+    testInput.value = groupEmail;
+  }
   openModal('testSmtpModal');
 }
 
