@@ -5,6 +5,12 @@ on:
     # Runs at 18:28 UTC every day (which is 23:58:00 IST - 2 minutes before midnight to wake sleeping servers)
     - cron: '28 18 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+    inputs:
+      force_send_sample:
+        description: 'Send latest notice as test email'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   check-notices:
@@ -34,6 +40,7 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FORCE_SEND_SAMPLE: ${{ github.event.inputs.force_send_sample }}
         run: |
           python cron_task.py
 

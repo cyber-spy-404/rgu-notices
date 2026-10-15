@@ -144,8 +144,29 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
     for n in pushed_notices:
         all_unmailed[str(n.get('id'))] = n
 
+    force_test = os.getenv('FORCE_SEND_SAMPLE', '').strip().lower() in ['true', '1', 'yes']
+    if len(all_unmailed) == 0 and force_test:
+        print("\n -> [TEST MODE ACTIVATED] 'force_send_sample' is TRUE.")
+        print(" -> Selecting the latest notice to perform a full live dispatch test...")
+        sample_notice = None
+        if scraped_notices:
+            sample_notice = scraped_notices[0]
+        else:
+            try:
+                rn_resp = requests.get(f"{webapp_url}/api/notices?limit=1", headers=headers, timeout=10)
+                if rn_resp.status_code == 200:
+                    r_notices = rn_resp.json().get('notices', [])
+                    if r_notices:
+                        sample_notice = r_notices[0]
+            except Exception:
+                pass
+        
+        if sample_notice:
+            print(f" -> Selected Notice #{sample_notice.get('id')} ('{sample_notice.get('title')}') for live test email.")
+            all_unmailed[str(sample_notice.get('id'))] = sample_notice
+
     total_to_mail = len(all_unmailed)
-    print(f" -> Total unmailed notices queued for dispatch: {total_to_mail}")
+    print(f" -> Total notices queued for dispatch: {total_to_mail}")
 
     sent_records = []
     if total_to_mail > 0:
