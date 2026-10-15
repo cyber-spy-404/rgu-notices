@@ -1,20 +1,29 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 from email.utils import formatdate, make_msgid
 from datetime import datetime
 import database as db
 
-def generate_notice_html(notice, student_name="Student", polished_html=None):
+def generate_notice_html(notice, student_name="Student", polished_html=None, attachment_name=None):
     """
     Renders an elegant, modern, responsive HTML email template for Raiganj University notices,
-    with embedded Gemini AI polished breakdown.
+    with embedded Gemini AI polished breakdown and attachment indicator.
     """
     title = notice.get('title', 'Official University Notice')
     link = notice.get('link', 'https://raiganjuniversity.ac.in/')
     published_on = notice.get('published_on', datetime.now().strftime('%b %d, %Y'))
     category = notice.get('category', 'General Notice')
     notice_id = notice.get('id', 'N/A')
+
+    attachment_banner = ""
+    if attachment_name:
+        attachment_banner = f"""
+        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px 18px; margin: 18px 0; color: #a7f3d0; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+          <span>📎 <strong>Official Document Attached:</strong> {attachment_name} (Downloadable directly from this email)</span>
+        </div>
+        """
 
     polished_section = ""
     if polished_html:
@@ -200,6 +209,8 @@ def generate_notice_html(notice, student_name="Student", polished_html=None):
         </div>
       </div>
 
+      {attachment_banner}
+
       {polished_section}
 
       <div class="btn-container">
@@ -328,19 +339,37 @@ def dispatch_notice_to_students(notice):
     fail_count = 0
     errors = []
 
-    # Step 1: Grab notice content and save as clean .md file
-    # Step 2: Give to Gemini to polish properly
-    # Step 3: Convert to styled HTML for email
+    # Step 1: Grab notice file (PDF, DOCX, Image) and convert to .md
+    # Step 2: Give to Gemini Multimodal AI to polish properly
+    # Step 3: Convert to styled HTML and attach file
     import gemini_polisher
+    saved_filepath = None
+    attachment_name = None
     try:
-        raw_md, md_path = gemini_polisher.grab_and_convert_to_md(notice)
+        raw_md, md_path, saved_filepath, mime_type, file_bytes = gemini_polisher.grab_notice_file_and_text(notice)
         db.log_event('INFO', 'DISPATCH', f"Saved notice #{notice.get('id')} to Markdown: {md_path}")
-        polished_md = gemini_polisher.polish_with_gemini(raw_md, notice)
+        if saved_filepath:
+            attachment_name = os.path.basename(saved_filepath)
+            db.log_event('INFO', 'DISPATCH', f"Saved notice file ({mime_type}): {saved_filepath}")
+
+        polished_md = gemini_polisher.polish_with_gemini(raw_md, notice, file_bytes=file_bytes, mime_type=mime_type)
         polished_html = gemini_polisher.convert_md_to_html(polished_md)
     except Exception as prep_err:
         db.log_event('WARNING', 'AI', f"AI processing error ({prep_err}), proceeding with default layout.")
         polished_html = None
         polished_md = notice.get('title')
+
+    def attach_document(msg_obj):
+        if saved_filepath and os.path.exists(saved_filepath):
+            try:
+                size_mb = os.path.getsize(saved_filepath) / (1024 * 1024)
+                if size_mb < 15:  # within standard email attachment limits
+                    with open(saved_filepath, 'rb') as f:
+                        part = MIMEApplication(f.read(), Name=attachment_name)
+                        part['Content-Disposition'] = f'attachment; filename="{attachment_name}"'
+                        msg_obj.attach(part)
+            except Exception as att_err:
+                db.log_event('WARNING', 'DISPATCH', f"Attachment warning ({att_err})")
 
     server = None
     try:
@@ -351,22 +380,27 @@ def dispatch_notice_to_students(notice):
         if group_email:
             # High-efficiency Google Group broadcast (1 email reaches 1000+ students)
             db.log_event('INFO', 'DISPATCH', f'Broadcasting Notice #{notice.get("id")} to Google Group: {group_email}')
-            html = generate_notice_html(notice, student_name="Student", polished_html=polished_html)
+            html = generate_notice_html(notice, student_name="Student", polished_html=polished_html, attachment_name=attachment_name)
             text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
             
-            msg = MIMEMultipart('alternative')
+            msg = MIMEMultipart('mixed')
             msg['Subject'] = subject
             msg['From'] = f'{sender_name} <{sender_email}>'
             msg['To'] = f"RGU Department Students <{group_email}>"
             msg['Date'] = formatdate(localtime=True)
             msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
 
-            msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
-            msg.attach(MIMEText(html, 'html', 'utf-8'))
+            alt_part = MIMEMultipart('alternative')
+            alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
+            alt_part.attach(MIMEText(html, 'html', 'utf-8'))
+            msg.attach(alt_part)
+
+            # Attach actual PDF / document
+            attach_document(msg)
 
             server.sendmail(sender_email, [group_email], msg.as_string())
             sent_count = 1
-            db.log_event('SUCCESS', 'DISPATCH', f'Notice #{notice.get("id")} successfully broadcasted to Google Group {group_email}!')
+            db.log_event('SUCCESS', 'DISPATCH', f'Notice #{notice.get("id")} successfully broadcasted to Google Group {group_email} (with attachment: {attachment_name or "None"})!')
             db.add_dispatch_record(notice.get('id'), notice.get('title'), 1, 'SUCCESS', f'Google Group: {group_email}')
             return {'success': True, 'sent_count': 1, 'is_group': True}
 
@@ -374,18 +408,23 @@ def dispatch_notice_to_students(notice):
         db.log_event('INFO', 'DISPATCH', f'Starting email dispatch of Notice #{notice.get("id")} to {len(students)} active student(s)...')
         for s in students:
             try:
-                html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html)
+                html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html, attachment_name=attachment_name)
                 text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
                 
-                msg = MIMEMultipart('alternative')
+                msg = MIMEMultipart('mixed')
                 msg['Subject'] = subject
                 msg['From'] = f'{sender_name} <{sender_email}>'
                 msg['To'] = f"{s.get('name', 'Student')} <{s['email']}>"
                 msg['Date'] = formatdate(localtime=True)
                 msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
 
-                msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
-                msg.attach(MIMEText(html, 'html', 'utf-8'))
+                alt_part = MIMEMultipart('alternative')
+                alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
+                alt_part.attach(MIMEText(html, 'html', 'utf-8'))
+                msg.attach(alt_part)
+
+                # Attach actual PDF / document
+                attach_document(msg)
 
                 server.sendmail(sender_email, [s['email']], msg.as_string())
                 sent_count += 1

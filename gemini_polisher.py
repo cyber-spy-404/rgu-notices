@@ -1,6 +1,9 @@
 import os
 import io
 import re
+import base64
+import zipfile
+import xml.etree.ElementTree as ET
 import requests
 from bs4 import BeautifulSoup
 import pypdf
@@ -8,17 +11,37 @@ import markdown
 import database as db
 
 NOTICES_MD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'notices_md')
+NOTICES_FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'notices_files')
 os.makedirs(NOTICES_MD_DIR, exist_ok=True)
+os.makedirs(NOTICES_FILES_DIR, exist_ok=True)
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
-def grab_and_convert_to_md(notice):
+def extract_docx_text(file_bytes):
+    """Extracts text from a .docx file without requiring external docx libraries."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
+            xml_content = z.read('word/document.xml')
+            tree = ET.fromstring(xml_content)
+            paragraphs = []
+            for node in tree.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p'):
+                texts = [n.text for n in node.iter('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t') if n.text]
+                if texts:
+                    paragraphs.append(''.join(texts))
+            return '\n'.join(paragraphs)
+    except Exception as e:
+        return f"(Could not parse DOCX text: {e})"
+
+def grab_notice_file_and_text(notice):
     """
-    1. Downloads the notice file/webpage (PDF or HTML)
-    2. Extracts clean text
-    3. Converts and saves as a raw .md file in notices_md/{notice_id}.md
+    1. Downloads the notice file (PDF, DOCX, Image, or HTML).
+    2. If it's an HTML page embedding a PDF, follows and grabs the actual PDF document.
+    3. Saves the original file into notices_files/{notice_id}.ext
+    4. Extracts text from the document.
+    5. Generates structured raw markdown and saves into notices_md/{notice_id}.md
+    Returns: (raw_md, md_path, file_path, mime_type, file_bytes)
     """
     notice_id = str(notice.get('id', 'notice')).replace('/', '_')
     title = notice.get('title', 'Official Notice')
@@ -27,40 +50,101 @@ def grab_and_convert_to_md(notice):
     category = notice.get('category', 'General')
 
     extracted_body = ""
+    saved_filepath = None
+    mime_type = "text/html"
+    file_bytes = None
 
     try:
-        resp = requests.get(link, headers=HEADERS, timeout=20)
-        content_type = resp.headers.get('Content-Type', '').lower()
+        resp = requests.get(link, headers=HEADERS, timeout=25)
+        content = resp.content
+        ctype = resp.headers.get('Content-Type', '').lower()
 
-        if resp.content[:4] == b'%PDF' or 'application/pdf' in content_type:
-            # Extract PDF text
-            reader = pypdf.PdfReader(io.BytesIO(resp.content))
-            pages_text = []
-            for i, page in enumerate(reader.pages):
-                txt = page.extract_text()
-                if txt and txt.strip():
-                    pages_text.append(txt.strip())
-            extracted_body = "\n\n".join(pages_text) if pages_text else "(Scanned PDF document or image notice)"
+        # Check for direct PDF
+        if content[:4] == b'%PDF' or 'application/pdf' in ctype:
+            mime_type = 'application/pdf'
+            file_bytes = content
+            saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.pdf")
+            with open(saved_filepath, 'wb') as f:
+                f.write(content)
+            
+            # Extract text via pypdf
+            reader = pypdf.PdfReader(io.BytesIO(content))
+            pages = [p.extract_text() for p in reader.pages if p.extract_text() and p.extract_text().strip()]
+            extracted_body = "\n\n".join(pages) if pages else "(Scanned image document/circular)"
+
+        # Check for Images (JPEG/PNG)
+        elif content[:3] == b'\xff\xd8\xff' or 'image/jpeg' in ctype:
+            mime_type = 'image/jpeg'
+            file_bytes = content
+            saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.jpg")
+            with open(saved_filepath, 'wb') as f:
+                f.write(content)
+            extracted_body = "(Official scanned notice image attached)"
+        elif content[:4] == b'\x89PNG' or 'image/png' in ctype:
+            mime_type = 'image/png'
+            file_bytes = content
+            saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.png")
+            with open(saved_filepath, 'wb') as f:
+                f.write(content)
+            extracted_body = "(Official scanned notice image attached)"
+
+        # Check for DOCX / Office files
+        elif content[:4] == b'PK\x03\x04' and ('word' in ctype or link.endswith('.docx')):
+            mime_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            file_bytes = content
+            saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.docx")
+            with open(saved_filepath, 'wb') as f:
+                f.write(content)
+            extracted_body = extract_docx_text(content)
+
+        # HTML Webpage - check if it links to an actual PDF
         else:
-            # Extract HTML notice text
             soup = BeautifulSoup(resp.text, 'html.parser')
-            # Remove scripts, styles
-            for s in soup(['script', 'style', 'nav', 'header', 'footer']):
-                s.decompose()
-            main_elem = soup.find('article') or soup.find(class_='notice-content') or soup.find('main') or soup.body
-            extracted_body = main_elem.get_text('\n', strip=True) if main_elem else soup.get_text('\n', strip=True)
+            # Check for embedded PDF or download links
+            pdf_link = soup.find('a', href=lambda h: h and ('.pdf' in h.lower() or 'ViewNoticeFile' in h or 'download' in h.lower()))
+            iframe_pdf = soup.find('iframe', src=lambda s: s and ('.pdf' in s.lower() or 'ViewNotice' in s))
+
+            target_pdf_url = None
+            if pdf_link:
+                from urllib.parse import urljoin
+                target_pdf_url = urljoin(link, pdf_link['href'])
+            elif iframe_pdf:
+                from urllib.parse import urljoin
+                target_pdf_url = urljoin(link, iframe_pdf['src'])
+
+            if target_pdf_url and target_pdf_url != link:
+                try:
+                    pdf_resp = requests.get(target_pdf_url, headers=HEADERS, timeout=20)
+                    if pdf_resp.content[:4] == b'%PDF' or 'application/pdf' in pdf_resp.headers.get('Content-Type', '').lower():
+                        mime_type = 'application/pdf'
+                        file_bytes = pdf_resp.content
+                        saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.pdf")
+                        with open(saved_filepath, 'wb') as f:
+                            f.write(pdf_resp.content)
+                        reader = pypdf.PdfReader(io.BytesIO(pdf_resp.content))
+                        pages = [p.extract_text() for p in reader.pages if p.extract_text() and p.extract_text().strip()]
+                        extracted_body = "\n\n".join(pages) if pages else "(Scanned document)"
+                except Exception as inner_e:
+                    print(f"Inner PDF download note: {inner_e}")
+
+            if not extracted_body:
+                for s in soup(['script', 'style', 'nav', 'header', 'footer']):
+                    s.decompose()
+                main_elem = soup.find('article') or soup.find(class_='notice-content') or soup.find('main') or soup.body
+                extracted_body = main_elem.get_text('\n', strip=True) if main_elem else soup.get_text('\n', strip=True)
 
     except Exception as e:
-        extracted_body = f"(Could not fetch full document text: {str(e)})"
-        db.log_event('WARNING', 'SCRAPER', f"Notice #{notice_id} document fetch warning: {e}")
+        extracted_body = f"(Could not download notice file: {str(e)})"
+        db.log_event('WARNING', 'SCRAPER', f"Notice #{notice_id} file fetch warning: {e}")
 
-    # Build structured markdown
+    # Build raw markdown document
     raw_md = f"""# Raiganj University Notice #{notice_id}
 
 **Notice Title:** {title}  
 **Published Date:** {pub_date}  
 **Category:** {category}  
 **Official Source Link:** {link}  
+**Local File Attached:** {os.path.basename(saved_filepath) if saved_filepath else 'None'}  
 
 ---
 
@@ -75,13 +159,13 @@ def grab_and_convert_to_md(notice):
     except Exception as e:
         print(f"Error saving raw markdown: {e}")
 
-    return raw_md, md_filepath
+    return raw_md, md_filepath, saved_filepath, mime_type, file_bytes
 
-def polish_with_gemini(raw_md, notice):
+def polish_with_gemini(raw_md, notice, file_bytes=None, mime_type=None):
     """
-    Sends the raw notice markdown to Google Gemini to polish into an executive,
-    student-friendly announcement with clear highlights, deadlines, and actions.
-    Saves polished markdown to notices_md/{notice_id}_polished.md
+    Polishes notice using Google Gemini.
+    If the notice is a PDF or image, uses Gemini's Multimodal capabilities (inlineData)
+    to OCR and read scanned text, stamps, handwriting, and tables directly!
     """
     notice_id = str(notice.get('id', 'notice')).replace('/', '_')
     title = notice.get('title', 'Official Notice')
@@ -94,64 +178,76 @@ def polish_with_gemini(raw_md, notice):
         return raw_md
 
     prompt = f"""You are the official student communications officer for Raiganj University (রায়গঞ্জ বিশ্ববিদ্যালয়).
-Review the following raw markdown of an official university notice.
-Convert and polish it into an executive, crystal-clear, student-friendly announcement.
+Analyze the attached official university notice document/text.
+Polish and structure it into a clean, executive, student-friendly announcement.
 
 Notice Title: {title}
-Official Link: {link}
-
-Raw Notice Content:
-{raw_md[:6000]}
+Official Portal Link: {link}
 
 Please structure your response strictly in clean GitHub-Flavored Markdown with these sections:
 ### 📌 Executive Summary (TL;DR)
-(2-3 clear sentences explaining what this notice is about in simple terms)
+(2-3 clear, simple sentences explaining what this notice is about)
 
 ### 👥 Who is Affected?
-(e.g., UG Sem 4, PG Students, All Departments, Applicants, etc.)
+(e.g., UG Sem 4, PG Students, Ph.D. Scholars, All Departments, Job Applicants, etc.)
 
 ### ⚡ Key Action Items & Instructions
-(Clear bullet points of what students must do step-by-step)
+(Step-by-step checklist of what students must do)
 
 ### 📅 Important Dates & Deadlines
-(List any dates, timings, or write 'Not specified' if none)
+(All dates, timings, or write 'Not specified' if none)
 
-### ⚠️ Important Notes / Venue / Fees
-(Any fee amount, contact person, office room, or warning)
+### ⚠️ Fees / Venue / Office Contacts
+(Any fee amount, room/hall number, payment portal link, or warning)
 
 Guidelines:
-- Do NOT invent facts or fake dates; extract only what is in the notice.
-- If the notice is a holiday notice, clearly state the date of university reopening.
-- Keep the language engaging, helpful, and easily scannable on mobile phones.
+- Do NOT make up any dates or facts; extract accurately from the document.
+- If it is an examination schedule or holiday, highlight dates clearly.
+- Keep the language engaging, clear, and mobile-friendly.
 """
 
-    # Call Gemini REST API (gemini-1.5-flash or gemini-2.0-flash)
+    parts = [{"text": prompt}]
+
+    # Multimodal OCR support: If we have PDF or Image bytes, pass directly to Gemini!
+    if file_bytes and mime_type in ['application/pdf', 'image/jpeg', 'image/png']:
+        try:
+            # Gemini inlineData size limit is ~20MB, our PDFs are <2MB
+            b64_data = base64.b64encode(file_bytes).decode('utf-8')
+            parts.append({
+                "inlineData": {
+                    "mimeType": mime_type,
+                    "data": b64_data
+                }
+            })
+            db.log_event('INFO', 'AI', f"Sending {mime_type} ({len(file_bytes)} bytes) to Gemini Multimodal OCR.")
+        except Exception as b64_err:
+            print(f"Base64 encoding note: {b64_err}")
+            parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
+    else:
+        parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
+
     models_to_try = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
     polished_text = None
 
     for model in models_to_try:
         endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key.strip()}"
         payload = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ],
+            "contents": [{"parts": parts}],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": 1000
+                "maxOutputTokens": 1200
             }
         }
         try:
-            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=25)
+            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=35)
             if r.status_code == 200:
                 data = r.json()
                 candidates = data.get('candidates', [])
                 if candidates:
-                    parts = candidates[0].get('content', {}).get('parts', [])
-                    if parts and 'text' in parts[0]:
-                        polished_text = parts[0]['text'].strip()
-                        db.log_event('SUCCESS', 'AI', f"Gemini ({model}) successfully polished Notice #{notice_id}!")
+                    resp_parts = candidates[0].get('content', {}).get('parts', [])
+                    if resp_parts and 'text' in resp_parts[0]:
+                        polished_text = resp_parts[0]['text'].strip()
+                        db.log_event('SUCCESS', 'AI', f"Gemini ({model}) successfully polished Notice #{notice_id} (multimodal)!")
                         break
             else:
                 db.log_event('WARNING', 'AI', f"Gemini {model} returned HTTP {r.status_code}: {r.text[:150]}")
@@ -173,11 +269,8 @@ Guidelines:
     return polished_text
 
 def convert_md_to_html(md_text):
-    """
-    Converts markdown text to styled HTML for email body.
-    """
-    html = markdown.markdown(
+    """Converts markdown text to styled HTML for email body."""
+    return markdown.markdown(
         md_text,
         extensions=['extra', 'nl2br', 'sane_lists']
     )
-    return html
