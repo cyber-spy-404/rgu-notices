@@ -5,15 +5,29 @@ from email.utils import formatdate, make_msgid
 from datetime import datetime
 import database as db
 
-def generate_notice_html(notice, student_name="Student"):
+def generate_notice_html(notice, student_name="Student", polished_html=None):
     """
-    Renders an elegant, modern, responsive HTML email template for Raiganj University notices.
+    Renders an elegant, modern, responsive HTML email template for Raiganj University notices,
+    with embedded Gemini AI polished breakdown.
     """
     title = notice.get('title', 'Official University Notice')
     link = notice.get('link', 'https://raiganjuniversity.ac.in/')
     published_on = notice.get('published_on', datetime.now().strftime('%b %d, %Y'))
     category = notice.get('category', 'General Notice')
     notice_id = notice.get('id', 'N/A')
+
+    polished_section = ""
+    if polished_html:
+        polished_section = f"""
+        <div style="background: #172033; border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 22px; margin: 24px 0; line-height: 1.65; color: #cbd5e1; box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: #a5b4fc; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #334155; padding-bottom: 10px;">
+            <span>✨ AI Polished Student Breakdown</span>
+          </div>
+          <div class="polished-content" style="font-size: 14px;">
+            {polished_html}
+          </div>
+        </div>
+        """
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -31,7 +45,7 @@ def generate_notice_html(notice, student_name="Student"):
       -webkit-font-smoothing: antialiased;
     }}
     .email-container {{
-      max-width: 620px;
+      max-width: 640px;
       margin: 25px auto;
       background: #111827;
       border: 1px solid #1f2937;
@@ -78,11 +92,6 @@ def generate_notice_html(notice, student_name="Student"):
       color: #94a3b8;
       margin-top: 0;
     }}
-    .badge-bar {{
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-    }}
     .badge {{
       display: inline-block;
       padding: 4px 12px;
@@ -90,6 +99,7 @@ def generate_notice_html(notice, student_name="Student"):
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.3px;
+      margin-right: 6px;
     }}
     .badge-category {{
       background: rgba(99, 102, 241, 0.2);
@@ -126,7 +136,7 @@ def generate_notice_html(notice, student_name="Student"):
     }}
     .btn-container {{
       text-align: center;
-      margin: 30px 0 10px 0;
+      margin: 26px 0 10px 0;
     }}
     .btn-action {{
       display: inline-block;
@@ -151,6 +161,19 @@ def generate_notice_html(notice, student_name="Student"):
     .footer a {{
       color: #818cf8;
       text-decoration: none;
+    }}
+    .polished-content h3 {{
+      color: #93c5fd;
+      font-size: 15px;
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }}
+    .polished-content ul, .polished-content ol {{
+      padding-left: 20px;
+      margin: 8px 0;
+    }}
+    .polished-content li {{
+      margin-bottom: 4px;
     }}
   </style>
 </head>
@@ -177,15 +200,17 @@ def generate_notice_html(notice, student_name="Student"):
         </div>
       </div>
 
+      {polished_section}
+
       <div class="btn-container">
-        <a href="{link}" class="btn-action" target="_blank">📄 View Official Notice & Download PDF</a>
+        <a href="{link}" class="btn-action" target="_blank">📄 View Official Notice &amp; Download PDF</a>
       </div>
       <p style="text-align: center; font-size: 12px; color: #64748b; margin-top: 12px;">
         Link: <a href="{link}" style="color: #818cf8; word-break: break-all;">{link}</a>
       </p>
     </div>
     <div class="footer">
-      <p>This automated alert is delivered daily by the <strong>Raiganj University SMTP Dispatch System</strong>.<br>
+      <p>This automated alert is delivered by the <strong>Raiganj University Notice Dispatcher</strong>.<br>
       Automated daily checks run at 00:00 midnight for newly added announcements.</p>
       <p><a href="https://raiganjuniversity.ac.in/">Official University Website</a> &bull; P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134</p>
     </div>
@@ -303,6 +328,20 @@ def dispatch_notice_to_students(notice):
     fail_count = 0
     errors = []
 
+    # Step 1: Grab notice content and save as clean .md file
+    # Step 2: Give to Gemini to polish properly
+    # Step 3: Convert to styled HTML for email
+    import gemini_polisher
+    try:
+        raw_md, md_path = gemini_polisher.grab_and_convert_to_md(notice)
+        db.log_event('INFO', 'DISPATCH', f"Saved notice #{notice.get('id')} to Markdown: {md_path}")
+        polished_md = gemini_polisher.polish_with_gemini(raw_md, notice)
+        polished_html = gemini_polisher.convert_md_to_html(polished_md)
+    except Exception as prep_err:
+        db.log_event('WARNING', 'AI', f"AI processing error ({prep_err}), proceeding with default layout.")
+        polished_html = None
+        polished_md = notice.get('title')
+
     server = None
     try:
         server, cfg = get_smtp_connection()
@@ -312,8 +351,8 @@ def dispatch_notice_to_students(notice):
         if group_email:
             # High-efficiency Google Group broadcast (1 email reaches 1000+ students)
             db.log_event('INFO', 'DISPATCH', f'Broadcasting Notice #{notice.get("id")} to Google Group: {group_email}')
-            html = generate_notice_html(notice, student_name="Student")
-            text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nPlease visit {notice.get('link')} to read."
+            html = generate_notice_html(notice, student_name="Student", polished_html=polished_html)
+            text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
             
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
@@ -335,8 +374,8 @@ def dispatch_notice_to_students(notice):
         db.log_event('INFO', 'DISPATCH', f'Starting email dispatch of Notice #{notice.get("id")} to {len(students)} active student(s)...')
         for s in students:
             try:
-                html = generate_notice_html(notice, student_name=s.get('name', 'Student'))
-                text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nPlease visit {notice.get('link')} to read."
+                html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html)
+                text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
                 
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = subject
