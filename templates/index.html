@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raiganj University &bull; Automated Notice &amp; SMTP Dispatcher</title>
+  <meta name="description" content="Automated daily 00:00 notice scraper and SMTP email dispatcher for Raiganj University students.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Background decorative glows -->
+  <div class="bg-glow glow-top-left"></div>
+  <div class="bg-glow glow-top-right"></div>
+  <div class="bg-glow glow-bottom-center"></div>
+
+  <!-- Main Container -->
+  <div class="app-layout">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-crest">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">Raiganj University <span>Notice Dispatcher</span></div>
+          <div class="brand-subtitle">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Automated Daily 00:00 Scraper &amp; SMTP Engine</div>
+        </div>
+      </div>
+
+      <!-- Live Service Badges & Countdown -->
+      <div class="header-status-area">
+        <div class="countdown-pill" id="countdownPill" title="Countdown to next daily check at 00:00">
+          <i class="fa-regular fa-clock pulse-icon"></i>
+          <span class="countdown-label">Next Check (00:00):</span>
+          <span class="countdown-digits" id="countdownTimer">--:--:--</span>
+        </div>
+
+        <div class="status-badge-group">
+          <div class="service-pill" id="schedulerBadge">
+            <span class="status-dot green pulse"></span>
+            <span>00:00 Scheduler: Active</span>
+          </div>
+          <div class="service-pill" id="smtpBadge">
+            <span class="status-dot green pulse"></span>
+            <span id="smtpBadgeText">SMTP: Local (2525)</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Check Notices Now</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openTestModal()">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Test Email</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Metrics Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon students-icon">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-label">Enrolled Students</div>
+          <div class="metric-val" id="metricTotalStudents">0</div>
+          <div class="metric-sub"><span id="metricActiveStudents">0</span> active email subscribers</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon notices-icon">
+          <i class="fa-solid fa-file-invoice"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-label">Tracked Notices</div>
+          <div class="metric-val" id="metricTotalNotices">0</div>
+          <div class="metric-sub">From <a href="https://raiganjuniversity.ac.in/" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon schedule-icon">
+          <i class="fa-solid fa-stopwatch"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-label">Daily Schedule</div>
+          <div class="metric-val">00:00 <span class="unit">IST</span></div>
+          <div class="metric-sub" id="metricNextRunText">Next: Calculating...</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon outbox-icon">
+          <i class="fa-solid fa-inbox"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-label">Captured In SMTP</div>
+          <div class="metric-val" id="metricCapturedEmails">0</div>
+          <div class="metric-sub"><a href="#" onclick="switchTab('smtp'); return false;" class="accent-link">View in local inbox</a></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="app-nav">
+      <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-tab" data-tab="students" onclick="switchTab('students')">
+        <i class="fa-solid fa-user-graduate"></i>
+        <span>Student Directory</span>
+        <span class="badge-count" id="navStudentCount">0</span>
+      </button>
+      <button class="nav-tab" data-tab="notices" onclick="switchTab('notices')">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>University Notices</span>
+        <span class="badge-count" id="navNoticeCount">0</span>
+      </button>
+      <button class="nav-tab" data-tab="smtp" onclick="switchTab('smtp')">
+        <i class="fa-solid fa-server"></i>
+        <span>SMTP Server &amp; Mailbox</span>
+      </button>
+      <button class="nav-tab" data-tab="logs" onclick="switchTab('logs')">
+        <i class="fa-solid fa-terminal"></i>
+        <span>Execution Logs</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+
+      <!-- ================= TAB 1: DASHBOARD ================= -->
+      <section class="tab-pane active" id="tab-dashboard">
+        <div class="dashboard-grid">
+          
+          <!-- Left Column: Automation Monitor & Latest Notices -->
+          <div class="dash-col-main">
+            
+            <!-- Automation Status Card -->
+            <div class="panel-card automation-card">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <i class="fa-solid fa-microchip"></i>
+                  <span>Automated Daily Engine Status</span>
+                </div>
+                <span class="badge badge-success" id="autoStatusBadge">
+                  <span class="status-dot green"></span> Running Daily at 00:00:00
+                </span>
+              </div>
+              <div class="automation-body">
+                <div class="automation-flow">
+                  <div class="flow-step">
+                    <div class="flow-step-icon"><i class="fa-regular fa-clock"></i></div>
+                    <div class="flow-step-text">
+                      <strong>Everyday at 00:00:00</strong>
+                      <span>Cron triggers automatically</span>
+                    </div>
+                  </div>
+                  <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                  <div class="flow-step">
+                    <div class="flow-step-icon"><i class="fa-solid fa-globe"></i></div>
+                    <div class="flow-step-text">
+                      <strong>Scrape RGU Website</strong>
+                      <span>Inspects raiganjuniversity.ac.in</span>
+                    </div>
+                  </div>
+                  <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                  <div class="flow-step">
+                    <div class="flow-step-icon"><i class="fa-solid fa-code-compare"></i></div>
+                    <div class="flow-step-text">
+                      <strong>Differential Check</strong>
+                      <span>Compare against database</span>
+                    </div>
+                  </div>
+                  <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                  <div class="flow-step">
+                    <div class="flow-step-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+                    <div class="flow-step-text">
+                      <strong>Dispatch to Students</strong>
+                      <span>Or reschedule for next 00:00</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="automation-details-box">
+                  <div class="detail-row">
+                    <span><i class="fa-solid fa-clock-rotate-left"></i> Last Scrape Run:</span>
+                    <strong id="dashLastRun">Never executed yet</strong>
+                  </div>
+                  <div class="detail-row">
+                    <span><i class="fa-regular fa-calendar-check"></i> Next Scheduled Run:</span>
+                    <strong id="dashNextRun">Tomorrow at 00:00:00</strong>
+                  </div>
+                  <div class="detail-row">
+                    <span><i class="fa-solid fa-paper-plane"></i> Outbound SMTP Channel:</span>
+                    <strong id="dashSmtpChannel">Local Server (127.0.0.1:2525)</strong>
+                  </div>
+                  <div class="detail-row">
+                    <span><i class="fa-solid fa-users"></i> Target Email Audience:</span>
+                    <strong id="dashStudentAudience">0 active enrolled students</strong>
+                  </div>
+                </div>
+
+                <div class="automation-actions">
+                  <button class="btn btn-primary" onclick="triggerScanNow()">
+                    <i class="fa-solid fa-play"></i> Run Check Right Now
+                  </button>
+                  <button class="btn btn-secondary" onclick="seedSampleStudents()">
+                    <i class="fa-solid fa-user-plus"></i> Load 5 Sample Students
+                  </button>
+                  <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="btn btn-ghost">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Visit Official RGU Portal
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Discovered Notices -->
+            <div class="panel-card mt-4">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <i class="fa-solid fa-newspaper"></i>
+                  <span>Recently Discovered University Notices</span>
+                </div>
+                <button class="btn btn-ghost btn-xs" onclick="switchTab('notices')">View All <i class="fa-solid fa-chevron-right"></i></button>
+              </div>
+              <div class="panel-body p-0">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Notice Title</th>
+                        <th>Category</th>
+                        <th>Published</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashNoticesTableBody">
+                      <tr>
+                        <td colspan="5" class="empty-cell">
+                          <i class="fa-solid fa-spinner fa-spin"></i> Loading notices...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Live Email Preview & Quick Actions -->
+          <div class="dash-col-side">
+            
+            <!-- Email Preview Mockup -->
+            <div class="panel-card preview-card">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <i class="fa-solid fa-envelope-open-text"></i>
+                  <span>Student Email Preview</span>
+                </div>
+                <span class="badge badge-info">Responsive HTML</span>
+              </div>
+              <div class="preview-mockup-wrapper">
+                <div class="mockup-chrome">
+                  <div class="mockup-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div class="mockup-subject" id="mockupSubject">
+                    Subject: [RGU Notice #79] Holiday Notice
+                  </div>
+                </div>
+                <div class="mockup-mail-content">
+                  <div class="mail-header-mini">
+                    <div class="mail-uni-icon">🏛️</div>
+                    <div class="mail-uni-name">Raiganj University</div>
+                    <div class="mail-uni-sub">Official Notice Alert &bull; রায়গঞ্জ বিশ্ববিদ্যালয়</div>
+                  </div>
+                  <div class="mail-body-mini">
+                    <p class="mail-greeting">Dear Student,</p>
+                    <p class="mail-p">A new official announcement has been published on the Raiganj University website:</p>
+                    <div class="mail-notice-box">
+                      <div class="mail-badges">
+                        <span class="m-badge" id="mockupCategory">Holiday</span>
+                        <span class="m-badge-id" id="mockupId">Notice #79</span>
+                      </div>
+                      <h4 class="mail-title-text" id="mockupTitle">Holiday Notice</h4>
+                      <div class="mail-meta">
+                        <span>📅 <strong id="mockupDate">Oct 13, 2026</strong></span>
+                        <span>🏛️ Raiganj University</span>
+                      </div>
+                    </div>
+                    <div class="mail-btn-wrap">
+                      <span class="mail-fake-btn">📄 View Official Notice &amp; Download PDF</span>
+                    </div>
+                  </div>
+                  <div class="mail-footer-mini">
+                    Automated daily notification by RGU SMTP Dispatcher (00:00:00 Daily Check)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Dispatch History -->
+            <div class="panel-card mt-4">
+              <div class="panel-header">
+                <div class="panel-title">
+                  <i class="fa-solid fa-list-check"></i>
+                  <span>Recent Dispatches</span>
+                </div>
+              </div>
+              <div class="panel-body p-0">
+                <ul class="dispatch-feed" id="dispatchFeedList">
+                  <li class="empty-cell">No email dispatches recorded yet.</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: STUDENT DIRECTORY ================= -->
+      <section class="tab-pane" id="tab-students">
+        <div class="panel-card">
+          <div class="panel-header flex-between">
+            <div>
+              <div class="panel-title">
+                <i class="fa-solid fa-user-graduate"></i>
+                <span>Enrolled Student Recipients</span>
+              </div>
+              <div class="panel-desc">All registered students will receive new notice emails whenever detected.</div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-secondary btn-sm" onclick="seedSampleStudents()">
+                <i class="fa-solid fa-magic-wand-sparkles"></i> Load Demo Students
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openBulkModal()">
+                <i class="fa-solid fa-file-import"></i> Bulk Import
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="openAddStudentModal()">
+                <i class="fa-solid fa-user-plus"></i> Add Student
+              </button>
+            </div>
+          </div>
+
+          <div class="table-toolbar">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="studentSearchInput" placeholder="Search by name, email, department, roll number..." oninput="handleStudentSearch()">
+            </div>
+            <div class="toolbar-stats">
+              Showing <strong id="studentTableCount">0</strong> students
+            </div>
+          </div>
+
+          <div class="panel-body p-0">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Student Name</th>
+                    <th>Email Address</th>
+                    <th>Department</th>
+                    <th>Roll / Reg No</th>
+                    <th>Status</th>
+                    <th>Enrolled Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                  <tr>
+                    <td colspan="7" class="empty-cell">
+                      <i class="fa-solid fa-spinner fa-spin"></i> Loading students...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: UNIVERSITY NOTICES ================= -->
+      <section class="tab-pane" id="tab-notices">
+        <div class="panel-card">
+          <div class="panel-header flex-between">
+            <div>
+              <div class="panel-title">
+                <i class="fa-solid fa-bullhorn"></i>
+                <span>Live Raiganj University Notices</span>
+              </div>
+              <div class="panel-desc">Notices scraped directly from <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-primary btn-sm" onclick="triggerScanNow()">
+                <i class="fa-solid fa-rotate"></i> Scan Website Now
+              </button>
+            </div>
+          </div>
+
+          <div class="table-toolbar">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="noticeSearchInput" placeholder="Filter notices by keyword or reference ID..." oninput="handleNoticeSearch()">
+            </div>
+            <div class="filter-pills" id="noticeCategoryFilters">
+              <button class="filter-pill active" onclick="filterNoticeCat('ALL')">All</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Admission')">Admission</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Examination')">Examination</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Holiday')">Holiday</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Tender')">Tenders / NIQ</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Research')">Research &amp; PhD</button>
+            </div>
+          </div>
+
+          <div class="panel-body p-0">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Ref / ID</th>
+                    <th>Notice Title</th>
+                    <th>Category</th>
+                    <th>Published Date</th>
+                    <th>Dispatched Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="noticesTableBody">
+                  <tr>
+                    <td colspan="6" class="empty-cell">
+                      <i class="fa-solid fa-spinner fa-spin"></i> Loading notices...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: SMTP CONFIG & INBOX ================= -->
+      <section class="tab-pane" id="tab-smtp">
+        <div class="smtp-grid">
+          
+          <!-- SMTP Settings Form -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <div class="panel-title">
+                <i class="fa-solid fa-sliders"></i>
+                <span>SMTP Server Configuration</span>
+              </div>
+              <span class="badge badge-info" id="currentSmtpModeBadge">Mode: Local</span>
+            </div>
+            <div class="panel-body">
+              <form id="smtpConfigForm" onsubmit="saveSmtpConfig(event)">
+                
+                <!-- Mode Toggle -->
+                <div class="form-group">
+                  <label class="form-label">SMTP Dispatch Engine</label>
+                  <div class="mode-selector">
+                    <label class="mode-option">
+                      <input type="radio" name="smtp_mode" value="local" checked onchange="toggleSmtpModeFields()">
+                      <div class="mode-box">
+                        <div class="mode-icon"><i class="fa-solid fa-server"></i></div>
+                        <div class="mode-title">Built-in Local SMTP Server</div>
+                        <div class="mode-desc">Zero configuration required. Runs on 127.0.0.1:2525. Captures and views emails in the local inbox below.</div>
+                      </div>
+                    </label>
+
+                    <label class="mode-option">
+                      <input type="radio" name="smtp_mode" value="custom" onchange="toggleSmtpModeFields()">
+                      <div class="mode-box">
+                        <div class="mode-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+                        <div class="mode-title">Custom / External SMTP</div>
+                        <div class="mode-desc">Connect Gmail (App Password), Outlook, Amazon SES, Brevo, or university relay for real student delivery.</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Sender info -->
+                <div class="form-row">
+                  <div class="form-group col-6">
+                    <label class="form-label">Sender Email Address</label>
+                    <input type="email" id="smtpSenderEmail" class="form-input" required value="notices@raiganjuniversity.ac.in">
+                  </div>
+                  <div class="form-group col-6">
+                    <label class="form-label">Sender Display Name</label>
+                    <input type="text" id="smtpSenderName" class="form-input" required value="Raiganj University Notice Board">
+                  </div>
+                </div>
+
+                <!-- Local Server Fields -->
+                <div id="localSmtpFields">
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label class="form-label">Local Host Bind</label>
+                      <input type="text" id="smtpLocalHost" class="form-input" value="127.0.0.1">
+                    </div>
+                    <div class="form-group col-6">
+                      <label class="form-label">Local Port</label>
+                      <input type="number" id="smtpLocalPort" class="form-input" value="2525">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Custom SMTP Fields -->
+                <div id="customSmtpFields" style="display: none;">
+                  <div class="form-row">
+                    <div class="form-group col-8">
+                      <label class="form-label">SMTP Host</label>
+                      <input type="text" id="smtpCustomHost" class="form-input" placeholder="smtp.gmail.com">
+                    </div>
+                    <div class="form-group col-4">
+                      <label class="form-label">SMTP Port</label>
+                      <input type="number" id="smtpCustomPort" class="form-input" placeholder="587">
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label class="form-label">SMTP Username / Email</label>
+                      <input type="text" id="smtpCustomUser" class="form-input" placeholder="your-email@gmail.com">
+                    </div>
+                    <div class="form-group col-6">
+                      <label class="form-label">SMTP Password / App Password</label>
+                      <input type="password" id="smtpCustomPass" class="form-input" placeholder="••••••••">
+                    </div>
+                  </div>
+
+                  <div class="form-checkbox-row">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="smtpCustomTls" checked>
+                      <span>Enable STARTTLS (Port 587)</span>
+                    </label>
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="smtpCustomSsl">
+                      <span>Enable SSL (Port 465)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-footer">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save SMTP Settings
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="openTestModal()">
+                    <i class="fa-solid fa-vial"></i> Test Connection
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+
+          <!-- Local Captured Emails (Inbox / Outbox) -->
+          <div class="panel-card">
+            <div class="panel-header flex-between">
+              <div>
+                <div class="panel-title">
+                  <i class="fa-solid fa-inbox"></i>
+                  <span>Local SMTP Inbox / Outbox</span>
+                </div>
+                <div class="panel-desc">Emails delivered to or intercepted by the built-in local SMTP server.</div>
+              </div>
+              <button class="btn btn-ghost btn-xs text-danger" onclick="clearLocalInbox()">
+                <i class="fa-solid fa-trash"></i> Clear Inbox
+              </button>
+            </div>
+
+            <div class="panel-body p-0">
+              <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Recipient</th>
+                      <th>Subject</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inboxTableBody">
+                    <tr>
+                      <td colspan="4" class="empty-cell">No emails captured yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: LOGS ================= -->
+      <section class="tab-pane" id="tab-logs">
+        <div class="panel-card">
+          <div class="panel-header flex-between">
+            <div>
+              <div class="panel-title">
+                <i class="fa-solid fa-terminal"></i>
+                <span>Execution &amp; Audit Logs</span>
+              </div>
+              <div class="panel-desc">Real-time log trail of website scrapes, 00:00 triggers, SMTP dispatch, and errors.</div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-secondary btn-sm" onclick="loadLogs()">
+                <i class="fa-solid fa-rotate"></i> Refresh
+              </button>
+              <button class="btn btn-ghost btn-sm text-danger" onclick="clearSystemLogs()">
+                <i class="fa-solid fa-trash"></i> Clear Logs
+              </button>
+            </div>
+          </div>
+
+          <div class="table-toolbar">
+            <div class="filter-pills" id="logLevelFilters">
+              <button class="filter-pill active" onclick="filterLogLevel('ALL')">All</button>
+              <button class="filter-pill" onclick="filterLogLevel('SUCCESS')">Success</button>
+              <button class="filter-pill" onclick="filterLogLevel('INFO')">Info</button>
+              <button class="filter-pill" onclick="filterLogLevel('WARNING')">Warning</button>
+              <button class="filter-pill" onclick="filterLogLevel('ERROR')">Error</button>
+            </div>
+          </div>
+
+          <div class="panel-body p-0">
+            <div class="logs-console" id="logsConsole">
+              <div class="log-line">Loading logs...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div>
+        <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; Developed with Python Flask, APScheduler, SQLite &amp; aiosmtpd
+      </div>
+      <div>
+        Daily 00:00 midnight schedule &bull; <a href="https://raiganjuniversity.ac.in/" target="_blank">raiganjuniversity.ac.in</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Modal 1: Add Single Student -->
+  <div class="modal-overlay" id="addStudentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user-plus"></i> Add Student Recipient</h3>
+        <button class="modal-close" onclick="closeModal('addStudentModal')">&times;</button>
+      </div>
+      <form id="addStudentForm" onsubmit="submitAddStudent(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="newStudentName" class="form-input" placeholder="e.g. Subhajit Roy" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Student Email Address</label>
+            <input type="email" id="newStudentEmail" class="form-input" placeholder="e.g. subhajit@rgu.ac.in" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label">Department / Course</label>
+              <input type="text" id="newStudentDept" class="form-input" placeholder="e.g. Computer Science" value="General">
+            </div>
+            <div class="form-group col-6">
+              <label class="form-label">Roll / Reg Number</label>
+              <input type="text" id="newStudentRoll" class="form-input" placeholder="e.g. CS-2026-001">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('addStudentModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Enroll Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Bulk Import Students -->
+  <div class="modal-overlay" id="bulkStudentModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-file-import"></i> Bulk Import Student Emails</h3>
+        <button class="modal-close" onclick="closeModal('bulkStudentModal')">&times;</button>
+      </div>
+      <form id="bulkStudentForm" onsubmit="submitBulkStudents(event)">
+        <div class="modal-body">
+          <p class="modal-intro">
+            Paste student emails or CSV lines below. Supports formats:<br>
+            <code>Name, email@domain.com, Department, RollNo</code><br>
+            or simply one email per line: <code>student@domain.com</code>
+          </p>
+          <div class="form-group">
+            <textarea id="bulkDataInput" class="form-textarea" rows="8" placeholder="Souvik Mukherjee, souvik@rgu.ac.in, Computer Science, CS-101&#10;Ananya Roy, ananya@rgu.ac.in, Mathematics, MATH-202&#10;student3@gmail.com"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('bulkStudentModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Import All Emails</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Test SMTP Connection -->
+  <div class="modal-overlay" id="testSmtpModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-vial"></i> Test SMTP Dispatcher</h3>
+        <button class="modal-close" onclick="closeModal('testSmtpModal')">&times;</button>
+      </div>
+      <form id="testSmtpForm" onsubmit="submitTestSmtp(event)">
+        <div class="modal-body">
+          <p class="modal-intro">
+            Verifies SMTP socket connection and sends a sample Raiganj University alert email.
+          </p>
+          <div class="form-group">
+            <label class="form-label">Send Test Email To (Optional)</label>
+            <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. student@example.com (or leave blank to verify socket only)">
+          </div>
+          <div id="testResultBox" class="test-result-box" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('testSmtpModal')">Close</button>
+          <button type="submit" class="btn btn-primary" id="btnRunTest">
+            <i class="fa-solid fa-paper-plane"></i> Run Test &amp; Send
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: View Captured Email HTML -->
+  <div class="modal-overlay" id="viewEmailModal">
+    <div class="modal-card modal-xl">
+      <div class="modal-header">
+        <h3 class="modal-title" id="viewEmailTitle"><i class="fa-solid fa-envelope"></i> Captured Email View</h3>
+        <button class="modal-close" onclick="closeModal('viewEmailModal')">&times;</button>
+      </div>
+      <div class="modal-body p-0">
+        <iframe id="emailIframe" class="email-iframe" src="about:blank"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="closeModal('viewEmailModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application JS -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

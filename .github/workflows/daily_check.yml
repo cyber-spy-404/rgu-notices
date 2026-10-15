@@ -1,0 +1,42 @@
+name: Daily Raiganj University Notice Scan
+
+on:
+  schedule:
+    # Runs at 18:30 UTC every day (which is exactly 00:00:00 IST Midnight)
+    - cron: '30 18 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+
+jobs:
+  check-notices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Run 00:00 Notice Scraper & Dispatcher
+        env:
+          GOOGLE_GROUP_EMAIL: ${{ secrets.GOOGLE_GROUP_EMAIL }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+        run: |
+          python cron_task.py
+
+      - name: Persist Seen Notices Database
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/rgu_smtp.db
+          git diff --staged --quiet || (git commit -m "chore: update tracked notices database [skip ci]" && git push) || true
