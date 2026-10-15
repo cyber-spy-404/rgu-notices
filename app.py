@@ -6,10 +6,22 @@ import database as db
 import scraper
 import scheduler_engine
 import local_smtp_server
+import security
 from email_dispatcher import test_smtp_connection, dispatch_notice_to_students
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
+app.secret_key = os.getenv('FLASK_SECRET_KEY') or os.getenv('SECRET_KEY') or security.get_cipher()._signing_key
+
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    if request.path.startswith('/api/smtp'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+    return response
 
 # Initialize Database
 db.init_db()
@@ -267,12 +279,22 @@ def serve_notice_md(filename):
 @app.route('/api/smtp/config', methods=['GET'])
 def api_get_smtp_config():
     cfg = db.get_smtp_config()
-    # Mask password for security
-    if cfg.get('custom_password'):
-        cfg['custom_password_masked'] = '••••••••••••••••'
-    if cfg.get('gemini_api_key'):
-        key = cfg.get('gemini_api_key')
-        cfg['gemini_api_key_masked'] = key[:4] + '••••••••' + key[-4:] if len(key) > 8 else '••••••••'
+    
+    raw_pass = cfg.get('custom_password', '')
+    raw_gemini = cfg.get('gemini_api_key', '')
+    
+    has_custom_password = bool(raw_pass)
+    has_gemini_key = bool(raw_gemini)
+    
+    cfg['has_custom_password'] = has_custom_password
+    cfg['has_gemini_key'] = has_gemini_key
+    cfg['custom_password_masked'] = '••••••••••••••••' if has_custom_password else ''
+    cfg['gemini_api_key_masked'] = security.mask_credential(raw_gemini, 4, 4) if has_gemini_key else ''
+
+    # CRITICAL SECURITY RULE: Never expose raw credentials in JSON response
+    cfg.pop('custom_password', None)
+    cfg.pop('gemini_api_key', None)
+    
     return jsonify(cfg)
 
 @app.route('/api/smtp/config', methods=['POST'])

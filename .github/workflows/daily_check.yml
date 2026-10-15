@@ -23,7 +23,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install requests beautifulsoup4 pypdf markdown
+          pip install -r requirements.txt
 
       - name: Run 00:00 Notice Scraper & Dispatcher
         env:
@@ -35,9 +35,9 @@ jobs:
         run: |
           python cron_task.py
 
-      - name: Persist Seen Notices Database & Markdown Files
+      - name: Persist Seen Notices Cache (Safe Non-Sensitive IDs Only)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/rgu_smtp.db notices_md/
-          git diff --staged --quiet || (git commit -m "chore: update notices database and markdown files [skip ci]" && git push) || true
+          git add data/seen_ids.txt
+          git diff --staged --quiet || (git commit -m "chore: update seen notice ids [skip ci]" && git push) || true

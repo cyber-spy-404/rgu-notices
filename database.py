@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rgu_smtp.db')
+SEEN_IDS_PATH = os.path.join(os.path.dirname(__file__), 'data', 'seen_ids.txt')
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -130,6 +131,24 @@ def init_db():
     ''')
 
     conn.commit()
+
+    # If notices table is empty, seed from non-sensitive seen_ids.txt (safe for CI/CD runners)
+    try:
+        cursor.execute('SELECT COUNT(*) FROM notices')
+        count_row = cursor.fetchone()
+        if count_row and count_row[0] == 0 and os.path.exists(SEEN_IDS_PATH):
+            with open(SEEN_IDS_PATH, 'r', encoding='utf-8') as f:
+                for line in f:
+                    nid = line.strip()
+                    if nid:
+                        cursor.execute('''
+                        INSERT OR IGNORE INTO notices (id, title, link, published_on, category, is_new, email_status)
+                        VALUES (?, ?, 'https://raiganjuniversity.ac.in/', '', 'General', 0, 'synced')
+                        ''', (nid, f"Notice #{nid}"))
+            conn.commit()
+    except Exception as e:
+        print(f"Warning: seen_ids sync note: {e}")
+
     conn.close()
 
 # ----------------- Students Operations ----------------- #
@@ -282,6 +301,21 @@ def save_notice(notice_dict):
     ))
     conn.commit()
     conn.close()
+
+    # Append to public seen_ids.txt cache (non-sensitive)
+    try:
+        os.makedirs(os.path.dirname(SEEN_IDS_PATH), exist_ok=True)
+        already_present = False
+        if os.path.exists(SEEN_IDS_PATH):
+            with open(SEEN_IDS_PATH, 'r', encoding='utf-8') as f:
+                if notice_id in [l.strip() for l in f if l.strip()]:
+                    already_present = True
+        if not already_present:
+            with open(SEEN_IDS_PATH, 'a', encoding='utf-8') as f:
+                f.write(f"{notice_id}\n")
+    except Exception:
+        pass
+
     return True
 
 def mark_notice_emailed(notice_id, status='sent'):
@@ -334,12 +368,26 @@ def get_smtp_config():
     row = cursor.fetchone()
     conn.close()
     if row:
-        return dict(row)
+        cfg = dict(row)
+        import security
+        if cfg.get('custom_password'):
+            cfg['custom_password'] = security.decrypt_credential(cfg['custom_password'])
+        if cfg.get('gemini_api_key'):
+            cfg['gemini_api_key'] = security.decrypt_credential(cfg['gemini_api_key'])
+        return cfg
     return {}
 
 def save_smtp_config(data):
+    import security
     conn = get_db()
     cursor = conn.cursor()
+
+    raw_pass = (data.get('custom_password') or '').strip()
+    raw_gemini = (data.get('gemini_api_key') or '').strip()
+
+    enc_pass = security.encrypt_credential(raw_pass) if raw_pass else ''
+    enc_gemini = security.encrypt_credential(raw_gemini) if raw_gemini else ''
+
     cursor.execute('''
     UPDATE smtp_config
     SET mode = ?,
@@ -366,15 +414,15 @@ def save_smtp_config(data):
         1 if data.get('custom_use_tls') else 0,
         1 if data.get('custom_use_ssl') else 0,
         data.get('custom_username', ''),
-        data.get('custom_password', ''),
+        enc_pass,
         data.get('sender_email', ''),
         data.get('sender_name', 'Raiganj University Notice Board'),
         data.get('google_group_email', ''),
-        data.get('gemini_api_key', '')
+        enc_gemini
     ))
     conn.commit()
     conn.close()
-    log_event('SUCCESS', 'SMTP', 'Dispatch settings updated successfully')
+    log_event('SUCCESS', 'SMTP', 'Dispatch settings updated successfully (encrypted at rest)')
     return True
 
 # ----------------- Local SMTP Inbox ----------------- #

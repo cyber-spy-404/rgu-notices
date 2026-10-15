@@ -10,6 +10,7 @@ import os
 # Ensure project directory is in python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import security
 import database as db
 import scraper
 
