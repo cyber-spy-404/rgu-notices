@@ -352,7 +352,7 @@
                   </div>
                   <div class="mockup-mail-content">
                     <div class="mail-header-mini">
-                      <div class="mail-uni-icon">🏛️</div>
+                      <img src="/static/images/logo.png" alt="Raiganj University Emblem" style="width: 42px; height: 42px; border-radius: 8px; background: #ffffff; padding: 2px; margin-bottom: 6px; object-fit: contain; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                       <div class="mail-uni-name">Raiganj University</div>
                       <div class="mail-uni-sub">Official Notice Alert &bull; রায়গঞ্জ বিশ্ববিদ্যালয়</div>
                     </div>
@@ -898,15 +898,18 @@
   <div class="modal-overlay" id="noticeAiModal">
     <div class="modal-card modal-xl">
       <div class="modal-header flex-between">
-        <div>
-          <h3 class="modal-title" id="modalNoticeAiTitle">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
-            <span>Notice AI &amp; Markdown Inspector</span>
-          </h3>
-          <div style="display: flex; gap: 8px; margin-top: 6px;">
-            <span class="badge badge-info" id="modalNoticeIdBadge">Notice #--</span>
-            <span class="badge badge-neutral" id="modalNoticeCatBadge">General</span>
-            <span class="badge badge-success" id="modalNoticeAiBadge">✨ Gemini Polished</span>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <img src="/static/images/logo.png" alt="Raiganj University Logo" style="width: 48px; height: 48px; border-radius: 10px; background: #ffffff; padding: 3px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.35); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2);">
+          <div>
+            <h3 class="modal-title" id="modalNoticeAiTitle">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
+              <span>Notice AI &amp; Markdown Inspector</span>
+            </h3>
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+              <span class="badge badge-info" id="modalNoticeIdBadge">Notice #--</span>
+              <span class="badge badge-neutral" id="modalNoticeCatBadge">General</span>
+              <span class="badge badge-success" id="modalNoticeAiBadge">✨ Gemini Polished</span>
+            </div>
           </div>
         </div>
         <button class="modal-close" onclick="closeModal('noticeAiModal')">&times;</button>

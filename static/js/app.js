@@ -373,9 +373,12 @@ function renderNoticesTable(notices) {
       <tr>
         <td><span class="badge badge-info" style="font-family: var(--font-mono);">${escapeHtml(n.id)}</span></td>
         <td>
-          <a href="${escapeHtml(n.link)}" target="_blank" class="accent-link" style="font-weight: 600;">
-            ${escapeHtml(n.title)}
-          </a>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="/static/images/logo.png" alt="RGU" style="width: 26px; height: 26px; border-radius: 6px; background: #ffffff; padding: 2px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15);">
+            <a href="${escapeHtml(n.link)}" target="_blank" class="accent-link" style="font-weight: 600;">
+              ${escapeHtml(n.title)}
+            </a>
+          </div>
         </td>
         <td><span class="badge badge-neutral">${escapeHtml(n.category || 'General')}</span></td>
         <td style="font-size: 12.5px; color: var(--text-muted);">${escapeHtml(n.published_on || '—')}</td>
@@ -418,9 +421,12 @@ function renderDashboardNotices(notices) {
     <tr>
       <td><span class="badge badge-info" style="font-family: var(--font-mono);">${escapeHtml(n.id)}</span></td>
       <td>
-        <a href="${escapeHtml(n.link)}" target="_blank" class="accent-link" style="font-weight: 500;">
-          ${escapeHtml(n.title)}
-        </a>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <img src="/static/images/logo.png" alt="RGU" style="width: 22px; height: 22px; border-radius: 5px; background: #ffffff; padding: 2px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25);">
+          <a href="${escapeHtml(n.link)}" target="_blank" class="accent-link" style="font-weight: 500;">
+            ${escapeHtml(n.title)}
+          </a>
+        </div>
       </td>
       <td><span class="badge badge-neutral">${escapeHtml(n.category || 'General')}</span></td>
       <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(n.published_on || '—')}</td>
@@ -895,7 +901,7 @@ async function loadRecentAiNotice() {
           <h4 class="mail-title-text">${escapeHtml(n.title)}</h4>
           <div class="mail-meta">
             <span>📅 <strong>${escapeHtml(n.published_on || 'Recent')}</strong></span>
-            <span>🏛️ Raiganj University</span>
+            <span><img src="/static/images/logo.png" alt="RGU" style="width: 15px; height: 15px; border-radius: 3px; background: #fff; padding: 1px; vertical-align: middle; margin-right: 4px;"> Raiganj University</span>
           </div>
         </div>
         <div class="gemini-polish-box" style="margin-bottom: 16px; font-size: 12.5px;">
