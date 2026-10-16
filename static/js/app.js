@@ -73,6 +73,24 @@ async function fetchSystemStatus() {
     document.getElementById('navStudentCount').innerText = data.stats.total_students || 0;
     document.getElementById('navNoticeCount').innerText = data.stats.total_notices || 0;
 
+    const pendingCount = data.stats.pending_notices || 0;
+    const pendingBadge = document.getElementById('pendingQueueCount');
+    if (pendingBadge) {
+      pendingBadge.innerText = pendingCount;
+    }
+    const btnDeliver = document.getElementById('btnDeliverPending');
+    if (btnDeliver) {
+      if (pendingCount > 0) {
+        btnDeliver.classList.add('pulse-badge');
+        btnDeliver.style.borderColor = 'rgba(245, 158, 11, 0.6)';
+        btnDeliver.style.color = '#fbbf24';
+      } else {
+        btnDeliver.classList.remove('pulse-badge');
+        btnDeliver.style.borderColor = '';
+        btnDeliver.style.color = '';
+      }
+    }
+
     // Google Group Badge in header
     const smtpBadgeText = document.getElementById('smtpBadgeText');
     if (smtpBadgeText) {
@@ -368,6 +386,18 @@ function renderNoticesTable(notices) {
     return;
   }
 
+function renderNoticeStatusBadge(status) {
+  if (status === 'sent') {
+    return `<span class="badge badge-success" title="Delivered to Google Group / Students"><i class="fa-solid fa-circle-check"></i> Emailed</span>`;
+  } else if (status === 'pending') {
+    return `<span class="badge badge-warning" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);" title="Queued for automated delivery"><i class="fa-solid fa-clock"></i> Pending Dispatch</span>`;
+  } else if (status === 'failed') {
+    return `<span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" title="Delivery failed on last attempt"><i class="fa-solid fa-triangle-exclamation"></i> Failed</span>`;
+  } else {
+    return `<span class="badge badge-neutral" style="color: #94a3b8; background: rgba(148, 163, 184, 0.12); border: 1px solid rgba(148, 163, 184, 0.25);" title="Archived history notice"><i class="fa-solid fa-box-archive"></i> Archived / Synced</span>`;
+  }
+}
+
   tbody.innerHTML = notices.map(n => {
     return `
       <tr>
@@ -383,10 +413,7 @@ function renderNoticesTable(notices) {
         <td><span class="badge badge-neutral">${escapeHtml(n.category || 'General')}</span></td>
         <td style="font-size: 12.5px; color: var(--text-muted);">${escapeHtml(n.published_on || '—')}</td>
         <td>
-          <span class="badge ${n.email_status === 'sent' ? 'badge-success' : 'badge-warning'}">
-            <i class="fa-solid ${n.email_status === 'sent' ? 'fa-check' : 'fa-clock'}"></i>
-            ${n.email_status === 'sent' ? 'Emailed' : 'Pending/Logged'}
-          </span>
+          ${renderNoticeStatusBadge(n.email_status)}
         </td>
         <td>
           <div style="display: flex; gap: 6px;">
@@ -399,6 +426,10 @@ function renderNoticesTable(notices) {
             <button class="btn btn-icon" title="Broadcast notice to Google Group" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
               <i class="fa-solid fa-paper-plane"></i>
             </button>
+            ${n.email_status !== 'pending' && n.email_status !== 'sent' ? `
+            <button class="btn btn-icon" title="Queue this notice for automatic delivery" onclick="queueNoticeForDelivery('${n.id}')">
+              <i class="fa-solid fa-plus"></i>
+            </button>` : ''}
           </div>
         </td>
       </tr>`;
@@ -485,6 +516,59 @@ async function resendNotice(noticeId, title) {
     }
   } catch (err) {
     showToast('Failed to dispatch notice: ' + err.message, 'error');
+  }
+}
+
+async function queueNoticeForDelivery(noticeId) {
+  showToast(`Queueing Notice #${noticeId} for automated delivery...`, 'info');
+  try {
+    const res = await fetch(`/api/notices/${noticeId}/mark-pending`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      await loadNotices();
+      await fetchSystemStatus();
+    } else {
+      showToast(data.message || 'Failed to queue notice', 'error');
+    }
+  } catch (err) {
+    showToast('Queue error: ' + err.message, 'error');
+  }
+}
+
+async function dispatchPendingNow() {
+  const btn = document.getElementById('btnDeliverPending');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Delivering...</span>`;
+  }
+
+  showToast('Checking pending queue and delivering emails to students...', 'info');
+
+  try {
+    const res = await fetch('/api/notices/dispatch-pending', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      if (data.sent_count > 0) {
+        showToast(`Delivered ${data.sent_count} pending notice(s) to students / Google Group!`, 'success');
+      } else {
+        showToast(data.message || 'No pending notices waiting. All up to date!', 'info');
+      }
+      await loadNotices();
+      await fetchSystemStatus();
+      await loadDispatches();
+      await loadLogs();
+    } else {
+      showToast(data.message || 'Dispatch failed', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to dispatch pending notices: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
   }
 }
 

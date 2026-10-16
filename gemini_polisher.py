@@ -49,13 +49,17 @@ def grab_notice_file_and_text(notice):
     pub_date = notice.get('published_on', 'Recent')
     category = notice.get('category', 'General')
 
+    # Normalize link if it's pointing to generic root URL
+    if not link or link.strip().rstrip('/') in ['https://raiganjuniversity.ac.in', 'http://raiganjuniversity.ac.in']:
+        link = f"https://raiganjuniversity.ac.in/Website/ViewNotice/{notice_id}"
+
     extracted_body = ""
     saved_filepath = None
     mime_type = "text/html"
     file_bytes = None
 
     try:
-        resp = requests.get(link, headers=HEADERS, timeout=25)
+        resp = requests.get(link, headers=HEADERS, timeout=8)
         content = resp.content
         ctype = resp.headers.get('Content-Type', '').lower()
 
@@ -230,10 +234,7 @@ Guidelines:
     models_to_try = [
         'gemini-2.5-flash',
         'gemini-flash-latest',
-        'gemini-2.5-pro',
-        'gemini-pro-latest',
-        'gemini-1.5-flash',
-        'gemini-2.0-flash'
+        'gemini-pro-latest'
     ]
     polished_text = None
 
@@ -247,7 +248,7 @@ Guidelines:
             }
         }
         try:
-            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=45)
+            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=12)
             if r.status_code == 200:
                 data = r.json()
                 candidates = data.get('candidates', [])
@@ -258,14 +259,16 @@ Guidelines:
                         polished_text = "\n\n".join(text_parts).strip()
                         db.log_event('SUCCESS', 'AI', f"Gemini ({model}) successfully polished Notice #{notice_id} (multimodal)!")
                         break
+            elif r.status_code == 429:
+                db.log_event('INFO', 'AI', f"Gemini API rate/quota limit reached (HTTP 429). Using clean structured notice breakdown.")
+                break
             else:
                 db.log_event('WARNING', 'AI', f"Gemini {model} returned HTTP {r.status_code}: {r.text[:150]}")
         except Exception as e:
             db.log_event('WARNING', 'AI', f"Gemini {model} call error: {e}")
 
     if not polished_text:
-        db.log_event('WARNING', 'AI', f"Gemini polishing unavailable. Falling back to original markdown.")
-        return raw_md
+        return generate_structured_fallback_md(notice, raw_md)
 
     # Save polished markdown to disk
     polished_filepath = os.path.join(NOTICES_MD_DIR, f"{notice_id}_polished.md")

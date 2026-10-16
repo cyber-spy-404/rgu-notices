@@ -87,9 +87,27 @@ def trigger_pending_mail_dispatch_async(source="STARTUP"):
     thread = threading.Thread(target=_worker, daemon=True)
     thread.start()
 
-# Automatically trigger pending notice delivery on web server boot
+def sync_and_deliver_on_startup():
+    """
+    On application boot:
+    1. Scrapes RGU website in background to update all notice titles, actual portal links, and categories.
+    2. Immediately delivers any notices marked as pending or failed.
+    """
+    try:
+        time.sleep(2)  # Brief pause to allow gunicorn / web workers to bind
+        # Step 1: Sync official notice metadata
+        scraped = scraper.fetch_rgu_notices()
+        if scraped:
+            for n in scraped:
+                db.save_notice(n)
+        # Step 2: Trigger pending mail delivery
+        trigger_pending_mail_dispatch_async("STARTUP_SYNC")
+    except Exception as e:
+        db.log_event('WARNING', 'STARTUP', f"Startup notice sync note: {e}")
+
+# Automatically trigger metadata sync and pending notice delivery on web server boot
 try:
-    trigger_pending_mail_dispatch_async("STARTUP")
+    threading.Thread(target=sync_and_deliver_on_startup, daemon=True).start()
 except Exception as _e:
     pass
 
@@ -225,6 +243,56 @@ def api_scan_now():
     """
     res = scraper.run_notice_check()
     return jsonify(res)
+
+@app.route('/api/notices/dispatch-pending', methods=['POST'])
+def api_dispatch_pending():
+    """
+    Manually triggers immediate delivery of all pending/unmailed notices in queue.
+    """
+    unmailed = db.get_unmailed_notices(limit=50)
+    if not unmailed:
+        return jsonify({
+            'success': True,
+            'message': 'No pending notices in delivery queue. All notices up to date!',
+            'sent_count': 0,
+            'total': 0
+        })
+
+    import email_dispatcher
+    sent_count = 0
+    total = len(unmailed)
+    db.log_event('INFO', 'DISPATCH', f'Manual dispatch triggered for {total} pending notice(s)...')
+
+    for notice in unmailed:
+        try:
+            res = email_dispatcher.dispatch_notice_to_students(notice)
+            status = 'sent' if res.get('success') else 'failed'
+            db.mark_notice_emailed(notice['id'], status)
+            if res.get('success'):
+                sent_count += 1
+            time.sleep(1)
+        except Exception as e:
+            db.log_event('ERROR', 'DISPATCH', f"Dispatch error for notice #{notice.get('id')}: {e}")
+            db.mark_notice_emailed(notice['id'], 'failed')
+
+    db.log_event('SUCCESS', 'DISPATCH', f'Manual pending dispatch complete: {sent_count}/{total} notices sent.')
+    return jsonify({
+        'success': True,
+        'message': f'Delivered {sent_count}/{total} pending notice(s) to students / Google Group.',
+        'sent_count': sent_count,
+        'total': total
+    })
+
+@app.route('/api/notices/<notice_id>/mark-pending', methods=['POST'])
+def api_mark_notice_pending(notice_id):
+    """Marks a specific notice as pending dispatch so it will be delivered."""
+    notice = db.get_notice_by_id(notice_id)
+    if not notice:
+        return jsonify({'success': False, 'message': 'Notice not found'}), 404
+    db.mark_notice_emailed(notice_id, 'pending')
+    # Trigger background worker to deliver it
+    trigger_pending_mail_dispatch_async(f"NOTICE_{notice_id}_QUEUED")
+    return jsonify({'success': True, 'message': f'Notice #{notice_id} queued for delivery!'})
 
 def check_sync_auth():
     """
