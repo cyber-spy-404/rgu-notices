@@ -374,9 +374,15 @@ def dispatch_notice_to_students(notice):
         attachment_name = proc.get('attachment_name')
         db.log_event('INFO', 'DISPATCH', f"Prepared notice #{notice.get('id')} with AI/MD (Attachment: {attachment_name or 'None'})")
     except Exception as prep_err:
-        db.log_event('WARNING', 'AI', f"AI processing error ({prep_err}), proceeding with default layout.")
-        polished_html = None
-        polished_md = notice.get('title')
+        db.log_event('WARNING', 'AI', f"Notice #{notice.get('id')} prep error ({prep_err}), using direct notice portal link fallback.")
+        polished_md = gemini_polisher.generate_structured_fallback_md(notice)
+        polished_html = gemini_polisher.convert_md_to_html(polished_md)
+        if not saved_filepath and os.path.exists(gemini_polisher.NOTICES_FILES_DIR):
+            for fname in os.listdir(gemini_polisher.NOTICES_FILES_DIR):
+                if fname.startswith(f"{notice.get('id')}."):
+                    saved_filepath = os.path.join(gemini_polisher.NOTICES_FILES_DIR, fname)
+                    attachment_name = fname
+                    break
 
     def attach_document(msg_obj):
         if saved_filepath and os.path.exists(saved_filepath):

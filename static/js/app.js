@@ -103,14 +103,14 @@ async function fetchSystemStatus() {
 
     // Dashboard info card
     document.getElementById('dashLastRun').innerText = data.stats.last_scraped_at || 'Never executed yet';
-    document.getElementById('dashNextRun').innerText = data.scheduler.next_run || 'Tomorrow at 00:00:00';
+    document.getElementById('dashNextRun').innerText = data.scheduler.next_run || '7:00 AM / 7:00 PM IST';
     document.getElementById('dashSmtpChannel').innerText = data.google_group_email 
       ? `Google Groups Broadcast (${data.google_group_email})` 
       : `Google Groups Broadcast (Setup Required)`;
     document.getElementById('dashStudentAudience').innerText = data.google_group_email
       ? `All 1,000+ members in Google Group`
       : `${data.stats.active_students} active enrolled student(s)`;
-    document.getElementById('metricNextRunText').innerText = `Next run: ${data.scheduler.next_run || '00:00:00'}`;
+    document.getElementById('metricNextRunText').innerText = `Next run: ${data.scheduler.next_run || '7:00 AM/PM IST'}`;
 
     // Update Countdown
     if (data.scheduler && typeof data.scheduler.countdown_seconds === 'number') {
@@ -131,7 +131,7 @@ function startCountdownClock() {
       currentCountdownSeconds--;
       updateCountdownDisplay();
     } else {
-      // Reached 00:00:00! Trigger status refresh
+      // Reached target time! Trigger status refresh
       fetchSystemStatus();
     }
   }, 1000);
@@ -164,7 +164,7 @@ async function triggerScanNow() {
     if (data.status === 'success') {
       showToast(`Scrape completed! Found ${data.new_count} new notice(s) and emailed students!`, 'success');
     } else if (data.status === 'no_new') {
-      showToast(`Scan complete: No new notices found. Total tracked: ${data.total_scraped}. Rescheduled for 00:00.`, 'info');
+      showToast(`Scan complete: No new notices found. Total tracked: ${data.total_scraped}. Next check at 7:00 AM/PM IST.`, 'info');
     } else {
       showToast(data.message || 'Scrape completed with notice check.', 'info');
     }

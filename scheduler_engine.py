@@ -12,27 +12,27 @@ _last_result = None
 
 def scheduled_daily_check():
     """
-    Scheduled job that runs everyday at 10:00:00 AM IST.
+    Scheduled job that runs twice a day at 7:00:00 AM IST and 7:00:00 PM IST.
     1. Scrapes Raiganj University website
-    2. Dispatches emails to students if new notices are found
-    3. If not, logs status and schedules work for next 10:00:00 AM IST
+    2. Checks if notices exist and are polished
+    3. If not, polishes with Gemini (or fallback), adds to database, and mails instantly
     """
     global _last_run_time, _last_result
     now_ist = datetime.now(KOLKATA_TZ)
     _last_run_time = now_ist.strftime('%Y-%m-%d %H:%M:%S')
 
-    db.log_event('INFO', 'SCHEDULER', f'Daily 10:00 AM IST scheduled task triggered at {_last_run_time}')
+    db.log_event('INFO', 'SCHEDULER', f'Twice-daily check (7:00 AM / 7:00 PM IST) triggered at {_last_run_time}')
     
     result = scraper.run_notice_check()
     _last_result = result
     
     next_run = get_next_run_time()
-    next_str = next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else 'Tomorrow 10:00:00 AM'
+    next_str = next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else 'Next check at 7:00 AM/PM IST'
     
-    if result.get('new_count', 0) > 0:
-        db.log_event('SUCCESS', 'SCHEDULER', f"Completed 10:00 AM check: Dispatched {result['new_count']} new notice(s) to students. Next check scheduled for {next_str}.")
+    if result.get('new_count', 0) > 0 or result.get('dispatch_count', 0) > 0:
+        db.log_event('SUCCESS', 'SCHEDULER', f"Completed scheduled check: Dispatched {result.get('sent_ok', 0)} notice(s) to students. Next check scheduled for {next_str}.")
     else:
-        db.log_event('INFO', 'SCHEDULER', f"Completed 10:00 AM check: No new notices found on Raiganj University website. Rescheduled for {next_str}.")
+        db.log_event('INFO', 'SCHEDULER', f"Completed scheduled check: All notices up to date. Next check scheduled for {next_str}.")
     
     return result
 
@@ -40,13 +40,17 @@ def get_next_run_time():
     job = scheduler.get_job('daily_rgu_check')
     if job and job.next_run_time:
         return job.next_run_time.astimezone(KOLKATA_TZ)
-    # Fallback calculate next 10:00:00 AM IST
+    # Calculate next scheduled check: 7:00 AM today, 7:00 PM today, or 7:00 AM tomorrow
     now_ist = datetime.now(KOLKATA_TZ)
-    today_target = datetime.combine(now_ist.date(), time(10, 0, 0), tzinfo=KOLKATA_TZ)
-    if now_ist < today_target:
-        return today_target
-    else:
-        return today_target + timedelta(days=1)
+    candidates = [
+        datetime.combine(now_ist.date(), time(7, 0, 0), tzinfo=KOLKATA_TZ),
+        datetime.combine(now_ist.date(), time(19, 0, 0), tzinfo=KOLKATA_TZ),
+        datetime.combine(now_ist.date() + timedelta(days=1), time(7, 0, 0), tzinfo=KOLKATA_TZ),
+    ]
+    for c in candidates:
+        if c > now_ist:
+            return c
+    return candidates[-1]
 
 def check_pending_notices_queue():
     """Periodically checks and delivers any unmailed/pending notices."""
@@ -54,11 +58,15 @@ def check_pending_notices_queue():
         unmailed = db.get_unmailed_notices(limit=50)
         if not unmailed:
             return
-        db.log_event('INFO', 'SCHEDULER', f'Interval queue watcher detected {len(unmailed)} pending notice(s). Starting delivery...')
+        db.log_event('INFO', 'SCHEDULER', f'Queue watcher detected {len(unmailed)} unmailed notice(s). Checking polish and starting instant delivery...')
         import email_dispatcher
+        import gemini_polisher
         import time
         for notice in unmailed:
             try:
+                # Ensure notice is polished before mailing
+                if not notice.get('polished_markdown') and not notice.get('has_gemini_polish'):
+                    gemini_polisher.process_notice_complete(notice)
                 res = email_dispatcher.dispatch_notice_to_students(notice)
                 db.mark_notice_emailed(notice['id'], 'sent' if res.get('success') else 'failed')
                 time.sleep(1.2)
@@ -71,12 +79,12 @@ def check_pending_notices_queue():
 def start_scheduler():
     global scheduler
     if not scheduler.running:
-        # Schedule everyday at 10:00:00 AM IST
+        # Schedule twice a day at 7:00:00 AM and 7:00:00 PM (19:00:00) IST
         scheduler.add_job(
             scheduled_daily_check,
-            CronTrigger(hour=10, minute=0, second=0, timezone=KOLKATA_TZ),
+            CronTrigger(hour='7,19', minute=0, second=0, timezone=KOLKATA_TZ),
             id='daily_rgu_check',
-            name='Raiganj University Daily Notice Scan at 10:00 AM IST',
+            name='Raiganj University Twice-Daily Notice Scan at 7:00 AM & 7:00 PM IST',
             misfire_grace_time=3600,
             replace_existing=True
         )
@@ -91,8 +99,8 @@ def start_scheduler():
         )
         scheduler.start()
         next_run = get_next_run_time()
-        next_str = next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else '10:00:00 AM'
-        db.log_event('SUCCESS', 'SCHEDULER', f'Daily automated scheduler started. Next run at 10:00 AM IST ({next_str})')
+        next_str = next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else '7:00 AM/PM IST'
+        db.log_event('SUCCESS', 'SCHEDULER', f'Automated scheduler started. Twice-daily checks active (7:00 AM & 7:00 PM IST). Next run at {next_str}')
 
 def get_scheduler_status():
     global _last_run_time, _last_result
@@ -113,7 +121,7 @@ def get_scheduler_status():
 
     return {
         'running': scheduler.running if scheduler else False,
-        'cron': '10:00:00 AM IST Everyday',
+        'cron': 'Twice Daily at 7:00 AM & 7:00 PM IST',
         'last_run': _last_run_time,
         'next_run': next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else None,
         'server_time': now_ist.strftime('%Y-%m-%d %H:%M:%S'),

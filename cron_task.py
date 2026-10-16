@@ -1,12 +1,12 @@
 """
-Raiganj University 00:00 Scheduled Notice Engine & Cloud Synchronizer
+Raiganj University Twice-Daily (7:00 AM & 7:00 PM IST) Notice Engine & Cloud Synchronizer
 Supports two operational modes:
 1. Cloud Sync Mode (When WEBAPP_URL is set, e.g. in GitHub Actions runner):
-   - Phase 1: Queries PythonAnywhere web app (/api/sync/status) for seen_ids & unmailed_notices.
+   - Phase 1: Queries web app (/api/sync/status) for seen_ids & unmailed_notices.
    - Phase 2: Scrapes official university portal (https://raiganjuniversity.ac.in/Website/AllNotices).
-   - Phase 3: Downloads new notices/PDFs, polishes with Gemini 2.5 Flash, and POSTs new notices to PythonAnywhere (/api/sync/push-notices).
-   - Phase 4: Dispatches ALL unmailed notices (both newly found + existing unmailed from PythonAnywhere) to students / Google Group.
-   - Phase 5: Updates PythonAnywhere with sent status (/api/sync/mark-sent) so web app records turn green.
+   - Phase 3: Downloads new notices/PDFs, polishes with Gemini 2.5 Flash, and POSTs new notices to web app (/api/sync/push-notices).
+   - Phase 4: Dispatches ALL unmailed notices (both newly found + existing unmailed) to students / Google Group.
+   - Phase 5: Updates web app with sent status (/api/sync/mark-sent).
 
 2. Standalone Local Mode (When WEBAPP_URL is not set):
    - Operates directly against local SQLite database.
@@ -221,7 +221,7 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
         print(" -> Everything is up to date! No unmailed notices waiting.")
 
     print("\n" + "=" * 60)
-    print("00:00 Daily Notice Engine Workflow Completed Successfully")
+    print("Twice-Daily (7:00 AM & 7:00 PM IST) Notice Engine Workflow Completed Successfully")
     print("=" * 60)
     return {
         'mode': 'cloud_sync',
@@ -250,7 +250,7 @@ def run_local_workflow():
 
 def main():
     print("=" * 60)
-    print(f"Raiganj University 00:00 Daily Notice Engine [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
+    print(f"Raiganj University Twice-Daily Notice Engine (7:00 AM & 7:00 PM IST) [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
     print("=" * 60)
 
     db.init_db()

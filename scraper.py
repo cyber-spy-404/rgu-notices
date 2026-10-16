@@ -134,66 +134,116 @@ def fetch_rgu_notices():
 
 def run_notice_check(force_email=False):
     """
-    Executes a notice check cycle:
-    1. Scrapes notices from Raiganj University (if accessible)
-    2. Identifies new notices
-    3. Always queries database for unmailed notices (email_status != 'sent')
-    4. Automatically dispatches emails to Google Group / active students
-    5. Logs the status and returns report
+    Executes scheduled notice check cycle (runs strictly twice a day at 7:00 AM & 7:00 PM IST):
+    1. Scrapes notices from Raiganj University official portal
+    2. Checks if each notice already exists in database and is polished
+    3. If not polished, polishes notice (via Gemini Multimodal or direct link fallback)
+    4. Saves/updates in database and mails instantly to Google Group / active students
+    5. Also ensures any existing unmailed notices in database are polished and mailed instantly
     """
     from email_dispatcher import dispatch_notice_to_students
+    import gemini_polisher
+    import time
 
-    db.log_event('INFO', 'SCRAPER', 'Starting scheduled notice check cycle...')
+    db.log_event('INFO', 'SCRAPER', 'Starting scheduled notice check cycle (7:00 AM / 7:00 PM IST)...')
     
     try:
         scraped_notices = fetch_rgu_notices() or []
-        new_notices = []
-        for n in scraped_notices:
-            is_new = db.save_notice(n)
-            if is_new:
-                new_notices.append(n)
-
-        # Collect all notices to dispatch: newly scraped + existing unmailed in database
-        to_dispatch = list(new_notices)
-        existing_unmailed = db.get_unmailed_notices(limit=50)
-        for unmailed_notice in existing_unmailed:
-            if str(unmailed_notice.get('id')) not in [str(x.get('id')) for x in to_dispatch]:
-                to_dispatch.append(unmailed_notice)
-
         total_scraped = len(scraped_notices)
-        new_count = len(new_notices)
-        dispatch_count = len(to_dispatch)
-
-        if dispatch_count > 0:
-            db.log_event('SUCCESS', 'SCRAPER', f'Found {new_count} brand-new notice(s). Total pending queue for dispatch: {dispatch_count}.')
+        
+        dispatched_results = []
+        newly_handled_count = 0
+        
+        # 1. First process all scraped notices
+        for n in scraped_notices:
+            nid = str(n.get('id', ''))
+            if not nid:
+                continue
             
-            # Dispatch each notice to students
-            dispatch_results = []
-            import time
-            for notice in to_dispatch:
-                try:
-                    res = dispatch_notice_to_students(notice)
-                    dispatch_results.append(res)
-                    status = 'sent' if res.get('success') else 'failed'
-                    db.mark_notice_emailed(notice['id'], status)
-                    time.sleep(1) # respectful pacing between emails
-                except Exception as de:
-                    db.log_event('ERROR', 'DISPATCH', f"Failed dispatching notice #{notice.get('id')}: {de}")
-                    db.mark_notice_emailed(notice['id'], 'failed')
+            existing = db.get_notice_by_id(nid)
+            is_polished = bool(existing and (existing.get('polished_markdown') or existing.get('has_gemini_polish') == 1))
+            is_mailed = bool(existing and existing.get('email_status') == 'sent')
+            
+            # If notice already exists, is already polished, and already mailed: skip
+            if existing and is_polished and is_mailed:
+                continue
+            
+            # If not in DB, add to DB
+            if not existing:
+                db.save_notice(n)
+                existing = db.get_notice_by_id(nid)
+            
+            # If not polished, polish now (Gemini or direct link fallback)
+            if not is_polished:
+                db.log_event('INFO', 'AI', f"Notice #{nid} not yet polished. Processing with AI / direct portal link fallback...")
+                proc = gemini_polisher.process_notice_complete(n)
+                n['polished_markdown'] = proc.get('polished_md', '')
+                n['polished_html'] = proc.get('polished_html', '')
+                n['has_gemini_polish'] = 1 if proc.get('has_gemini') else 0
+            else:
+                n['polished_markdown'] = existing.get('polished_markdown', '')
+                n['polished_html'] = existing.get('polished_html', '')
+                n['has_gemini_polish'] = existing.get('has_gemini_polish', 0)
+                n['attachment_path'] = existing.get('attachment_path', '')
 
-            sent_ok = sum(1 for r in dispatch_results if r.get('success'))
+            # Mail instantly
+            db.log_event('INFO', 'DISPATCH', f"Instantly mailing Notice #{nid} ('{n.get('title')[:60]}')...")
+            try:
+                res = dispatch_notice_to_students(n)
+                dispatched_results.append(res)
+                status = 'sent' if res.get('success') else 'failed'
+                db.mark_notice_emailed(nid, status)
+                newly_handled_count += 1
+                time.sleep(1.2)  # respectful SMTP pacing
+            except Exception as de:
+                db.log_event('ERROR', 'DISPATCH', f"Instant dispatch failed for notice #{nid}: {de}")
+                db.mark_notice_emailed(nid, 'failed')
+
+        # 2. Check for any remaining unmailed notices in database
+        unmailed_in_db = db.get_unmailed_notices(limit=50)
+        for notice in unmailed_in_db:
+            nid = str(notice.get('id', ''))
+            # Skip if already dispatched in this run
+            if nid in [str(x.get('id')) for x in scraped_notices]:
+                continue
+            
+            # Check if polished, if not polish
+            if not notice.get('polished_markdown') and not notice.get('has_gemini_polish'):
+                db.log_event('INFO', 'AI', f"Unmailed notice #{nid} missing polish. Polishing now...")
+                proc = gemini_polisher.process_notice_complete(notice)
+                notice['polished_markdown'] = proc.get('polished_md', '')
+                notice['polished_html'] = proc.get('polished_html', '')
+            
+            # Mail instantly
+            db.log_event('INFO', 'DISPATCH', f"Instantly mailing pending notice #{nid} ('{notice.get('title')[:60]}')...")
+            try:
+                res = dispatch_notice_to_students(notice)
+                dispatched_results.append(res)
+                status = 'sent' if res.get('success') else 'failed'
+                db.mark_notice_emailed(nid, status)
+                newly_handled_count += 1
+                time.sleep(1.2)
+            except Exception as de:
+                db.log_event('ERROR', 'DISPATCH', f"Failed delivering pending notice #{nid}: {de}")
+                db.mark_notice_emailed(nid, 'failed')
+
+        sent_ok = sum(1 for r in dispatched_results if r.get('success'))
+        dispatch_count = len(dispatched_results)
+        
+        if dispatch_count > 0:
+            msg = f"Check cycle complete: Polished and instantly mailed {sent_ok}/{dispatch_count} notice(s)."
+            db.log_event('SUCCESS', 'SCRAPER', msg)
             return {
                 'status': 'success',
-                'message': f'Dispatched {sent_ok}/{dispatch_count} notice(s) to students ({new_count} newly scraped + {dispatch_count - new_count} previously pending).',
-                'new_count': new_count,
+                'message': msg,
+                'new_count': newly_handled_count,
                 'dispatch_count': dispatch_count,
                 'sent_ok': sent_ok,
                 'total_scraped': total_scraped,
-                'new_notices': new_notices,
-                'dispatch_results': dispatch_results
+                'dispatch_results': dispatched_results
             }
         else:
-            msg = f'Daily check completed at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: No new or pending notices waiting. All notices up to date. Rescheduled for next 10:00 AM IST.'
+            msg = f'Scheduled check completed at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: All notices are already polished and mailed. Next check scheduled for 7:00 AM/PM IST.'
             db.log_event('INFO', 'SCHEDULER', msg)
             return {
                 'status': 'no_new',

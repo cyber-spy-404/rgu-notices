@@ -38,22 +38,22 @@
         </div>
         <div class="brand-text">
           <div class="brand-title">Raiganj University <span>Notice Dispatcher</span></div>
-          <div class="brand-subtitle">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Automated Daily 10:00 AM Scraper &amp; SMTP Engine</div>
+          <div class="brand-subtitle">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Automated Twice-Daily (7:00 AM &amp; 7:00 PM IST) Scraper &amp; SMTP Engine</div>
         </div>
       </div>
 
       <!-- Live Service Badges & Countdown -->
       <div class="header-status-area">
-        <div class="countdown-pill" id="countdownPill" title="Countdown to next daily check at 10:00 AM IST">
+        <div class="countdown-pill" id="countdownPill" title="Countdown to next check at 7:00 AM / 7:00 PM IST">
           <i class="fa-regular fa-clock pulse-icon"></i>
-          <span class="countdown-label">Next Check (10:00 AM):</span>
+          <span class="countdown-label">Next Check:</span>
           <span class="countdown-digits" id="countdownTimer">--:--:--</span>
         </div>
 
         <div class="status-badge-group">
           <div class="service-pill" id="schedulerBadge">
             <span class="status-dot green pulse"></span>
-            <span>10:00 AM Scheduler: Active</span>
+            <span>7 AM &amp; 7 PM Scheduler: Active</span>
           </div>
           <div class="service-pill" id="smtpBadge">
             <span class="status-dot green pulse"></span>
@@ -103,8 +103,8 @@
           <i class="fa-solid fa-stopwatch"></i>
         </div>
         <div class="metric-content">
-          <div class="metric-label">Daily Schedule</div>
-          <div class="metric-val">10:00 AM <span class="unit">IST</span></div>
+          <div class="metric-label">Twice-Daily Schedule</div>
+          <div class="metric-val">7 AM &amp; 7 PM <span class="unit">IST</span></div>
           <div class="metric-sub" id="metricNextRunText">Next: Calculating...</div>
         </div>
       </div>
@@ -165,7 +165,7 @@
                   <span>Automated Daily Engine Status</span>
                 </div>
                 <span class="badge badge-success" id="autoStatusBadge">
-                  <span class="status-dot green"></span> Running Daily at 10:00:00 AM IST
+                  <span class="status-dot green"></span> Running Twice Daily at 7:00 AM &amp; 7:00 PM IST
                 </span>
               </div>
               <div class="automation-body">
@@ -173,7 +173,7 @@
                   <div class="flow-step">
                     <div class="flow-step-icon"><i class="fa-regular fa-clock"></i></div>
                     <div class="flow-step-text">
-                      <strong>Everyday at 10:00:00 AM</strong>
+                      <strong>Twice Daily (7 AM &amp; 7 PM)</strong>
                       <span>Cron triggers automatically</span>
                     </div>
                   </div>
@@ -189,16 +189,16 @@
                   <div class="flow-step">
                     <div class="flow-step-icon"><i class="fa-solid fa-code-compare"></i></div>
                     <div class="flow-step-text">
-                      <strong>Differential Check</strong>
-                      <span>Compare against database</span>
+                      <strong>Check Polish &amp; Mails</strong>
+                      <span>Check DB if polished</span>
                     </div>
                   </div>
                   <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
                   <div class="flow-step">
                     <div class="flow-step-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
                     <div class="flow-step-text">
-                      <strong>Dispatch to Students</strong>
-                      <span>Or reschedule for next 00:00</span>
+                      <strong>Polish &amp; Mail Instantly</strong>
+                      <span>Dispatches via SMTP</span>
                     </div>
                   </div>
                 </div>
@@ -210,7 +210,7 @@
                   </div>
                   <div class="detail-row">
                     <span><i class="fa-regular fa-calendar-check"></i> Next Scheduled Run:</span>
-                    <strong id="dashNextRun">Tomorrow at 00:00:00</strong>
+                    <strong id="dashNextRun">7:00 AM / 7:00 PM IST</strong>
                   </div>
                   <div class="detail-row">
                     <span><i class="fa-solid fa-paper-plane"></i> Outbound Channel:</span>
@@ -747,7 +747,7 @@
                 <i class="fa-solid fa-terminal"></i>
                 <span>Execution &amp; Audit Logs</span>
               </div>
-              <div class="panel-desc">Real-time log trail of website scrapes, 00:00 triggers, SMTP dispatch, and errors.</div>
+              <div class="panel-desc">Real-time log trail of website scrapes, 7:00 AM &amp; 7:00 PM IST triggers, SMTP dispatch, and errors.</div>
             </div>
             <div class="panel-actions">
               <button class="btn btn-secondary btn-sm" onclick="loadLogs()">
@@ -785,7 +785,7 @@
         <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; Developed with Python Flask, APScheduler, SQLite &amp; aiosmtpd
       </div>
       <div>
-        Daily 00:00 midnight schedule &bull; <a href="https://raiganjuniversity.ac.in/" target="_blank">raiganjuniversity.ac.in</a>
+        Twice Daily schedule (7:00 AM &amp; 7:00 PM IST) &bull; <a href="https://raiganjuniversity.ac.in/" target="_blank">raiganjuniversity.ac.in</a>
       </div>
     </footer>
 

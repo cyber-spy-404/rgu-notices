@@ -179,8 +179,8 @@ def polish_with_gemini(raw_md, notice, file_bytes=None, mime_type=None):
     api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or cfg.get('gemini_api_key', '').strip()
     
     if not api_key:
-        db.log_event('INFO', 'AI', f"No GEMINI_API_KEY configured. Using raw notice markdown for Notice #{notice_id}.")
-        return raw_md
+        db.log_event('INFO', 'AI', f"No GEMINI_API_KEY configured. Using direct notice portal link layout for Notice #{notice_id}.")
+        return generate_structured_fallback_md(notice, raw_md)
 
     prompt = f"""You are the official student communications officer for Raiganj University (রায়গঞ্জ বিশ্ববিদ্যালয়).
 Analyze the attached official university notice document/text.
@@ -248,7 +248,7 @@ Guidelines:
             }
         }
         try:
-            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=12)
+            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=10)
             if r.status_code == 200:
                 data = r.json()
                 candidates = data.get('candidates', [])
@@ -259,13 +259,14 @@ Guidelines:
                         polished_text = "\n\n".join(text_parts).strip()
                         db.log_event('SUCCESS', 'AI', f"Gemini ({model}) successfully polished Notice #{notice_id} (multimodal)!")
                         break
-            elif r.status_code == 429:
-                db.log_event('INFO', 'AI', f"Gemini API rate/quota limit reached (HTTP 429). Using clean structured notice breakdown.")
+            elif r.status_code in [400, 401, 403, 429]:
+                db.log_event('INFO', 'AI', f"Gemini API returned HTTP {r.status_code}. Immediately falling back to direct notice portal link.")
                 break
             else:
-                db.log_event('WARNING', 'AI', f"Gemini {model} returned HTTP {r.status_code}: {r.text[:150]}")
+                db.log_event('WARNING', 'AI', f"Gemini {model} returned HTTP {r.status_code}: {r.text[:120]}")
         except Exception as e:
-            db.log_event('WARNING', 'AI', f"Gemini {model} call error: {e}")
+            db.log_event('WARNING', 'AI', f"Gemini API connection error ({e}). Falling back to direct portal link.")
+            break
 
     if not polished_text:
         return generate_structured_fallback_md(notice, raw_md)
@@ -289,25 +290,30 @@ def convert_md_to_html(md_text):
 
 def generate_structured_fallback_md(notice, raw_extracted_text=""):
     """
-    Creates a clean, structured student announcement markdown when Gemini API is not yet configured.
+    Creates a clean, structured student announcement markdown when Gemini API fails for any reason
+    or is not yet configured. Direct notice portal link is prominently featured.
     """
     title = notice.get('title', 'Official University Notice')
     pub_date = notice.get('published_on', 'Recent')
     category = notice.get('category', 'General')
-    link = notice.get('link', 'https://raiganjuniversity.ac.in/')
-    notice_id = str(notice.get('id', 'N/A'))
+    notice_id = str(notice.get('id', 'N/A')).replace('/', '_')
+    link = notice.get('link', '')
+
+    if not link or link.strip().rstrip('/') in ['https://raiganjuniversity.ac.in', 'http://raiganjuniversity.ac.in']:
+        link = f"https://raiganjuniversity.ac.in/Website/ViewNotice/{notice_id}"
 
     return f"""### 📌 Executive Summary
 Official notice announcement published by **Raiganj University** under the **{category}** section regarding **{title}**.
 
 ### 👥 Who is Affected?
-All students and researchers enrolled in or associated with **{category}** programs.
+All students, scholars, and department members associated with **{category}** directives.
 
-### ⚡ Key Information & Instructions
+### ⚡ Official Notice Direct Access & Instructions
 - **Official Reference:** Notice #{notice_id}
 - **Publication Date:** {pub_date}
-- Detailed circular document has been downloaded and attached.
-- Read through the full circular text and follow the directives of the Registrar/Controller.
+- **Direct Notice Portal Link:** [{link}]({link})
+- Detailed circular document has been downloaded and attached (if available from portal).
+- Please click the direct portal link above to view full notifications, schedules, and application links.
 
 ### 📅 Important Dates & Deadlines
 - **Published On:** {pub_date}

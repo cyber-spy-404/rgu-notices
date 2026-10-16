@@ -56,6 +56,7 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
     Checks the database for any unmailed notices (email_status != 'sent')
     and automatically delivers them in a non-blocking background thread
     whenever someone accesses the webapp (visits, pings, or restarts).
+    Note: Does NOT perform a live scrape, as scraping is scheduled strictly twice daily (7 AM & 7 PM IST).
     """
     def _worker():
         if not _pending_dispatch_lock.acquire(blocking=False):
@@ -65,30 +66,22 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
             if not unmailed:
                 return
 
-            # Check if any unmailed notices have placeholder titles ('Notice #X') or generic link
-            needs_scrape_sync = any(not n.get('title') or str(n.get('title')).startswith('Notice #') or 'Website/ViewNotice' not in str(n.get('link', '')) for n in unmailed)
-            if needs_scrape_sync:
-                try:
-                    scraped = scraper.fetch_rgu_notices()
-                    if scraped:
-                        for n in scraped:
-                            db.save_notice(n)
-                    # Re-fetch with fresh scraped titles and links
-                    unmailed = db.get_unmailed_notices(limit=50)
-                except Exception as se:
-                    print(f"Scraper refresh note: {se}")
-
-            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} unmailed notice(s). Starting automatic delivery to students / Google Group...")
+            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} unmailed notice(s) in database. Starting instant delivery to students / Google Group...")
             import email_dispatcher
+            import gemini_polisher
             sent_count = 0
             for notice in unmailed:
                 try:
+                    # Check if notice is polished, if not polish now
+                    if not notice.get('polished_markdown') and not notice.get('has_gemini_polish'):
+                        gemini_polisher.process_notice_complete(notice)
+
                     res = email_dispatcher.dispatch_notice_to_students(notice)
                     status = 'sent' if res.get('success') else 'failed'
                     db.mark_notice_emailed(notice['id'], status)
                     if res.get('success'):
                         sent_count += 1
-                    time.sleep(1.5)  # respectful SMTP pacing between emails
+                    time.sleep(1.2)  # respectful SMTP pacing between emails
                 except Exception as de:
                     db.log_event('ERROR', 'DISPATCH', f"Auto-dispatch error on notice #{notice.get('id')}: {de}")
                     db.mark_notice_emailed(notice['id'], 'failed')
@@ -103,23 +96,15 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
 
 def sync_and_deliver_on_startup():
     """
-    On application boot:
-    1. Scrapes RGU website in background to update all notice titles, actual portal links, and categories.
-    2. Immediately delivers any notices marked as pending or failed.
+    On application boot: checks database and delivers any unmailed notices.
     """
     try:
         time.sleep(2)  # Brief pause to allow gunicorn / web workers to bind
-        # Step 1: Sync official notice metadata
-        scraped = scraper.fetch_rgu_notices()
-        if scraped:
-            for n in scraped:
-                db.save_notice(n)
-        # Step 2: Trigger pending mail delivery
         trigger_pending_mail_dispatch_async("STARTUP_SYNC")
     except Exception as e:
-        db.log_event('WARNING', 'STARTUP', f"Startup notice sync note: {e}")
+        db.log_event('WARNING', 'STARTUP', f"Startup unmailed notice sync note: {e}")
 
-# Automatically trigger metadata sync and pending notice delivery on web server boot
+# Automatically check for unmailed notices and deliver on web server boot
 try:
     threading.Thread(target=sync_and_deliver_on_startup, daemon=True).start()
 except Exception as _e:
