@@ -48,6 +48,26 @@ def get_next_run_time():
     else:
         return today_target + timedelta(days=1)
 
+def check_pending_notices_queue():
+    """Periodically checks and delivers any unmailed/pending notices."""
+    try:
+        unmailed = db.get_unmailed_notices(limit=50)
+        if not unmailed:
+            return
+        db.log_event('INFO', 'SCHEDULER', f'Interval queue watcher detected {len(unmailed)} pending notice(s). Starting delivery...')
+        import email_dispatcher
+        import time
+        for notice in unmailed:
+            try:
+                res = email_dispatcher.dispatch_notice_to_students(notice)
+                db.mark_notice_emailed(notice['id'], 'sent' if res.get('success') else 'failed')
+                time.sleep(1.2)
+            except Exception as e:
+                db.log_event('ERROR', 'DISPATCH', f"Queue delivery error on notice #{notice.get('id')}: {e}")
+                db.mark_notice_emailed(notice['id'], 'failed')
+    except Exception as err:
+        print(f"Pending queue interval error: {err}")
+
 def start_scheduler():
     global scheduler
     if not scheduler.running:
@@ -58,6 +78,15 @@ def start_scheduler():
             id='daily_rgu_check',
             name='Raiganj University Daily Notice Scan at 10:00 AM IST',
             misfire_grace_time=3600,
+            replace_existing=True
+        )
+        # Periodically deliver any pending notices every 15 minutes
+        scheduler.add_job(
+            check_pending_notices_queue,
+            'interval',
+            minutes=15,
+            id='pending_queue_watcher',
+            name='Raiganj University Pending Notice Delivery Watcher',
             replace_existing=True
         )
         scheduler.start()

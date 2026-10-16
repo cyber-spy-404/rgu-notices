@@ -1,5 +1,7 @@
 import os
 import atexit
+import threading
+import time
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file, Response
 import database as db
@@ -46,10 +48,56 @@ try:
 except Exception:
     pass
 
+# ----------------- Automatic Pending Mail Dispatch Worker ----------------- #
+_pending_dispatch_lock = threading.Lock()
+
+def trigger_pending_mail_dispatch_async(source="STARTUP"):
+    """
+    Checks for pending unmailed notices and dispatches them in a non-blocking background thread.
+    Protected by a thread-safe mutex lock to prevent concurrent/duplicate sending.
+    Delivers pending mails anytime the web service is started, pinged, or visited.
+    """
+    def _worker():
+        if not _pending_dispatch_lock.acquire(blocking=False):
+            return  # Already actively dispatching in another background worker
+        try:
+            unmailed = db.get_unmailed_notices(limit=50)
+            if not unmailed:
+                return
+            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} pending notice(s). Starting automatic delivery to students...")
+            import email_dispatcher
+            sent_count = 0
+            for notice in unmailed:
+                try:
+                    res = email_dispatcher.dispatch_notice_to_students(notice)
+                    status = 'sent' if res.get('success') else 'failed'
+                    db.mark_notice_emailed(notice['id'], status)
+                    if res.get('success'):
+                        sent_count += 1
+                    time.sleep(1.2)  # respectful SMTP pacing between emails
+                except Exception as de:
+                    db.log_event('ERROR', 'DISPATCH', f"Auto-dispatch error on notice #{notice.get('id')}: {de}")
+                    db.mark_notice_emailed(notice['id'], 'failed')
+            db.log_event('SUCCESS', 'DISPATCH', f"[{source}] Automatic delivery complete: {sent_count}/{len(unmailed)} pending notice(s) delivered.")
+        except Exception as e:
+            db.log_event('ERROR', 'DISPATCH', f"Background pending worker exception: {e}")
+        finally:
+            _pending_dispatch_lock.release()
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
+# Automatically trigger pending notice delivery on web server boot
+try:
+    trigger_pending_mail_dispatch_async("STARTUP")
+except Exception as _e:
+    pass
+
 # ----------------- Web UI Routes ----------------- #
 
 @app.route('/')
 def index():
+    trigger_pending_mail_dispatch_async("WEB_VISIT")
     return render_template('index.html')
 
 @app.route('/email-preview/<int:msg_id>')
@@ -232,7 +280,9 @@ def api_cron_trigger():
 def api_health():
     """
     Lightweight keep-alive ping endpoint to wake sleeping cloud containers (e.g. Render/Railway).
+    Immediately checks and delivers any pending unmailed notices whenever pinged.
     """
+    trigger_pending_mail_dispatch_async("HEALTH_PING")
     return jsonify({
         'status': 'awake',
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
