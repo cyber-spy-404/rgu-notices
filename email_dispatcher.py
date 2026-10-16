@@ -235,8 +235,11 @@ def get_smtp_connection():
     """
     Establishes SMTP client connection according to environment variables (for GitHub Actions / Cloud)
     or SQLite database configuration.
+    Includes pure IPv4 resolution and dual-protocol fallback (Port 587 STARTTLS -> Port 465 SSL)
+    to eliminate [Errno 101] Network is unreachable on Render and cloud containers.
     """
     import os
+    import socket
     cfg = db.get_smtp_config()
 
     # Environment variables take priority (ideal for GitHub Actions secrets)
@@ -246,47 +249,70 @@ def get_smtp_connection():
     env_port = os.getenv('SMTP_PORT')
     env_sender = os.getenv('SENDER_EMAIL')
 
-    if env_user and env_pass:
-        host = env_host or 'smtp.gmail.com'
-        port = int(env_port or 587)
-        server = smtplib.SMTP(host, port, timeout=20)
-        server.starttls()
-        server.login(env_user.strip(), env_pass.strip())
-        cfg_override = {
-            'mode': 'googlegroup',
-            'sender_email': env_sender or env_user.strip(),
-            'sender_name': os.getenv('SENDER_NAME', 'Raiganj University Notice Board'),
-            'google_group_email': os.getenv('GOOGLE_GROUP_EMAIL') or cfg.get('google_group_email', '')
-        }
-        return server, cfg_override
-
+    user = (env_user or cfg.get('sender_email') or cfg.get('custom_username', '')).strip()
+    pwd = (env_pass or cfg.get('custom_password', '')).strip()
+    host = env_host or cfg.get('custom_host') or 'smtp.gmail.com'
     mode = cfg.get('mode', 'googlegroup')
 
-    if mode == 'local':
-        host = cfg.get('local_host', '127.0.0.1')
-        port = int(cfg.get('local_port', 2525))
-        server = smtplib.SMTP(host, port, timeout=12)
+    if mode == 'local' and not env_user:
+        local_host = cfg.get('local_host', '127.0.0.1')
+        local_port = int(cfg.get('local_port', 2525))
+        server = smtplib.SMTP(local_host, local_port, timeout=12)
         return server, cfg
-    else:
-        # googlegroup or custom
-        host = cfg.get('custom_host') or 'smtp.gmail.com'
-        port = int(cfg.get('custom_port') or 587)
-        use_ssl = bool(cfg.get('custom_use_ssl', 0))
-        use_tls = bool(cfg.get('custom_use_tls', 1))
 
-        if use_ssl:
-            server = smtplib.SMTP_SSL(host, port, timeout=15)
-        else:
-            server = smtplib.SMTP(host, port, timeout=15)
-            if use_tls:
+    # Resolve pure IPv4 address to avoid IPv6 [Errno 101] Network is unreachable on Render/cloud
+    ipv4_host = None
+    try:
+        ipv4_host = socket.gethostbyname(host)
+    except Exception:
+        ipv4_host = None
+
+    cfg_effective = dict(cfg)
+    if env_user:
+        cfg_effective['sender_email'] = env_sender or env_user
+        cfg_effective['google_group_email'] = os.getenv('GOOGLE_GROUP_EMAIL') or cfg.get('google_group_email', '')
+
+    configured_port = int(env_port or cfg.get('custom_port') or 587)
+
+    # Sequence of connection strategies:
+    # 1. Pure IPv4 on configured port (usually 587 STARTTLS)
+    # 2. Pure IPv4 on Port 465 SMTPS (SSL)
+    # 3. Hostname on configured port (587)
+    # 4. Hostname on Port 465 (SSL)
+    strategies = []
+    if ipv4_host:
+        strategies.append(('ipv4_tls', ipv4_host, configured_port))
+        strategies.append(('ipv4_ssl', ipv4_host, 465))
+    strategies.append(('host_tls', host, configured_port))
+    strategies.append(('host_ssl', host, 465))
+
+    last_exc = None
+    for method, target, port in strategies:
+        server = None
+        try:
+            if 'ssl' in method:
+                server = smtplib.SMTP_SSL(target, port, timeout=15)
+            else:
+                server = smtplib.SMTP(timeout=15)
+                server.connect(target, port)
+                server._host = host  # Preserve original hostname for SNI/TLS cert validation
                 server.starttls()
 
-        user = (cfg.get('sender_email') or cfg.get('custom_username', '')).strip()
-        pwd = cfg.get('custom_password', '').strip()
-        if user and pwd:
-            server.login(user, pwd)
+            if user and pwd:
+                server.login(user, pwd)
 
-        return server, cfg
+            return server, cfg_effective
+        except Exception as conn_err:
+            last_exc = conn_err
+            if server:
+                try:
+                    server.quit()
+                except Exception:
+                    pass
+            server = None
+            continue
+
+    raise Exception(f"SMTP Connection failure: {last_exc}")
 
 def send_single_email(recipient_email, recipient_name, subject, html_content, text_content=None):
     """
