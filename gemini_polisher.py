@@ -59,7 +59,7 @@ def grab_notice_file_and_text(notice):
     file_bytes = None
 
     try:
-        resp = requests.get(link, headers=HEADERS, timeout=8)
+        resp = requests.get(link, headers=HEADERS, timeout=3)
         content = resp.content
         ctype = resp.headers.get('Content-Type', '').lower()
 

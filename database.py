@@ -133,11 +133,33 @@ def init_db():
 
     conn.commit()
 
-    # If notices table is empty, seed from non-sensitive seen_ids.txt (safe for CI/CD runners)
-    try:
-        cursor.execute('SELECT COUNT(*) FROM notices')
-        count_row = cursor.fetchone()
-        if count_row and count_row[0] == 0 and os.path.exists(SEEN_IDS_PATH):
+    # Seed full notices metadata from notices_seed.json
+    NOTICES_SEED_PATH = os.path.join(DATA_DIR, 'notices_seed.json')
+    if os.path.exists(NOTICES_SEED_PATH):
+        try:
+            with open(NOTICES_SEED_PATH, 'r', encoding='utf-8') as f:
+                seed_data = json.load(f)
+                for item in seed_data:
+                    cursor.execute('''
+                    INSERT INTO notices (id, title, link, published_on, category, is_new, email_status)
+                    VALUES (?, ?, ?, ?, ?, 1, 'pending')
+                    ON CONFLICT(id) DO UPDATE SET
+                        title = excluded.title,
+                        link = excluded.link,
+                        published_on = excluded.published_on,
+                        category = excluded.category
+                    ''', (
+                        str(item.get('id')),
+                        item.get('title'),
+                        item.get('link'),
+                        item.get('published_on'),
+                        item.get('category', 'General')
+                    ))
+            conn.commit()
+        except Exception as se:
+            print(f"Seed notices note: {se}")
+    elif os.path.exists(SEEN_IDS_PATH):
+        try:
             with open(SEEN_IDS_PATH, 'r', encoding='utf-8') as f:
                 for line in f:
                     nid = line.strip()
@@ -147,8 +169,8 @@ def init_db():
                         VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 1, 'pending')
                         ''', (nid, f"Notice #{nid}", nid))
             conn.commit()
-    except Exception as e:
-        print(f"Warning: seen_ids sync note: {e}")
+        except Exception as e:
+            print(f"Warning: seen_ids sync note: {e}")
 
     # Ensure any unmailed notices marked 'synced' are upgraded to 'pending' so they are delivered
     try:

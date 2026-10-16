@@ -43,7 +43,7 @@ def fetch_rgu_notices():
 
     # Step 1: Scrape AllNotices page
     try:
-        response = requests.get(ALL_NOTICES_URL, headers=HEADERS, timeout=18)
+        response = requests.get(ALL_NOTICES_URL, headers=HEADERS, timeout=4)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             items = soup.select('.notice-item')
@@ -62,7 +62,6 @@ def fetch_rgu_notices():
                 if badge and badge.get_text(strip=True):
                     notice_id = badge.get_text(strip=True)
                 else:
-                    # Parse from URL or fallback
                     match = re.search(r'ViewNotice/([0-9A-Za-z_-]+)', href)
                     if match:
                         notice_id = match.group(1)
@@ -90,11 +89,11 @@ def fetch_rgu_notices():
                     'is_new': is_new_badge
                 })
     except Exception as e:
-        db.log_event('WARNING', 'SCRAPER', f'Failed fetching AllNotices: {str(e)}')
+        db.log_event('INFO', 'SCRAPER', f'Portal scrape note (cloud network): {str(e)[:100]}')
 
     # Step 2: Also scrape homepage for any marquee or new notices not yet in AllNotices
     try:
-        hp_resp = requests.get(HOMEPAGE_URL, headers=HEADERS, timeout=18)
+        hp_resp = requests.get(HOMEPAGE_URL, headers=HEADERS, timeout=4)
         if hp_resp.status_code == 200:
             hp_soup = BeautifulSoup(hp_resp.text, 'html.parser')
             hp_links = hp_soup.find_all('a', href=lambda h: h and ('ViewNotice' in h or 'notice' in h.lower()))
@@ -129,36 +128,32 @@ def fetch_rgu_notices():
                     'is_new': True
                 })
     except Exception as e:
-        db.log_event('WARNING', 'SCRAPER', f'Homepage scrape warning: {str(e)}')
+        db.log_event('INFO', 'SCRAPER', f'Homepage scrape note: {str(e)[:100]}')
 
     return notices
 
 def run_notice_check(force_email=False):
     """
     Executes a notice check cycle:
-    1. Scrapes notices from Raiganj University
+    1. Scrapes notices from Raiganj University (if accessible)
     2. Identifies new notices
-    3. If new notices found (or force_email=True), dispatches alert to all active students
-    4. Logs the status and returns report
+    3. Always queries database for unmailed notices (email_status != 'sent')
+    4. Automatically dispatches emails to Google Group / active students
+    5. Logs the status and returns report
     """
     from email_dispatcher import dispatch_notice_to_students
 
-    db.log_event('INFO', 'SCRAPER', 'Starting scheduled notice scan from https://raiganjuniversity.ac.in/')
+    db.log_event('INFO', 'SCRAPER', 'Starting scheduled notice check cycle...')
     
     try:
-        scraped_notices = fetch_rgu_notices()
-        if not scraped_notices:
-            msg = 'Scraper completed: 0 notices fetched from Raiganj University. Connection may be restricted or page structure changed.'
-            db.log_event('WARNING', 'SCRAPER', msg)
-            return {'status': 'warning', 'message': msg, 'new_count': 0, 'total': 0}
-
+        scraped_notices = fetch_rgu_notices() or []
         new_notices = []
         for n in scraped_notices:
             is_new = db.save_notice(n)
             if is_new:
                 new_notices.append(n)
 
-        # Collect all notices to dispatch: newly scraped + existing pending in database
+        # Collect all notices to dispatch: newly scraped + existing unmailed in database
         to_dispatch = list(new_notices)
         existing_unmailed = db.get_unmailed_notices(limit=50)
         for unmailed_notice in existing_unmailed:
