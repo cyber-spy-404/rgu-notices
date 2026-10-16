@@ -122,6 +122,12 @@
   padding: 0;
 }
 
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 html {
   font-size: 15px;
   scroll-behavior: smooth;
@@ -300,29 +306,108 @@ body {
   text-decoration: none;
 }
 
-.brand-emblem {
-  width: 46px;
-  height: 46px;
+.brand-emblem, .brand-crest {
+  width: 44px !important;
+  height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
   border-radius: var(--radius-md);
   background: #ffffff;
-  padding: 2.5px;
-  display: flex;
+  padding: 3px;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
+  overflow: hidden;
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
-.brand-emblem:hover {
+.brand-emblem:hover, .brand-crest:hover {
   transform: scale(1.06) rotate(-2deg);
   box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
 }
 
-.brand-emblem img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.brand-emblem img, .brand-crest img, .brand-logo-img, img[src*="logo.png"] {
+  width: 38px !important;
+  height: 38px !important;
+  max-width: 38px !important;
+  max-height: 38px !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+/* Backward compatibility aliases */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 14px var(--space-5);
+  background: rgba(11, 15, 25, 0.82);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md), var(--shadow-inset-top);
+  animation: kowalskiReveal 0.6s var(--ease-spring) 0.04s both;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.brand-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-white);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-subtitle {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.header-status-area {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.status-badge-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.service-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: var(--radius-full);
+  background: rgba(15, 20, 32, 0.8);
+  border: 1px solid var(--border-default);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.app-layout {
+  position: relative;
+  z-index: 2;
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6) var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .brand-info {
