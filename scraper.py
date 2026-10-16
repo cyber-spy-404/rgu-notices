@@ -158,34 +158,53 @@ def run_notice_check(force_email=False):
             if is_new:
                 new_notices.append(n)
 
+        # Collect all notices to dispatch: newly scraped + existing pending in database
+        to_dispatch = list(new_notices)
+        existing_unmailed = db.get_unmailed_notices(limit=50)
+        for unmailed_notice in existing_unmailed:
+            if str(unmailed_notice.get('id')) not in [str(x.get('id')) for x in to_dispatch]:
+                to_dispatch.append(unmailed_notice)
+
         total_scraped = len(scraped_notices)
         new_count = len(new_notices)
+        dispatch_count = len(to_dispatch)
 
-        if new_count > 0:
-            db.log_event('SUCCESS', 'SCRAPER', f'Found {new_count} NEW notices from Raiganj University out of {total_scraped} scanned.')
+        if dispatch_count > 0:
+            db.log_event('SUCCESS', 'SCRAPER', f'Found {new_count} brand-new notice(s). Total pending queue for dispatch: {dispatch_count}.')
             
-            # Dispatch each new notice to students
+            # Dispatch each notice to students
             dispatch_results = []
-            for notice in new_notices:
-                res = dispatch_notice_to_students(notice)
-                dispatch_results.append(res)
-                db.mark_notice_emailed(notice['id'], 'sent' if res.get('success') else 'failed')
+            import time
+            for notice in to_dispatch:
+                try:
+                    res = dispatch_notice_to_students(notice)
+                    dispatch_results.append(res)
+                    status = 'sent' if res.get('success') else 'failed'
+                    db.mark_notice_emailed(notice['id'], status)
+                    time.sleep(1) # respectful pacing between emails
+                except Exception as de:
+                    db.log_event('ERROR', 'DISPATCH', f"Failed dispatching notice #{notice.get('id')}: {de}")
+                    db.mark_notice_emailed(notice['id'], 'failed')
 
+            sent_ok = sum(1 for r in dispatch_results if r.get('success'))
             return {
                 'status': 'success',
-                'message': f'Discovered {new_count} new notice(s) and dispatched emails to enrolled students.',
+                'message': f'Dispatched {sent_ok}/{dispatch_count} notice(s) to students ({new_count} newly scraped + {dispatch_count - new_count} previously pending).',
                 'new_count': new_count,
+                'dispatch_count': dispatch_count,
+                'sent_ok': sent_ok,
                 'total_scraped': total_scraped,
                 'new_notices': new_notices,
                 'dispatch_results': dispatch_results
             }
         else:
-            msg = f'Daily check completed at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: No new notices found on Raiganj University website. Total tracked: {total_scraped}. Rescheduled for next 00:00.'
+            msg = f'Daily check completed at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: No new or pending notices waiting. All notices up to date. Rescheduled for next 10:00 AM IST.'
             db.log_event('INFO', 'SCHEDULER', msg)
             return {
                 'status': 'no_new',
                 'message': msg,
                 'new_count': 0,
+                'dispatch_count': 0,
                 'total_scraped': total_scraped,
                 'new_notices': []
             }
