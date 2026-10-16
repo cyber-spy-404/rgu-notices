@@ -172,9 +172,9 @@ def init_db():
         except Exception as e:
             print(f"Warning: seen_ids sync note: {e}")
 
-    # Ensure any unmailed notices marked 'synced' are upgraded to 'pending' so they are delivered
+    # Ensure any unmailed notices marked 'synced' or 'failed' (from cold-start network warmup) are upgraded to 'pending' so they are delivered
     try:
-        cursor.execute("UPDATE notices SET email_status = 'pending' WHERE email_status = 'synced'")
+        cursor.execute("UPDATE notices SET email_status = 'pending' WHERE email_status IN ('synced', 'failed')")
         conn.commit()
     except Exception as e:
         print(f"Warning: notice status migration note: {e}")
