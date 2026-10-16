@@ -883,25 +883,37 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ----------------- Toast Notifications ----------------- //
+// ----------------- Toast Notifications & Keyboard Shortcuts ----------------- //
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
+  if (!container) return;
   const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
+  toast.className = `toast toast-${type}`;
 
   const icon = type === 'success' ? 'fa-circle-check' : (type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info');
+  const iconColor = type === 'success' ? '#34d399' : (type === 'error' ? '#fb7185' : '#38bdf8');
   toast.innerHTML = `
-    <i class="fa-solid ${icon}"></i>
+    <i class="fa-solid ${icon}" style="font-size: 1.05rem; color: ${iconColor}; flex-shrink: 0;"></i>
     <span>${escapeHtml(message)}</span>
   `;
 
   container.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    setTimeout(() => toast.remove(), 300);
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
   }, 4000);
 }
+
+// Close modals on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+  }
+});
 
 function escapeHtml(str) {
   if (!str) return '';

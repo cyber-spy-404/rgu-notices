@@ -3,70 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Raiganj University &bull; Automated Notice &amp; SMTP Dispatcher</title>
-  <meta name="description" content="Automated daily 00:00 notice scraper and SMTP email dispatcher for Raiganj University students.">
+  <title>Raiganj University &bull; Notice &amp; SMTP Broadcast Automation</title>
+  <meta name="description" content="Automated twice-daily (7:00 AM & 7:00 PM IST) notice scraper, Gemini AI polisher, and Google Group SMTP dispatcher for Raiganj University.">
   
-  <!-- Modern Google Fonts -->
+  <!-- Modern Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Font Awesome Icons -->
+  <!-- Font Awesome Pro Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/static/images/logo.png">
 
-  <!-- Custom Stylesheet -->
+  <!-- Custom Design System Stylesheet -->
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-  <!-- Background decorative glows -->
+  <!-- Background Decorative Glowing Meshes -->
   <div class="bg-glow glow-top-left"></div>
   <div class="bg-glow glow-top-right"></div>
   <div class="bg-glow glow-bottom-center"></div>
 
-  <!-- Main Container -->
+  <!-- Main Application Container -->
   <div class="app-layout">
     
-    <!-- Header -->
+    <!-- ================= TOP APP HEADER ================= -->
     <header class="app-header">
       <div class="header-brand">
-        <div class="brand-crest">
+        <div class="brand-crest" title="Raiganj University Official Emblem">
           <img src="/static/images/logo.png" alt="Raiganj University Logo" class="brand-logo-img">
         </div>
         <div class="brand-text">
-          <div class="brand-title">Raiganj University <span>Notice Dispatcher</span></div>
-          <div class="brand-subtitle">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Automated Twice-Daily (7:00 AM &amp; 7:00 PM IST) Scraper &amp; SMTP Engine</div>
+          <div class="brand-title">
+            Raiganj University <span>Notice Dispatcher</span>
+          </div>
+          <div class="brand-subtitle">
+            রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Twice-Daily Scraper &amp; Google Groups Broadcast Engine
+          </div>
         </div>
       </div>
 
-      <!-- Live Service Badges & Countdown -->
+      <!-- Live Service Indicators & Countdown -->
       <div class="header-status-area">
-        <div class="countdown-pill" id="countdownPill" title="Countdown to next check at 7:00 AM / 7:00 PM IST">
+        <!-- Next Run Countdown -->
+        <div class="countdown-pill" id="countdownPill" title="Automated check runs twice daily at 7:00 AM & 7:00 PM IST">
           <i class="fa-regular fa-clock pulse-icon"></i>
           <span class="countdown-label">Next Check:</span>
           <span class="countdown-digits" id="countdownTimer">--:--:--</span>
         </div>
 
+        <!-- Service Badges -->
         <div class="status-badge-group">
-          <div class="service-pill" id="schedulerBadge">
+          <div class="service-pill" id="schedulerBadge" title="Automated Twice-Daily Background Scheduler">
             <span class="status-dot green pulse"></span>
-            <span>7 AM &amp; 7 PM Scheduler: Active</span>
+            <span>7 AM &amp; 7 PM IST: Active</span>
           </div>
-          <div class="service-pill" id="smtpBadge">
+          <div class="service-pill" id="smtpBadge" title="Target Outbound Broadcast Channel">
             <span class="status-dot green pulse"></span>
-            <span id="smtpBadgeText">SMTP: Local (2525)</span>
+            <span id="smtpBadgeText"><i class="fa-solid fa-users"></i> Google Group Active</span>
           </div>
         </div>
 
+        <!-- Header Actions -->
         <div class="header-actions">
-          <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()">
-            <i class="fa-solid fa-bolt"></i>
+          <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()" title="Check for new university notices right now">
+            <i class="fa-solid fa-rotate"></i>
             <span>Check Notices Now</span>
           </button>
-          <button class="btn btn-secondary btn-sm" onclick="openTestModal()">
+          <button class="btn btn-secondary btn-sm" onclick="openTestModal()" title="Send a verification test email to Google Group">
             <i class="fa-solid fa-paper-plane"></i>
             <span>Test Email</span>
           </button>
@@ -74,19 +81,9 @@
       </div>
     </header>
 
-    <!-- Metrics Cards -->
+    <!-- ================= METRICS GRID ================= -->
     <section class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-icon students-icon">
-          <i class="fa-solid fa-users"></i>
-        </div>
-        <div class="metric-content">
-          <div class="metric-label">Enrolled Students</div>
-          <div class="metric-val" id="metricTotalStudents">0</div>
-          <div class="metric-sub"><span id="metricActiveStudents">0</span> active email subscribers</div>
-        </div>
-      </div>
-
+      <!-- Card 1: Tracked Notices -->
       <div class="metric-card">
         <div class="metric-icon notices-icon">
           <i class="fa-solid fa-file-invoice"></i>
@@ -94,51 +91,69 @@
         <div class="metric-content">
           <div class="metric-label">Tracked Notices</div>
           <div class="metric-val" id="metricTotalNotices">0</div>
-          <div class="metric-sub">From <a href="https://raiganjuniversity.ac.in/" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
+          <div class="metric-sub">
+            From <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a>
+          </div>
         </div>
       </div>
 
+      <!-- Card 2: Enrolled Students -->
+      <div class="metric-card">
+        <div class="metric-icon students-icon">
+          <i class="fa-solid fa-user-graduate"></i>
+        </div>
+        <div class="metric-content">
+          <div class="metric-label">Directory Students</div>
+          <div class="metric-val" id="metricTotalStudents">0</div>
+          <div class="metric-sub"><span id="metricActiveStudents">0</span> active student records</div>
+        </div>
+      </div>
+
+      <!-- Card 3: Execution Schedule -->
       <div class="metric-card">
         <div class="metric-icon schedule-icon">
           <i class="fa-solid fa-stopwatch"></i>
         </div>
         <div class="metric-content">
-          <div class="metric-label">Twice-Daily Schedule</div>
+          <div class="metric-label">Check Frequency</div>
           <div class="metric-val">7 AM &amp; 7 PM <span class="unit">IST</span></div>
           <div class="metric-sub" id="metricNextRunText">Next: Calculating...</div>
         </div>
       </div>
 
+      <!-- Card 4: Target Audience -->
       <div class="metric-card">
         <div class="metric-icon outbox-icon">
-          <i class="fa-solid fa-users"></i>
+          <i class="fa-solid fa-people-group"></i>
         </div>
         <div class="metric-content">
-          <div class="metric-label">Target Audience</div>
+          <div class="metric-label">Broadcast Audience</div>
           <div class="metric-val" id="metricGroupAudience">1,000+</div>
-          <div class="metric-sub"><a href="#" onclick="switchTab('smtp'); return false;" class="accent-link" id="metricGroupEmailLink">Google Group Broadcast</a></div>
+          <div class="metric-sub">
+            <a href="#" onclick="switchTab('smtp'); return false;" class="accent-link" id="metricGroupEmailLink">rgu-notices@googlegroups.com</a>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Navigation Tabs -->
+    <!-- ================= NAVIGATION TABS ================= -->
     <nav class="app-nav">
       <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
         <i class="fa-solid fa-chart-pie"></i>
         <span>Dashboard</span>
-      </button>
-      <button class="nav-tab" data-tab="students" onclick="switchTab('students')">
-        <i class="fa-solid fa-user-graduate"></i>
-        <span>Student Directory</span>
-        <span class="badge-count" id="navStudentCount">0</span>
       </button>
       <button class="nav-tab" data-tab="notices" onclick="switchTab('notices')">
         <i class="fa-solid fa-bullhorn"></i>
         <span>University Notices</span>
         <span class="badge-count" id="navNoticeCount">0</span>
       </button>
+      <button class="nav-tab" data-tab="students" onclick="switchTab('students')">
+        <i class="fa-solid fa-user-graduate"></i>
+        <span>Student Directory</span>
+        <span class="badge-count" id="navStudentCount">0</span>
+      </button>
       <button class="nav-tab" data-tab="smtp" onclick="switchTab('smtp')">
-        <i class="fa-solid fa-people-group"></i>
+        <i class="fa-solid fa-sliders"></i>
         <span>Google Group Settings</span>
       </button>
       <button class="nav-tab" data-tab="logs" onclick="switchTab('logs')">
@@ -147,66 +162,68 @@
       </button>
     </nav>
 
-    <!-- Main Content Area -->
+    <!-- ================= MAIN CONTENT VIEWS ================= -->
     <main class="app-main">
 
       <!-- ================= TAB 1: DASHBOARD ================= -->
       <section class="tab-pane active" id="tab-dashboard">
         <div class="dashboard-grid">
           
-          <!-- Left Column: Automation Monitor & Latest Notices -->
+          <!-- Left Column: Automation Engine & Discovered Notices -->
           <div class="dash-col-main">
             
-            <!-- Automation Status Card -->
+            <!-- Automation Pipeline Card -->
             <div class="panel-card automation-card">
               <div class="panel-header">
                 <div class="panel-title">
                   <i class="fa-solid fa-microchip"></i>
-                  <span>Automated Daily Engine Status</span>
+                  <span>Automated Execution Pipeline</span>
                 </div>
                 <span class="badge badge-success" id="autoStatusBadge">
-                  <span class="status-dot green"></span> Running Twice Daily at 7:00 AM &amp; 7:00 PM IST
+                  <span class="status-dot green pulse"></span> Active: Twice Daily at 7:00 AM &amp; 7:00 PM IST
                 </span>
               </div>
               <div class="automation-body">
+                <!-- Visual 4-Step Pipeline -->
                 <div class="automation-flow">
                   <div class="flow-step">
                     <div class="flow-step-icon"><i class="fa-regular fa-clock"></i></div>
                     <div class="flow-step-text">
-                      <strong>Twice Daily (7 AM &amp; 7 PM)</strong>
-                      <span>Cron triggers automatically</span>
+                      <strong>7:00 AM &amp; 7:00 PM IST</strong>
+                      <span>Cron Trigger</span>
                     </div>
                   </div>
-                  <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                  <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
                   <div class="flow-step">
                     <div class="flow-step-icon"><i class="fa-solid fa-globe"></i></div>
                     <div class="flow-step-text">
-                      <strong>Scrape RGU Website</strong>
-                      <span>Inspects raiganjuniversity.ac.in</span>
+                      <strong>Scrape Portal</strong>
+                      <span>Check RGU Website</span>
                     </div>
                   </div>
-                  <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                  <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
                   <div class="flow-step">
-                    <div class="flow-step-icon"><i class="fa-solid fa-code-compare"></i></div>
+                    <div class="flow-step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                     <div class="flow-step-text">
-                      <strong>Check Polish &amp; Mails</strong>
-                      <span>Check DB if polished</span>
+                      <strong>Gemini 3.6 OCR</strong>
+                      <span>Polish &amp; Format</span>
                     </div>
                   </div>
-                  <div class="flow-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                  <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
                   <div class="flow-step">
-                    <div class="flow-step-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+                    <div class="flow-step-icon"><i class="fa-solid fa-paper-plane"></i></div>
                     <div class="flow-step-text">
-                      <strong>Polish &amp; Mail Instantly</strong>
-                      <span>Dispatches via SMTP</span>
+                      <strong>Mail Instantly</strong>
+                      <span>Google Group Broadcast</span>
                     </div>
                   </div>
                 </div>
 
+                <!-- Automation Meta Boxes -->
                 <div class="automation-details-box">
                   <div class="detail-row">
                     <span><i class="fa-solid fa-clock-rotate-left"></i> Last Scrape Run:</span>
-                    <strong id="dashLastRun">Never executed yet</strong>
+                    <strong id="dashLastRun">Calculated on schedule</strong>
                   </div>
                   <div class="detail-row">
                     <span><i class="fa-regular fa-calendar-check"></i> Next Scheduled Run:</span>
@@ -214,39 +231,39 @@
                   </div>
                   <div class="detail-row">
                     <span><i class="fa-solid fa-paper-plane"></i> Outbound Channel:</span>
-                    <strong id="dashSmtpChannel">Google Groups Broadcast (1,000+ Students)</strong>
+                    <strong id="dashSmtpChannel">Google Group Broadcast (1,000+ Students)</strong>
                   </div>
                   <div class="detail-row">
                     <span><i class="fa-solid fa-users"></i> Target Audience:</span>
-                    <strong id="dashStudentAudience">All students in Google Group</strong>
+                    <strong id="dashStudentAudience">rgu-notices@googlegroups.com</strong>
                   </div>
                 </div>
 
+                <!-- Quick Action Bar -->
                 <div class="automation-actions">
-                  <button class="btn btn-primary" onclick="triggerScanNow()">
-                    <i class="fa-solid fa-play"></i> Run Check Right Now
+                  <button class="btn btn-primary btn-sm" onclick="triggerScanNow()">
+                    <i class="fa-solid fa-bolt"></i> Run Notice Scan Now
                   </button>
-                  <button class="btn btn-secondary" onclick="dispatchPendingNow()">
-                    <i class="fa-solid fa-paper-plane"></i> Deliver Unmailed Notices
+                  <button class="btn btn-secondary btn-sm" onclick="dispatchPendingNow()">
+                    <i class="fa-solid fa-envelope-circle-check"></i> Deliver Pending Notices
                   </button>
-                  <button class="btn btn-ghost" onclick="seedSampleStudents()">
-                    <i class="fa-solid fa-user-plus"></i> Load Sample Students
-                  </button>
-                  <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="btn btn-ghost">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Visit Official RGU Portal
+                  <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="btn btn-ghost btn-sm">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open University Portal
                   </a>
                 </div>
               </div>
             </div>
 
-            <!-- Recent Discovered Notices -->
+            <!-- Recently Discovered Notices Table -->
             <div class="panel-card mt-4">
-              <div class="panel-header">
+              <div class="panel-header flex-between">
                 <div class="panel-title">
                   <i class="fa-solid fa-newspaper"></i>
                   <span>Recently Discovered University Notices</span>
                 </div>
-                <button class="btn btn-ghost btn-xs" onclick="switchTab('notices')">View All <i class="fa-solid fa-chevron-right"></i></button>
+                <button class="btn btn-ghost btn-xs" onclick="switchTab('notices')">
+                  View All Notices <i class="fa-solid fa-chevron-right"></i>
+                </button>
               </div>
               <div class="panel-body p-0">
                 <div class="table-responsive">
@@ -274,15 +291,14 @@
 
           </div>
 
-          <!-- Right Column: Live Email Preview & Quick Actions -->
+          <!-- Right Column: Latest Notice AI Showcase & Email Mockup -->
           <div class="dash-col-side">
             
-            <!-- Latest Notice AI Breakdown & Markdown Showcase -->
             <div class="panel-card preview-card">
               <div class="panel-header flex-between">
                 <div class="panel-title">
                   <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
-                  <span>Latest Notice: AI Polish &amp; Markdown</span>
+                  <span>Notice AI Polish &amp; Inspector</span>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <span class="badge badge-info" id="liveNoticeId">Notice #--</span>
@@ -290,20 +306,20 @@
                 </div>
               </div>
 
-              <!-- Mode Switcher Tabs -->
+              <!-- Segmented View Tabs -->
               <div class="preview-mode-bar">
                 <button class="preview-tab active" id="btnModeAi" onclick="setDashboardPreviewMode('ai')">
-                  <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini AI Polish
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Polish
                 </button>
                 <button class="preview-tab" id="btnModeMd" onclick="setDashboardPreviewMode('md')">
-                  <i class="fa-solid fa-file-code"></i> 📝 Raw Markdown (.md)
+                  <i class="fa-solid fa-file-code"></i> 📝 Markdown (.md)
                 </button>
                 <button class="preview-tab" id="btnModeEmail" onclick="setDashboardPreviewMode('email')">
                   <i class="fa-solid fa-envelope"></i> ✉️ Email View
                 </button>
               </div>
 
-              <!-- Live Card Body -->
+              <!-- Live Body Container -->
               <div class="preview-live-container">
                 
                 <!-- Notice Meta Header -->
@@ -312,15 +328,19 @@
                   <div class="live-notice-meta">
                     <span>📅 Published: <strong id="liveNoticeDate">—</strong></span>
                     <span>🏷️ Category: <span class="badge badge-neutral" id="liveNoticeCategory">General</span></span>
-                    <a href="#" id="liveNoticeOfficialLink" target="_blank" class="accent-link" style="font-size: 11.5px;">Portal Link &nearr;</a>
+                    <a href="#" id="liveNoticeOfficialLink" target="_blank" class="accent-link">Portal Link &nearr;</a>
                   </div>
                 </div>
 
-                <!-- View 1: Gemini AI Polished Content -->
+                <!-- View 1: Gemini AI Polished Breakdown -->
                 <div id="viewAiContent" class="preview-view active">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> <strong>AI Structured Announcement:</strong></span>
-                    <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()"><i class="fa-regular fa-copy"></i> Copy Text</button>
+                    <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600;">
+                      <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> AI Structured Student Breakdown:
+                    </span>
+                    <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()">
+                      <i class="fa-regular fa-copy"></i> Copy Text
+                    </button>
                   </div>
                   <div class="gemini-polish-box" id="livePolishedHtml">
                     <div class="loading-placeholder">
@@ -328,11 +348,13 @@
                     </div>
                   </div>
 
-                  <!-- Dedicated Message Text Field -->
+                  <!-- Copyable Textarea Field -->
                   <div class="gemini-message-field-wrap">
                     <div class="gemini-field-header">
                       <span><i class="fa-solid fa-align-left"></i> <strong>Message Text Field (Ready to copy/send):</strong></span>
-                      <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()"><i class="fa-regular fa-copy"></i> Copy Field</button>
+                      <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()">
+                        <i class="fa-regular fa-copy"></i> Copy Field
+                      </button>
                     </div>
                     <textarea id="livePolishedTextarea" class="gemini-message-textarea" readonly placeholder="Gemini polished announcement text field..."></textarea>
                   </div>
@@ -342,7 +364,9 @@
                 <div id="viewMdContent" class="preview-view" style="display: none;">
                   <div class="md-toolbar">
                     <span class="md-filename" id="liveMdFilename">notice.md</span>
-                    <button class="btn btn-ghost btn-xs" onclick="copyLiveMarkdown()"><i class="fa-regular fa-copy"></i> Copy Markdown</button>
+                    <button class="btn btn-ghost btn-xs" onclick="copyLiveMarkdown()">
+                      <i class="fa-regular fa-copy"></i> Copy Markdown
+                    </button>
                   </div>
                   <pre class="md-pre" id="liveRawMd">Loading raw extracted markdown...</pre>
                 </div>
@@ -355,7 +379,7 @@
                   </div>
                   <div class="mockup-mail-content">
                     <div class="mail-header-mini">
-                      <img src="/static/images/logo.png" alt="Raiganj University Emblem" style="width: 42px; height: 42px; border-radius: 8px; background: #ffffff; padding: 2px; margin-bottom: 6px; object-fit: contain; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                      <img src="/static/images/logo.png" alt="Raiganj University Emblem" style="width: 44px; height: 44px; border-radius: 8px; background: #ffffff; padding: 2px; margin-bottom: 6px; object-fit: contain; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                       <div class="mail-uni-name">Raiganj University</div>
                       <div class="mail-uni-sub">Official Notice Alert &bull; রায়গঞ্জ বিশ্ববিদ্যালয়</div>
                     </div>
@@ -368,27 +392,27 @@
 
               </div>
 
-              <!-- Footer Quick Actions -->
+              <!-- Footer Actions -->
               <div class="preview-actions-footer">
-                <button class="btn btn-secondary btn-xs" id="btnLiveRegenAi" onclick="regenerateLiveAi()" title="Refresh with Gemini AI">
-                  <i class="fa-solid fa-arrows-rotate"></i> Regenerate AI Polish
+                <button class="btn btn-secondary btn-xs" id="btnLiveRegenAi" onclick="regenerateLiveAi()" title="Re-run Gemini AI Polish">
+                  <i class="fa-solid fa-arrows-rotate"></i> Re-polish
                 </button>
                 <a href="#" id="btnLiveDownloadFile" target="_blank" class="btn btn-secondary btn-xs" style="display: none;">
                   <i class="fa-solid fa-file-arrow-down"></i> <span id="liveFileBtnLabel">Download File</span>
                 </a>
                 <button class="btn btn-primary btn-xs" id="btnLiveBroadcast" onclick="broadcastLiveNotice()">
-                  <i class="fa-solid fa-paper-plane"></i> Broadcast
+                  <i class="fa-solid fa-paper-plane"></i> Broadcast Notice
                 </button>
               </div>
 
             </div>
 
-            <!-- Recent Dispatch History -->
+            <!-- Recent Dispatch History Feed -->
             <div class="panel-card mt-4">
               <div class="panel-header">
                 <div class="panel-title">
                   <i class="fa-solid fa-list-check"></i>
-                  <span>Recent Dispatches</span>
+                  <span>Recent Broadcast Records</span>
                 </div>
               </div>
               <div class="panel-body p-0">
@@ -403,7 +427,70 @@
         </div>
       </section>
 
-      <!-- ================= TAB 2: STUDENT DIRECTORY ================= -->
+      <!-- ================= TAB 2: UNIVERSITY NOTICES ================= -->
+      <section class="tab-pane" id="tab-notices">
+        <div class="panel-card">
+          <div class="panel-header flex-between">
+            <div>
+              <div class="panel-title">
+                <i class="fa-solid fa-bullhorn"></i>
+                <span>Live Raiganj University Notices</span>
+              </div>
+              <div class="panel-desc">All notices synchronized directly from <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
+            </div>
+            <div class="panel-actions" style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn-secondary btn-sm" id="btnDeliverPending" onclick="dispatchPendingNow()" title="Deliver any pending notices">
+                <i class="fa-solid fa-paper-plane"></i> Deliver Unmailed Notices (<span id="pendingQueueCount">0</span>)
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="triggerScanNow()">
+                <i class="fa-solid fa-rotate"></i> Scan Website Now
+              </button>
+            </div>
+          </div>
+
+          <!-- Toolbar: Search & Category Filters -->
+          <div class="table-toolbar">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="noticeSearchInput" placeholder="Filter notices by keyword or reference ID..." oninput="handleNoticeSearch()">
+            </div>
+            <div class="filter-pills" id="noticeCategoryFilters">
+              <button class="filter-pill active" onclick="filterNoticeCat('ALL')">All</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Admission')">Admission</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Examination')">Examination</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Holiday')">Holiday</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Tender')">Tenders / NIQ</button>
+              <button class="filter-pill" onclick="filterNoticeCat('Research')">Research &amp; PhD</button>
+            </div>
+          </div>
+
+          <div class="panel-body p-0">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Ref / ID</th>
+                    <th>Notice Title</th>
+                    <th>Category</th>
+                    <th>Published Date</th>
+                    <th>Delivery Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="noticesTableBody">
+                  <tr>
+                    <td colspan="6" class="empty-cell">
+                      <i class="fa-solid fa-spinner fa-spin"></i> Loading notices...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: STUDENT DIRECTORY ================= -->
       <section class="tab-pane" id="tab-students">
         <div class="panel-card">
           <div class="panel-header flex-between">
@@ -412,11 +499,11 @@
                 <i class="fa-solid fa-user-graduate"></i>
                 <span>Enrolled Student Recipients</span>
               </div>
-              <div class="panel-desc">All registered students will receive new notice emails whenever detected.</div>
+              <div class="panel-desc">Individual student recipients directory (used for direct delivery or fallback).</div>
             </div>
             <div class="panel-actions">
               <button class="btn btn-secondary btn-sm" onclick="seedSampleStudents()">
-                <i class="fa-solid fa-magic-wand-sparkles"></i> Load Demo Students
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Load Demo Students
               </button>
               <button class="btn btn-secondary btn-sm" onclick="openBulkModal()">
                 <i class="fa-solid fa-file-import"></i> Bulk Import
@@ -430,7 +517,7 @@
           <div class="table-toolbar">
             <div class="search-box">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="studentSearchInput" placeholder="Search by name, email, department, roll number..." oninput="handleStudentSearch()">
+              <input type="text" id="studentSearchInput" placeholder="Search by student name, email, department, roll number..." oninput="handleStudentSearch()">
             </div>
             <div class="toolbar-stats">
               Showing <strong id="studentTableCount">0</strong> students
@@ -464,69 +551,7 @@
         </div>
       </section>
 
-      <!-- ================= TAB 3: UNIVERSITY NOTICES ================= -->
-      <section class="tab-pane" id="tab-notices">
-        <div class="panel-card">
-          <div class="panel-header flex-between">
-            <div>
-              <div class="panel-title">
-                <i class="fa-solid fa-bullhorn"></i>
-                <span>Live Raiganj University Notices</span>
-              </div>
-              <div class="panel-desc">Notices scraped directly from <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
-            </div>
-            <div class="panel-actions" style="display: flex; gap: 8px; align-items: center;">
-              <button class="btn btn-secondary btn-sm" id="btnDeliverPending" onclick="dispatchPendingNow()" title="Deliver all unmailed notices waiting in database">
-                <i class="fa-solid fa-paper-plane"></i> Deliver Unmailed Notices (<span id="pendingQueueCount">0</span>)
-              </button>
-              <button class="btn btn-primary btn-sm" onclick="triggerScanNow()">
-                <i class="fa-solid fa-rotate"></i> Scan Website Now
-              </button>
-            </div>
-          </div>
-
-          <div class="table-toolbar">
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" id="noticeSearchInput" placeholder="Filter notices by keyword or reference ID..." oninput="handleNoticeSearch()">
-            </div>
-            <div class="filter-pills" id="noticeCategoryFilters">
-              <button class="filter-pill active" onclick="filterNoticeCat('ALL')">All</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Admission')">Admission</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Examination')">Examination</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Holiday')">Holiday</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Tender')">Tenders / NIQ</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Research')">Research &amp; PhD</button>
-            </div>
-          </div>
-
-          <div class="panel-body p-0">
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Ref / ID</th>
-                    <th>Notice Title</th>
-                    <th>Category</th>
-                    <th>Published Date</th>
-                    <th>Dispatched Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="noticesTableBody">
-                  <tr>
-                    <td colspan="6" class="empty-cell">
-                      <i class="fa-solid fa-spinner fa-spin"></i> Loading notices...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================= TAB 4: GOOGLE GROUP & DISPATCH ================= -->
+      <!-- ================= TAB 4: GOOGLE GROUP & SETTINGS ================= -->
       <section class="tab-pane" id="tab-smtp">
         <div class="smtp-grid">
           
@@ -537,28 +562,30 @@
                 <i class="fa-brands fa-google" style="color: #4285F4;"></i>
                 <span>Google Group Broadcast Configuration</span>
               </div>
-              <span class="badge badge-success" id="currentSmtpModeBadge"><i class="fa-solid fa-users"></i> Google Groups Broadcast</span>
+              <span class="badge badge-success" id="currentSmtpModeBadge">
+                <i class="fa-solid fa-users"></i> Google Groups Broadcast Mode
+              </span>
             </div>
             <div class="panel-body">
               <form id="smtpConfigForm" onsubmit="saveSmtpConfig(event)">
                 
-                <!-- Google Group Hero Highlight -->
+                <!-- Google Group Callout -->
                 <div class="google-group-hero">
                   <div class="hero-icon">
                     <i class="fa-solid fa-people-group"></i>
                   </div>
                   <div class="hero-content">
                     <h4>Direct Broadcast to 1,000+ Students via Google Groups</h4>
-                    <p>When new notices are found, the system sends <strong>1 single email</strong> to your Google Group. Google immediately fans out the message and downloadable PDF attachments to all enrolled students with zero rate limits or Gmail daily caps.</p>
+                    <p>When new notices are found, the engine sends <strong>1 single email</strong> to your Google Group. Google distributes the alert and all downloadable circulars to every enrolled member with zero Gmail rate limits or daily throttling.</p>
                   </div>
                 </div>
 
-                <!-- Google Group Email Input -->
+                <!-- Google Group Address -->
                 <div class="form-group">
                   <label class="form-label" for="smtpGoogleGroupEmail">
                     <i class="fa-solid fa-users" style="color: #38bdf8;"></i> Target Google Group Email Address <span class="text-danger">*</span>
                   </label>
-                  <input type="email" id="smtpGoogleGroupEmail" class="form-input" placeholder="e.g. rgu-students-notices@googlegroups.com" required>
+                  <input type="email" id="smtpGoogleGroupEmail" class="form-input" placeholder="e.g. rgu-notices@googlegroups.com" required>
                   <div class="form-help">Enter your Google Group address. All students in this group receive new notices and PDF attachments automatically.</div>
                 </div>
 
@@ -568,7 +595,7 @@
                     <label class="form-label" for="smtpSenderEmail">
                       <i class="fa-solid fa-at" style="color: #a78bfa;"></i> Sender / Dispatcher Gmail <span class="text-danger">*</span>
                     </label>
-                    <input type="email" id="smtpSenderEmail" class="form-input" required placeholder="e.g. your-department@gmail.com">
+                    <input type="email" id="smtpSenderEmail" class="form-input" required placeholder="e.g. rgunotices@gmail.com">
                     <div class="form-help">The Gmail account authorized to post to the Google Group.</div>
                   </div>
                   <div class="form-group col-6">
@@ -592,14 +619,14 @@
                     </button>
                   </div>
                   <div class="form-help">
-                    Generated in your Google Account: <a href="https://myaccount.google.com/apppasswords" target="_blank" class="accent-link">Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords</a>.
+                    Generated in: <a href="https://myaccount.google.com/apppasswords" target="_blank" class="accent-link">Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords</a>.
                   </div>
                 </div>
 
-                <!-- Gemini API Key (Optional AI Polish Engine) -->
+                <!-- Gemini API Key -->
                 <div class="form-group">
                   <label class="form-label" for="smtpGeminiKey">
-                    <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini AI API Key (Optional AI OCR &amp; Polisher)
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini AI API Key (Optional Multimodal OCR &amp; Polisher)
                   </label>
                   <div class="input-with-toggle">
                     <input type="password" id="smtpGeminiKey" class="form-input" placeholder="AIzaSy..." autocomplete="off">
@@ -608,11 +635,11 @@
                     </button>
                   </div>
                   <div class="form-help">
-                    Enables OCR for scanned PDF tables and converts notices into readable Markdown. Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="accent-link">Google AI Studio</a>.
+                    Performs OCR on scanned circulars and formats markdown summaries. Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="accent-link">Google AI Studio</a>.
                   </div>
                 </div>
 
-                <!-- Advanced SMTP Settings (Collapsible) -->
+                <!-- Advanced SMTP Settings Accordion -->
                 <details class="advanced-settings-accordion">
                   <summary class="advanced-toggle">
                     <i class="fa-solid fa-sliders"></i> Advanced SMTP Host &amp; Port Settings (Optional)
@@ -654,9 +681,9 @@
             </div>
           </div>
 
-          <!-- Right Column: Setup Guide & Local Inbox -->
+          <!-- Right Column: Setup Guide & Captured Outbox -->
           <div class="smtp-right-col">
-            <!-- Google Groups 4-Step Setup Guide Card -->
+            <!-- 4-Step Setup Guide -->
             <div class="panel-card mb-4">
               <div class="panel-header">
                 <div class="panel-title">
@@ -670,35 +697,35 @@
                     <div class="step-num">1</div>
                     <div class="step-info">
                       <strong>Create Google Group</strong>
-                      <span>Go to <a href="https://groups.google.com" target="_blank" class="accent-link">groups.google.com</a> &rarr; "Create group" (e.g. <code>rgu-dept@googlegroups.com</code>).</span>
+                      <span>Visit <a href="https://groups.google.com" target="_blank" class="accent-link">groups.google.com</a> &rarr; "Create group" (e.g. <code>rgu-notices@googlegroups.com</code>).</span>
                     </div>
                   </div>
                   <div class="setup-step">
                     <div class="step-num">2</div>
                     <div class="step-info">
                       <strong>Add Students</strong>
-                      <span>Invite or directly add all ~1,000 student email addresses. You can add or remove members anytime.</span>
+                      <span>Invite or directly add your 1,000+ student email addresses to the group.</span>
                     </div>
                   </div>
                   <div class="setup-step">
                     <div class="step-num">3</div>
                     <div class="step-info">
                       <strong>Set Posting Permissions</strong>
-                      <span>In Group Settings &rarr; Posting permissions, allow your Dispatcher Gmail address to post messages.</span>
+                      <span>In Group Settings &rarr; Posting permissions, authorize your Dispatcher Gmail address to post messages.</span>
                     </div>
                   </div>
                   <div class="setup-step">
                     <div class="step-num">4</div>
                     <div class="step-info">
-                      <strong>Enter Details &amp; Test</strong>
-                      <span>Paste your group email and Gmail App Password on the left, then click <strong>"Send Test Notice to Group"</strong>!</span>
+                      <strong>Save &amp; Verify</strong>
+                      <span>Save your Google Group address and App Password, then click <strong>"Send Test Notice to Group"</strong>!</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Outbox / Test Inbox -->
+            <!-- Captured Outbox Emails -->
             <div class="panel-card">
               <div class="panel-header flex-between">
                 <div>
@@ -706,7 +733,7 @@
                     <i class="fa-solid fa-inbox"></i>
                     <span>Captured Outbox &amp; Test Emails</span>
                   </div>
-                  <div class="panel-desc">Emails delivered or intercepted for inspection.</div>
+                  <div class="panel-desc">Emails delivered or captured for verification.</div>
                 </div>
                 <button class="btn btn-ghost btn-xs text-danger" onclick="clearLocalInbox()">
                   <i class="fa-solid fa-trash"></i> Clear
@@ -738,7 +765,7 @@
         </div>
       </section>
 
-      <!-- ================= TAB 5: LOGS ================= -->
+      <!-- ================= TAB 5: AUDIT LOGS ================= -->
       <section class="tab-pane" id="tab-logs">
         <div class="panel-card">
           <div class="panel-header flex-between">
@@ -747,7 +774,7 @@
                 <i class="fa-solid fa-terminal"></i>
                 <span>Execution &amp; Audit Logs</span>
               </div>
-              <div class="panel-desc">Real-time log trail of website scrapes, 7:00 AM &amp; 7:00 PM IST triggers, SMTP dispatch, and errors.</div>
+              <div class="panel-desc">Real-time log trail of portal scans, 7 AM &amp; 7 PM IST cron runs, SMTP dispatch, and AI processing.</div>
             </div>
             <div class="panel-actions">
               <button class="btn btn-secondary btn-sm" onclick="loadLogs()">
@@ -771,7 +798,7 @@
 
           <div class="panel-body p-0">
             <div class="logs-console" id="logsConsole">
-              <div class="log-line">Loading logs...</div>
+              <div class="log-entry"><span class="log-msg">Loading logs...</span></div>
             </div>
           </div>
         </div>
@@ -779,10 +806,10 @@
 
     </main>
 
-    <!-- Footer -->
+    <!-- ================= FOOTER ================= -->
     <footer class="app-footer">
       <div>
-        <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; Developed with Python Flask, APScheduler, SQLite &amp; aiosmtpd
+        <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; Developed with Python Flask, APScheduler, SQLite &amp; Google Groups
       </div>
       <div>
         Twice Daily schedule (7:00 AM &amp; 7:00 PM IST) &bull; <a href="https://raiganjuniversity.ac.in/" target="_blank">raiganjuniversity.ac.in</a>
@@ -839,9 +866,9 @@
       <form id="bulkStudentForm" onsubmit="submitBulkStudents(event)">
         <div class="modal-body">
           <p class="modal-intro">
-            Paste student emails or CSV lines below. Supports formats:<br>
+            Paste student emails or CSV lines below. Formats supported:<br>
             <code>Name, email@domain.com, Department, RollNo</code><br>
-            or simply one email per line: <code>student@domain.com</code>
+            or one email per line: <code>student@domain.com</code>
           </p>
           <div class="form-group">
             <textarea id="bulkDataInput" class="form-textarea" rows="8" placeholder="Souvik Mukherjee, souvik@rgu.ac.in, Computer Science, CS-101&#10;Ananya Roy, ananya@rgu.ac.in, Mathematics, MATH-202&#10;student3@gmail.com"></textarea>
@@ -865,14 +892,14 @@
       <form id="testSmtpForm" onsubmit="submitTestSmtp(event)">
         <div class="modal-body">
           <p class="modal-intro">
-            Sends an official sample notice email with attachment indicators to verify your Google Group or email dispatcher.
+            Sends an official sample notice email with attachment indicators to verify your Google Group broadcast pipeline.
           </p>
           <div class="form-group">
             <label class="form-label">Send Test Notice To</label>
-            <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. rgu-students@googlegroups.com">
-            <div class="form-help">Enter your Google Group email or your personal email to verify delivery.</div>
+            <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. rgu-notices@googlegroups.com">
+            <div class="form-help">Enter your Google Group email address to verify delivery.</div>
           </div>
-          <div id="testResultBox" class="test-result-box" style="display: none;"></div>
+          <div id="testResultBox" class="test-result-box" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.82rem; margin-top: 10px;"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('testSmtpModal')">Close</button>
@@ -900,18 +927,18 @@
     </div>
   </div>
 
-  <!-- Modal 5: Notice AI Breakdown & Markdown Viewer -->
+  <!-- Modal 5: Notice AI Breakdown & Markdown Inspector -->
   <div class="modal-overlay" id="noticeAiModal">
     <div class="modal-card modal-xl">
       <div class="modal-header flex-between">
         <div style="display: flex; align-items: center; gap: 14px;">
-          <img src="/static/images/logo.png" alt="Raiganj University Logo" style="width: 48px; height: 48px; border-radius: 10px; background: #ffffff; padding: 3px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.35); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2);">
+          <img src="/static/images/logo.png" alt="Raiganj University Logo" style="width: 44px; height: 44px; border-radius: 8px; background: #ffffff; padding: 2px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.35); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2);">
           <div>
             <h3 class="modal-title" id="modalNoticeAiTitle">
               <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
               <span>Notice AI &amp; Markdown Inspector</span>
             </h3>
-            <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
               <span class="badge badge-info" id="modalNoticeIdBadge">Notice #--</span>
               <span class="badge badge-neutral" id="modalNoticeCatBadge">General</span>
               <span class="badge badge-success" id="modalNoticeAiBadge">✨ Gemini Polished</span>
@@ -921,8 +948,8 @@
         <button class="modal-close" onclick="closeModal('noticeAiModal')">&times;</button>
       </div>
 
-      <!-- Mode switcher inside modal -->
-      <div class="preview-mode-bar" style="margin: 0; border-radius: 0; border-left: none; border-right: none;">
+      <!-- Segmented Mode Switcher -->
+      <div class="preview-mode-bar" style="border-left: none; border-right: none;">
         <button class="preview-tab active" id="modalTabAi" onclick="setModalTab('ai')">
           <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini AI Breakdown
         </button>
@@ -938,8 +965,8 @@
         <!-- Tab 1: AI Polish -->
         <div id="modalViewAi" class="modal-tab-content">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 13px; color: #fff; font-weight: 600;">
-              <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini Polished Student Announcement
+            <span style="font-size: 0.82rem; color: #fff; font-weight: 600;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini Polished Student Announcement:
             </span>
             <button class="btn btn-ghost btn-xs" onclick="copyModalPolishedText()">
               <i class="fa-regular fa-copy"></i> Copy Polished Text
@@ -971,10 +998,10 @@
 
         <!-- Tab 3: Attachment -->
         <div id="modalViewAtt" class="modal-tab-content" style="display: none;">
-          <div class="attachment-preview-box" id="modalAttachmentBox">
-            <i class="fa-solid fa-file-pdf" style="font-size: 38px; color: #f43f5e; margin-bottom: 12px; display: block;"></i>
+          <div class="attachment-preview-box" id="modalAttachmentBox" style="text-align: center; padding: 32px 16px; background: rgba(9, 14, 26, 0.7); border: 1px solid var(--border-medium); border-radius: var(--radius-md);">
+            <i class="fa-solid fa-file-pdf" style="font-size: 42px; color: #f43f5e; margin-bottom: 12px; display: block;"></i>
             <h4 id="modalAttFilename" style="color: #fff; margin-bottom: 8px;">document.pdf</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">Official university circular file downloaded by the dispatcher.</p>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Official university circular file downloaded from the portal.</p>
             <a href="#" id="modalAttDownloadLink" target="_blank" class="btn btn-primary btn-sm">
               <i class="fa-solid fa-download"></i> Open / Download File
             </a>
@@ -1004,7 +1031,7 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Application JS -->
+  <!-- Application JS Controller -->
   <script src="/static/js/app.js"></script>
 </body>
 </html>
