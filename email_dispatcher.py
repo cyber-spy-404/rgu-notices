@@ -339,6 +339,21 @@ def dispatch_notice_to_students(notice):
         db.add_dispatch_record(notice.get('id'), notice.get('title'), 0, 'SKIPPED', 'No recipients')
         return {'success': False, 'message': msg, 'sent_count': 0}
 
+    # Normalize link if generic root URL
+    notice_id = str(notice.get('id', ''))
+    link = notice.get('link', '')
+    if not link or link.strip().rstrip('/') in ['https://raiganjuniversity.ac.in', 'http://raiganjuniversity.ac.in']:
+        notice['link'] = f"https://raiganjuniversity.ac.in/Website/ViewNotice/{notice_id}"
+
+    # If title is placeholder 'Notice #X', attempt to fetch real title from DB
+    title = notice.get('title', '')
+    if not title or str(title).startswith('Notice #'):
+        db_notice = db.get_notice_by_id(notice_id)
+        if db_notice and db_notice.get('title') and not str(db_notice.get('title')).startswith('Notice #'):
+            notice['title'] = db_notice['title']
+            notice['category'] = db_notice.get('category', notice.get('category', 'General'))
+            notice['published_on'] = db_notice.get('published_on', notice.get('published_on', ''))
+
     subject = f"[RGU Notice #{notice.get('id')}] {notice.get('title')}"
     sent_count = 0
     fail_count = 0

@@ -389,12 +389,10 @@ function renderNoticesTable(notices) {
 function renderNoticeStatusBadge(status) {
   if (status === 'sent') {
     return `<span class="badge badge-success" title="Delivered to Google Group / Students"><i class="fa-solid fa-circle-check"></i> Emailed</span>`;
-  } else if (status === 'pending') {
-    return `<span class="badge badge-warning" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);" title="Queued for automated delivery"><i class="fa-solid fa-clock"></i> Pending Dispatch</span>`;
   } else if (status === 'failed') {
-    return `<span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" title="Delivery failed on last attempt"><i class="fa-solid fa-triangle-exclamation"></i> Failed</span>`;
+    return `<span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" title="Delivery failed on last attempt"><i class="fa-solid fa-triangle-exclamation"></i> Delivery Failed</span>`;
   } else {
-    return `<span class="badge badge-neutral" style="color: #94a3b8; background: rgba(148, 163, 184, 0.12); border: 1px solid rgba(148, 163, 184, 0.25);" title="Archived history notice"><i class="fa-solid fa-box-archive"></i> Archived / Synced</span>`;
+    return `<span class="badge badge-warning" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);" title="Unmailed notice - automatically delivered when webapp is accessed"><i class="fa-solid fa-envelope"></i> Unmailed / Queued</span>`;
   }
 }
 

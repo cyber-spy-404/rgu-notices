@@ -227,7 +227,7 @@
                     <i class="fa-solid fa-play"></i> Run Check Right Now
                   </button>
                   <button class="btn btn-secondary" onclick="dispatchPendingNow()">
-                    <i class="fa-solid fa-paper-plane"></i> Deliver Pending Mails
+                    <i class="fa-solid fa-paper-plane"></i> Deliver Unmailed Notices
                   </button>
                   <button class="btn btn-ghost" onclick="seedSampleStudents()">
                     <i class="fa-solid fa-user-plus"></i> Load Sample Students
@@ -476,8 +476,8 @@
               <div class="panel-desc">Notices scraped directly from <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
             </div>
             <div class="panel-actions" style="display: flex; gap: 8px; align-items: center;">
-              <button class="btn btn-secondary btn-sm" id="btnDeliverPending" onclick="dispatchPendingNow()" title="Deliver any notices waiting in pending queue">
-                <i class="fa-solid fa-paper-plane"></i> Deliver Pending Mails (<span id="pendingQueueCount">0</span>)
+              <button class="btn btn-secondary btn-sm" id="btnDeliverPending" onclick="dispatchPendingNow()" title="Deliver all unmailed notices waiting in database">
+                <i class="fa-solid fa-paper-plane"></i> Deliver Unmailed Notices (<span id="pendingQueueCount">0</span>)
               </button>
               <button class="btn btn-primary btn-sm" onclick="triggerScanNow()">
                 <i class="fa-solid fa-rotate"></i> Scan Website Now

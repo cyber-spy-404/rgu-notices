@@ -51,11 +51,11 @@ except Exception:
 # ----------------- Automatic Pending Mail Dispatch Worker ----------------- #
 _pending_dispatch_lock = threading.Lock()
 
-def trigger_pending_mail_dispatch_async(source="STARTUP"):
+def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
     """
-    Checks for pending unmailed notices and dispatches them in a non-blocking background thread.
-    Protected by a thread-safe mutex lock to prevent concurrent/duplicate sending.
-    Delivers pending mails anytime the web service is started, pinged, or visited.
+    Checks the database for any unmailed notices (email_status != 'sent')
+    and automatically delivers them in a non-blocking background thread
+    whenever someone accesses the webapp (visits, pings, or restarts).
     """
     def _worker():
         if not _pending_dispatch_lock.acquire(blocking=False):
@@ -64,7 +64,21 @@ def trigger_pending_mail_dispatch_async(source="STARTUP"):
             unmailed = db.get_unmailed_notices(limit=50)
             if not unmailed:
                 return
-            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} pending notice(s). Starting automatic delivery to students...")
+
+            # Check if any unmailed notices have placeholder titles ('Notice #X') or generic link
+            needs_scrape_sync = any(not n.get('title') or str(n.get('title')).startswith('Notice #') or 'Website/ViewNotice' not in str(n.get('link', '')) for n in unmailed)
+            if needs_scrape_sync:
+                try:
+                    scraped = scraper.fetch_rgu_notices()
+                    if scraped:
+                        for n in scraped:
+                            db.save_notice(n)
+                    # Re-fetch with fresh scraped titles and links
+                    unmailed = db.get_unmailed_notices(limit=50)
+                except Exception as se:
+                    print(f"Scraper refresh note: {se}")
+
+            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} unmailed notice(s). Starting automatic delivery to students / Google Group...")
             import email_dispatcher
             sent_count = 0
             for notice in unmailed:
@@ -74,13 +88,13 @@ def trigger_pending_mail_dispatch_async(source="STARTUP"):
                     db.mark_notice_emailed(notice['id'], status)
                     if res.get('success'):
                         sent_count += 1
-                    time.sleep(1.2)  # respectful SMTP pacing between emails
+                    time.sleep(1.5)  # respectful SMTP pacing between emails
                 except Exception as de:
                     db.log_event('ERROR', 'DISPATCH', f"Auto-dispatch error on notice #{notice.get('id')}: {de}")
                     db.mark_notice_emailed(notice['id'], 'failed')
-            db.log_event('SUCCESS', 'DISPATCH', f"[{source}] Automatic delivery complete: {sent_count}/{len(unmailed)} pending notice(s) delivered.")
+            db.log_event('SUCCESS', 'DISPATCH', f"[{source}] Automatic delivery complete: {sent_count}/{len(unmailed)} unmailed notice(s) delivered to Google Group.")
         except Exception as e:
-            db.log_event('ERROR', 'DISPATCH', f"Background pending worker exception: {e}")
+            db.log_event('ERROR', 'DISPATCH', f"Background unmailed worker exception: {e}")
         finally:
             _pending_dispatch_lock.release()
 
@@ -131,6 +145,7 @@ def email_preview(msg_id):
 
 @app.route('/api/status', methods=['GET'])
 def api_status():
+    trigger_pending_mail_dispatch_async("WEB_POLL")
     import os
     stats = db.get_stats()
     sched_status = scheduler_engine.get_scheduler_status()

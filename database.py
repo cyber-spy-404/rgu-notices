@@ -144,11 +144,18 @@ def init_db():
                     if nid:
                         cursor.execute('''
                         INSERT OR IGNORE INTO notices (id, title, link, published_on, category, is_new, email_status)
-                        VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 0, 'synced')
+                        VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 1, 'pending')
                         ''', (nid, f"Notice #{nid}", nid))
             conn.commit()
     except Exception as e:
         print(f"Warning: seen_ids sync note: {e}")
+
+    # Ensure any unmailed notices marked 'synced' are upgraded to 'pending' so they are delivered
+    try:
+        cursor.execute("UPDATE notices SET email_status = 'pending' WHERE email_status = 'synced'")
+        conn.commit()
+    except Exception as e:
+        print(f"Warning: notice status migration note: {e}")
 
     conn.close()
 
@@ -285,23 +292,32 @@ def save_notice(notice_dict):
     cursor.execute('SELECT id, email_status FROM notices WHERE id = ?', (notice_id,))
     existing = cursor.fetchone()
 
+    new_title = (notice_dict.get('title') or '').strip()
+    new_link = (notice_dict.get('link') or '').strip()
+    new_pub = (notice_dict.get('published_on') or '').strip()
+    new_cat = (notice_dict.get('category') or '').strip()
+
     if existing:
-        # Notice already exists. Ensure real title, portal link, publication date, and category are updated.
-        cursor.execute('''
-        UPDATE notices
-        SET title = CASE WHEN (? != '' AND ? NOT LIKE 'Notice #%') THEN ? ELSE title END,
-            link = CASE WHEN (? != '' AND ? != 'https://raiganjuniversity.ac.in/') THEN ? ELSE link END,
-            published_on = CASE WHEN (? != '' AND ? IS NOT NULL) THEN ? ELSE published_on END,
-            category = CASE WHEN (? != '' AND ? != 'General') THEN ? ELSE category END
-        WHERE id = ?
-        ''', (
-            notice_dict.get('title', '').strip(), notice_dict.get('title', '').strip(), notice_dict.get('title', '').strip(),
-            notice_dict.get('link', '').strip(), notice_dict.get('link', '').strip(), notice_dict.get('link', '').strip(),
-            notice_dict.get('published_on', ''), notice_dict.get('published_on', ''), notice_dict.get('published_on', ''),
-            notice_dict.get('category', ''), notice_dict.get('category', ''), notice_dict.get('category', ''),
-            notice_id
-        ))
-        conn.commit()
+        updates = []
+        params = []
+        if new_title:
+            updates.append("title = ?")
+            params.append(new_title)
+        if new_link:
+            updates.append("link = ?")
+            params.append(new_link)
+        if new_pub:
+            updates.append("published_on = ?")
+            params.append(new_pub)
+        if new_cat:
+            updates.append("category = ?")
+            params.append(new_cat)
+
+        if updates:
+            params.append(str(notice_id))
+            cursor.execute(f"UPDATE notices SET {', '.join(updates)} WHERE id = ?", params)
+            conn.commit()
+
         conn.close()
         return False
 
@@ -310,10 +326,10 @@ def save_notice(notice_dict):
     VALUES (?, ?, ?, ?, ?, 1, 'pending')
     ''', (
         notice_id,
-        notice_dict.get('title', '').strip(),
-        notice_dict.get('link', '').strip(),
-        notice_dict.get('published_on', ''),
-        notice_dict.get('category', 'General'),
+        new_title or f"Notice #{notice_id}",
+        new_link or f"https://raiganjuniversity.ac.in/Website/ViewNotice/{notice_id}",
+        new_pub,
+        new_cat or 'General',
     ))
     conn.commit()
     conn.close()
@@ -346,12 +362,12 @@ def mark_notice_emailed(notice_id, status='sent'):
     conn.close()
 
 def get_unmailed_notices(limit=50):
-    """Returns notices pending dispatch or marked failed/pending."""
+    """Returns any notices in database that have not yet been successfully delivered."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
     SELECT * FROM notices 
-    WHERE email_status = 'pending' OR email_status = 'failed'
+    WHERE email_status != 'sent'
     ORDER BY id DESC LIMIT ?
     ''', (limit,))
     rows = [dict(r) for r in cursor.fetchall()]
@@ -671,8 +687,8 @@ def get_stats():
     cursor.execute('SELECT COUNT(*) FROM smtp_inbox')
     captured_emails = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM notices WHERE email_status = 'pending'")
-    pending_notices = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM notices WHERE email_status != 'sent'")
+    unmailed_notices = cursor.fetchone()[0]
 
     cursor.execute("SELECT MAX(created_at) FROM logs WHERE category = 'SCRAPER'")
     last_scrape_row = cursor.fetchone()
@@ -684,7 +700,8 @@ def get_stats():
         'active_students': active_students,
         'total_notices': total_notices,
         'new_notices_today': new_notices_today,
-        'pending_notices': pending_notices,
+        'pending_notices': unmailed_notices,
+        'unmailed_notices': unmailed_notices,
         'captured_emails': captured_emails,
         'last_scraped_at': last_scraped_at
     }
