@@ -33,7 +33,7 @@ async function initApp() {
 
 // ----------------- Tab Navigation ----------------- //
 function switchTab(tabId) {
-  document.querySelectorAll('.nav-tab').forEach(t => {
+  document.querySelectorAll('.tab-btn, .nav-tab').forEach(t => {
     t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
   });
   document.querySelectorAll('.tab-pane').forEach(p => {
@@ -475,7 +475,7 @@ function renderDashboardNotices(notices) {
 
 function filterNoticeCat(cat) {
   currentCategoryFilter = cat;
-  document.querySelectorAll('#noticeCategoryFilters .filter-pill').forEach(p => {
+  document.querySelectorAll('#noticeCategoryFilters .filter-chip, #noticeCategoryFilters .filter-pill').forEach(p => {
     p.classList.toggle('active', p.innerText.toLowerCase().includes(cat.toLowerCase()) || (cat === 'ALL' && p.innerText === 'All'));
   });
   applyNoticeFilters();
@@ -813,7 +813,7 @@ function renderLogsConsole(logs) {
 
 function filterLogLevel(level) {
   currentLogLevelFilter = level;
-  document.querySelectorAll('#logLevelFilters .filter-pill').forEach(p => {
+  document.querySelectorAll('#logLevelFilters .filter-chip, #logLevelFilters .filter-pill').forEach(p => {
     p.classList.toggle('active', p.innerText.toUpperCase() === level);
   });
   loadLogs();
@@ -878,7 +878,7 @@ function openBulkModal() {
 
 // Close modals when clicking backdrop
 document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('modal-overlay')) {
+  if (e.target.classList.contains('modal-overlay') || e.target.classList.contains('modal-backdrop')) {
     e.target.classList.remove('active');
   }
 });

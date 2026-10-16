@@ -3,133 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Raiganj University &bull; Notice &amp; SMTP Broadcast Automation</title>
-  <meta name="description" content="Automated twice-daily (7:00 AM & 7:00 PM IST) notice scraper, Gemini AI polisher, and Google Group SMTP dispatcher for Raiganj University.">
+  <title>Raiganj University &bull; Notice Automation Engine</title>
+  <meta name="description" content="Automated twice-daily (7:00 AM & 7:00 PM IST) notice scraper, Gemini AI polisher, and Google Groups SMTP broadcaster for Raiganj University.">
   
-  <!-- Modern Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <!-- Premium Fonts: Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Font Awesome Pro Icons -->
+  <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/static/images/logo.png">
 
-  <!-- Custom Design System Stylesheet -->
+  <!-- Linear-Grade SaaS Design System -->
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-  <!-- Background Decorative Glowing Meshes -->
-  <div class="bg-glow glow-top-left"></div>
-  <div class="bg-glow glow-top-right"></div>
-  <div class="bg-glow glow-bottom-center"></div>
+  <!-- Top Ambient Illumination Beam -->
+  <div class="bg-ambient-beam"></div>
+  <div class="bg-ambient-dots"></div>
 
-  <!-- Main Application Container -->
-  <div class="app-layout">
+  <!-- Main Viewport Layout -->
+  <div class="app-wrapper">
     
-    <!-- ================= TOP APP HEADER ================= -->
-    <header class="app-header">
-      <div class="header-brand">
-        <div class="brand-crest" title="Raiganj University Official Emblem">
-          <img src="/static/images/logo.png" alt="Raiganj University Logo" class="brand-logo-img">
+    <!-- ================= NAVBAR ================= -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="brand-emblem" title="Raiganj University Official Emblem">
+          <img src="/static/images/logo.png" alt="RGU Logo">
         </div>
-        <div class="brand-text">
-          <div class="brand-title">
-            Raiganj University <span>Notice Dispatcher</span>
+        <div class="brand-info">
+          <div class="brand-heading">
+            Raiganj University <span class="badge-app">Notice Engine</span>
           </div>
-          <div class="brand-subtitle">
-            রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Twice-Daily Scraper &amp; Google Groups Broadcast Engine
+          <div class="brand-subtext">
+            রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Twice-Daily Automated Scraper &amp; Google Group Dispatcher
           </div>
         </div>
       </div>
 
-      <!-- Live Service Indicators & Countdown -->
-      <div class="header-status-area">
-        <!-- Next Run Countdown -->
-        <div class="countdown-pill" id="countdownPill" title="Automated check runs twice daily at 7:00 AM & 7:00 PM IST">
-          <i class="fa-regular fa-clock pulse-icon"></i>
-          <span class="countdown-label">Next Check:</span>
-          <span class="countdown-digits" id="countdownTimer">--:--:--</span>
+      <!-- Controls & Status Hub -->
+      <div class="nav-controls">
+        <!-- Countdown Chip -->
+        <div class="countdown-chip" id="countdownPill" title="Automated check executes twice daily at 7:00 AM & 7:00 PM IST">
+          <i class="fa-regular fa-clock icon-pulse"></i>
+          <span class="label">Next Scan:</span>
+          <span class="value" id="countdownTimer">--:--:--</span>
         </div>
 
-        <!-- Service Badges -->
-        <div class="status-badge-group">
-          <div class="service-pill" id="schedulerBadge" title="Automated Twice-Daily Background Scheduler">
-            <span class="status-dot green pulse"></span>
-            <span>7 AM &amp; 7 PM IST: Active</span>
-          </div>
-          <div class="service-pill" id="smtpBadge" title="Target Outbound Broadcast Channel">
-            <span class="status-dot green pulse"></span>
-            <span id="smtpBadgeText"><i class="fa-solid fa-users"></i> Google Group Active</span>
-          </div>
+        <!-- System Status Chips -->
+        <div class="status-pill" id="schedulerBadge" title="Automated Twice-Daily Background Scheduler">
+          <span class="dot-beacon active"></span>
+          <span>7 AM &amp; 7 PM IST: Active</span>
+        </div>
+        <div class="status-pill" id="smtpBadge" title="Target Outbound Broadcast Channel">
+          <span class="dot-beacon active"></span>
+          <span id="smtpBadgeText"><i class="fa-solid fa-users"></i> Google Group Active</span>
         </div>
 
-        <!-- Header Actions -->
-        <div class="header-actions">
-          <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()" title="Check for new university notices right now">
-            <i class="fa-solid fa-rotate"></i>
-            <span>Check Notices Now</span>
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="openTestModal()" title="Send a verification test email to Google Group">
-            <i class="fa-solid fa-paper-plane"></i>
-            <span>Test Email</span>
-          </button>
-        </div>
+        <!-- Action Buttons -->
+        <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()" title="Check for new university notices right now">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Scan Portal</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openTestModal()" title="Send verification notice email">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Test Email</span>
+        </button>
       </div>
     </header>
 
-    <!-- ================= METRICS GRID ================= -->
-    <section class="metrics-grid">
+    <!-- ================= METRICS STRIP ================= -->
+    <section class="metrics-strip">
       <!-- Card 1: Tracked Notices -->
       <div class="metric-card">
-        <div class="metric-icon notices-icon">
+        <div class="metric-icon-box notices">
           <i class="fa-solid fa-file-invoice"></i>
         </div>
-        <div class="metric-content">
-          <div class="metric-label">Tracked Notices</div>
-          <div class="metric-val" id="metricTotalNotices">0</div>
-          <div class="metric-sub">
+        <div class="metric-details">
+          <div class="metric-meta">Tracked Notices</div>
+          <div class="metric-number" id="metricTotalNotices">0</div>
+          <div class="metric-footnote">
             From <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a>
           </div>
         </div>
       </div>
 
-      <!-- Card 2: Enrolled Students -->
+      <!-- Card 2: Student Directory -->
       <div class="metric-card">
-        <div class="metric-icon students-icon">
+        <div class="metric-icon-box students">
           <i class="fa-solid fa-user-graduate"></i>
         </div>
-        <div class="metric-content">
-          <div class="metric-label">Directory Students</div>
-          <div class="metric-val" id="metricTotalStudents">0</div>
-          <div class="metric-sub"><span id="metricActiveStudents">0</span> active student records</div>
+        <div class="metric-details">
+          <div class="metric-meta">Enrolled Directory</div>
+          <div class="metric-number" id="metricTotalStudents">0</div>
+          <div class="metric-footnote"><span id="metricActiveStudents">0</span> active student records</div>
         </div>
       </div>
 
       <!-- Card 3: Execution Schedule -->
       <div class="metric-card">
-        <div class="metric-icon schedule-icon">
+        <div class="metric-icon-box schedule">
           <i class="fa-solid fa-stopwatch"></i>
         </div>
-        <div class="metric-content">
-          <div class="metric-label">Check Frequency</div>
-          <div class="metric-val">7 AM &amp; 7 PM <span class="unit">IST</span></div>
-          <div class="metric-sub" id="metricNextRunText">Next: Calculating...</div>
+        <div class="metric-details">
+          <div class="metric-meta">Scan Schedule</div>
+          <div class="metric-number">7 AM &amp; 7 PM <span class="unit">IST</span></div>
+          <div class="metric-footnote" id="metricNextRunText">Next: Calculating...</div>
         </div>
       </div>
 
-      <!-- Card 4: Target Audience -->
+      <!-- Card 4: Broadcast Reach -->
       <div class="metric-card">
-        <div class="metric-icon outbox-icon">
+        <div class="metric-icon-box audience">
           <i class="fa-solid fa-people-group"></i>
         </div>
-        <div class="metric-content">
-          <div class="metric-label">Broadcast Audience</div>
-          <div class="metric-val" id="metricGroupAudience">1,000+</div>
-          <div class="metric-sub">
+        <div class="metric-details">
+          <div class="metric-meta">Broadcast Reach</div>
+          <div class="metric-number" id="metricGroupAudience">1,000+</div>
+          <div class="metric-footnote">
             <a href="#" onclick="switchTab('smtp'); return false;" class="accent-link" id="metricGroupEmailLink">rgu-notices@googlegroups.com</a>
           </div>
         </div>
@@ -137,110 +132,107 @@
     </section>
 
     <!-- ================= NAVIGATION TABS ================= -->
-    <nav class="app-nav">
-      <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+    <nav class="tab-nav-bar">
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
         <i class="fa-solid fa-chart-pie"></i>
         <span>Dashboard</span>
       </button>
-      <button class="nav-tab" data-tab="notices" onclick="switchTab('notices')">
+      <button class="tab-btn" data-tab="notices" onclick="switchTab('notices')">
         <i class="fa-solid fa-bullhorn"></i>
         <span>University Notices</span>
-        <span class="badge-count" id="navNoticeCount">0</span>
+        <span class="tab-counter" id="navNoticeCount">0</span>
       </button>
-      <button class="nav-tab" data-tab="students" onclick="switchTab('students')">
+      <button class="tab-btn" data-tab="students" onclick="switchTab('students')">
         <i class="fa-solid fa-user-graduate"></i>
         <span>Student Directory</span>
-        <span class="badge-count" id="navStudentCount">0</span>
+        <span class="tab-counter" id="navStudentCount">0</span>
       </button>
-      <button class="nav-tab" data-tab="smtp" onclick="switchTab('smtp')">
+      <button class="tab-btn" data-tab="smtp" onclick="switchTab('smtp')">
         <i class="fa-solid fa-sliders"></i>
         <span>Google Group Settings</span>
       </button>
-      <button class="nav-tab" data-tab="logs" onclick="switchTab('logs')">
+      <button class="tab-btn" data-tab="logs" onclick="switchTab('logs')">
         <i class="fa-solid fa-terminal"></i>
         <span>Execution Logs</span>
       </button>
     </nav>
 
-    <!-- ================= MAIN CONTENT VIEWS ================= -->
-    <main class="app-main">
+    <!-- ================= TAB CONTENT PANES ================= -->
+    <main class="content-container">
 
       <!-- ================= TAB 1: DASHBOARD ================= -->
       <section class="tab-pane active" id="tab-dashboard">
-        <div class="dashboard-grid">
+        <div class="dashboard-layout">
           
           <!-- Left Column: Automation Engine & Discovered Notices -->
-          <div class="dash-col-main">
+          <div class="dash-left-col">
             
             <!-- Automation Pipeline Card -->
-            <div class="panel-card automation-card">
-              <div class="panel-header">
-                <div class="panel-title">
-                  <i class="fa-solid fa-microchip"></i>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fa-solid fa-microchip" style="color: var(--primary);"></i>
                   <span>Automated Execution Pipeline</span>
                 </div>
                 <span class="badge badge-success" id="autoStatusBadge">
-                  <span class="status-dot green pulse"></span> Active: Twice Daily at 7:00 AM &amp; 7:00 PM IST
+                  <span class="dot-beacon active"></span> Running Twice Daily at 7:00 AM &amp; 7:00 PM IST
                 </span>
               </div>
-              <div class="automation-body">
-                <!-- Visual 4-Step Pipeline -->
-                <div class="automation-flow">
-                  <div class="flow-step">
-                    <div class="flow-step-icon"><i class="fa-regular fa-clock"></i></div>
-                    <div class="flow-step-text">
-                      <strong>7:00 AM &amp; 7:00 PM IST</strong>
+              <div class="pipeline-container">
+                <!-- Visual Stepper -->
+                <div class="pipeline-stepper">
+                  <div class="step-node">
+                    <div class="step-icon"><i class="fa-regular fa-clock"></i></div>
+                    <div class="step-copy">
+                      <strong>7 AM &amp; 7 PM IST</strong>
                       <span>Cron Trigger</span>
                     </div>
                   </div>
-                  <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-                  <div class="flow-step">
-                    <div class="flow-step-icon"><i class="fa-solid fa-globe"></i></div>
-                    <div class="flow-step-text">
+                  <div class="step-node">
+                    <div class="step-icon"><i class="fa-solid fa-globe"></i></div>
+                    <div class="step-copy">
                       <strong>Scrape Portal</strong>
-                      <span>Check RGU Website</span>
+                      <span>AllNotices Page</span>
                     </div>
                   </div>
-                  <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-                  <div class="flow-step">
-                    <div class="flow-step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                    <div class="flow-step-text">
+                  <div class="step-node">
+                    <div class="step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div class="step-copy">
                       <strong>Gemini 3.6 OCR</strong>
-                      <span>Polish &amp; Format</span>
+                      <span>AI Polisher</span>
                     </div>
                   </div>
-                  <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-                  <div class="flow-step">
-                    <div class="flow-step-icon"><i class="fa-solid fa-paper-plane"></i></div>
-                    <div class="flow-step-text">
+                  <div class="step-node">
+                    <div class="step-icon"><i class="fa-solid fa-paper-plane"></i></div>
+                    <div class="step-copy">
                       <strong>Mail Instantly</strong>
-                      <span>Google Group Broadcast</span>
+                      <span>Google Group</span>
                     </div>
                   </div>
                 </div>
 
-                <!-- Automation Meta Boxes -->
-                <div class="automation-details-box">
-                  <div class="detail-row">
-                    <span><i class="fa-solid fa-clock-rotate-left"></i> Last Scrape Run:</span>
-                    <strong id="dashLastRun">Calculated on schedule</strong>
+                <!-- Meta Details -->
+                <div class="pipeline-meta-grid">
+                  <div class="meta-box">
+                    <span class="meta-label"><i class="fa-solid fa-clock-rotate-left"></i> Last Scrape Run:</span>
+                    <strong class="meta-val" id="dashLastRun">Calculated on schedule</strong>
                   </div>
-                  <div class="detail-row">
-                    <span><i class="fa-regular fa-calendar-check"></i> Next Scheduled Run:</span>
-                    <strong id="dashNextRun">7:00 AM / 7:00 PM IST</strong>
+                  <div class="meta-box">
+                    <span class="meta-label"><i class="fa-regular fa-calendar-check"></i> Next Scheduled Run:</span>
+                    <strong class="meta-val" id="dashNextRun">7:00 AM / 7:00 PM IST</strong>
                   </div>
-                  <div class="detail-row">
-                    <span><i class="fa-solid fa-paper-plane"></i> Outbound Channel:</span>
-                    <strong id="dashSmtpChannel">Google Group Broadcast (1,000+ Students)</strong>
+                  <div class="meta-box">
+                    <span class="meta-label"><i class="fa-solid fa-paper-plane"></i> Outbound Channel:</span>
+                    <strong class="meta-val" id="dashSmtpChannel">Google Group Broadcast (1,000+ Students)</strong>
                   </div>
-                  <div class="detail-row">
-                    <span><i class="fa-solid fa-users"></i> Target Audience:</span>
-                    <strong id="dashStudentAudience">rgu-notices@googlegroups.com</strong>
+                  <div class="meta-box">
+                    <span class="meta-label"><i class="fa-solid fa-users"></i> Target Audience:</span>
+                    <strong class="meta-val" id="dashStudentAudience">rgu-notices@googlegroups.com</strong>
                   </div>
                 </div>
 
-                <!-- Quick Action Bar -->
-                <div class="automation-actions">
+                <!-- Action Bar -->
+                <div class="pipeline-actions-row">
                   <button class="btn btn-primary btn-sm" onclick="triggerScanNow()">
                     <i class="fa-solid fa-bolt"></i> Run Notice Scan Now
                   </button>
@@ -255,19 +247,19 @@
             </div>
 
             <!-- Recently Discovered Notices Table -->
-            <div class="panel-card mt-4">
-              <div class="panel-header flex-between">
-                <div class="panel-title">
-                  <i class="fa-solid fa-newspaper"></i>
+            <div class="card mt-4">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fa-solid fa-newspaper" style="color: var(--accent-cyan);"></i>
                   <span>Recently Discovered University Notices</span>
                 </div>
                 <button class="btn btn-ghost btn-xs" onclick="switchTab('notices')">
                   View All Notices <i class="fa-solid fa-chevron-right"></i>
                 </button>
               </div>
-              <div class="panel-body p-0">
-                <div class="table-responsive">
-                  <table class="data-table">
+              <div class="card-body p-0">
+                <div class="table-wrap">
+                  <table class="data-grid">
                     <thead>
                       <tr>
                         <th>ID</th>
@@ -291,14 +283,14 @@
 
           </div>
 
-          <!-- Right Column: Latest Notice AI Showcase & Email Mockup -->
-          <div class="dash-col-side">
+          <!-- Right Column: Active Notice Inspector & Email Mockup -->
+          <div class="dash-right-col">
             
-            <div class="panel-card preview-card">
-              <div class="panel-header flex-between">
-                <div class="panel-title">
-                  <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
-                  <span>Notice AI Polish &amp; Inspector</span>
+            <div class="card inspector-card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--fuchsia);"></i>
+                  <span>Notice AI Inspector &amp; Markdown</span>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
                   <span class="badge badge-info" id="liveNoticeId">Notice #--</span>
@@ -307,25 +299,25 @@
               </div>
 
               <!-- Segmented View Tabs -->
-              <div class="preview-mode-bar">
-                <button class="preview-tab active" id="btnModeAi" onclick="setDashboardPreviewMode('ai')">
+              <div class="inspector-tabs">
+                <button class="inspector-tab active" id="btnModeAi" onclick="setDashboardPreviewMode('ai')">
                   <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ AI Polish
                 </button>
-                <button class="preview-tab" id="btnModeMd" onclick="setDashboardPreviewMode('md')">
+                <button class="inspector-tab" id="btnModeMd" onclick="setDashboardPreviewMode('md')">
                   <i class="fa-solid fa-file-code"></i> 📝 Markdown (.md)
                 </button>
-                <button class="preview-tab" id="btnModeEmail" onclick="setDashboardPreviewMode('email')">
+                <button class="inspector-tab" id="btnModeEmail" onclick="setDashboardPreviewMode('email')">
                   <i class="fa-solid fa-envelope"></i> ✉️ Email View
                 </button>
               </div>
 
-              <!-- Live Body Container -->
-              <div class="preview-live-container">
+              <!-- Content Container -->
+              <div class="inspector-content-pane">
                 
                 <!-- Notice Meta Header -->
-                <div class="live-notice-header">
+                <div style="padding: 10px 14px; border-radius: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle);">
                   <h4 id="liveNoticeTitle" class="live-notice-heading">Loading latest notice...</h4>
-                  <div class="live-notice-meta">
+                  <div class="live-notice-meta-tags">
                     <span>📅 Published: <strong id="liveNoticeDate">—</strong></span>
                     <span>🏷️ Category: <span class="badge badge-neutral" id="liveNoticeCategory">General</span></span>
                     <a href="#" id="liveNoticeOfficialLink" target="_blank" class="accent-link">Portal Link &nearr;</a>
@@ -335,8 +327,8 @@
                 <!-- View 1: Gemini AI Polished Breakdown -->
                 <div id="viewAiContent" class="preview-view active">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600;">
-                      <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> AI Structured Student Breakdown:
+                    <span style="font-size: 0.74rem; color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                      <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--fuchsia);"></i> AI Structured Student Breakdown
                     </span>
                     <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()">
                       <i class="fa-regular fa-copy"></i> Copy Text
@@ -379,7 +371,7 @@
                   </div>
                   <div class="mockup-mail-content">
                     <div class="mail-header-mini">
-                      <img src="/static/images/logo.png" alt="Raiganj University Emblem" style="width: 44px; height: 44px; border-radius: 8px; background: #ffffff; padding: 2px; margin-bottom: 6px; object-fit: contain; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                      <img src="/static/images/logo.png" alt="Raiganj University Emblem" style="width: 42px; height: 42px; border-radius: 8px; background: #ffffff; padding: 2px; margin-bottom: 6px; object-fit: contain; display: inline-block;">
                       <div class="mail-uni-name">Raiganj University</div>
                       <div class="mail-uni-sub">Official Notice Alert &bull; রায়গঞ্জ বিশ্ববিদ্যালয়</div>
                     </div>
@@ -393,7 +385,7 @@
               </div>
 
               <!-- Footer Actions -->
-              <div class="preview-actions-footer">
+              <div class="inspector-actions-footer">
                 <button class="btn btn-secondary btn-xs" id="btnLiveRegenAi" onclick="regenerateLiveAi()" title="Re-run Gemini AI Polish">
                   <i class="fa-solid fa-arrows-rotate"></i> Re-polish
                 </button>
@@ -408,14 +400,14 @@
             </div>
 
             <!-- Recent Dispatch History Feed -->
-            <div class="panel-card mt-4">
-              <div class="panel-header">
-                <div class="panel-title">
-                  <i class="fa-solid fa-list-check"></i>
-                  <span>Recent Broadcast Records</span>
+            <div class="card mt-4">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fa-solid fa-list-check" style="color: var(--emerald-light);"></i>
+                  <span>Recent Broadcast Log</span>
                 </div>
               </div>
-              <div class="panel-body p-0">
+              <div class="card-body p-0">
                 <ul class="dispatch-feed" id="dispatchFeedList">
                   <li class="empty-cell">No email dispatches recorded yet.</li>
                 </ul>
@@ -429,16 +421,16 @@
 
       <!-- ================= TAB 2: UNIVERSITY NOTICES ================= -->
       <section class="tab-pane" id="tab-notices">
-        <div class="panel-card">
-          <div class="panel-header flex-between">
+        <div class="card">
+          <div class="card-header">
             <div>
-              <div class="panel-title">
-                <i class="fa-solid fa-bullhorn"></i>
+              <div class="card-title">
+                <i class="fa-solid fa-bullhorn" style="color: var(--primary);"></i>
                 <span>Live Raiganj University Notices</span>
               </div>
-              <div class="panel-desc">All notices synchronized directly from <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
+              <div class="card-desc">All notices synchronized directly from <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" class="accent-link">raiganjuniversity.ac.in</a></div>
             </div>
-            <div class="panel-actions" style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center;">
               <button class="btn btn-secondary btn-sm" id="btnDeliverPending" onclick="dispatchPendingNow()" title="Deliver any pending notices">
                 <i class="fa-solid fa-paper-plane"></i> Deliver Unmailed Notices (<span id="pendingQueueCount">0</span>)
               </button>
@@ -450,23 +442,23 @@
 
           <!-- Toolbar: Search & Category Filters -->
           <div class="table-toolbar">
-            <div class="search-box">
+            <div class="search-input-wrap">
               <i class="fa-solid fa-magnifying-glass"></i>
               <input type="text" id="noticeSearchInput" placeholder="Filter notices by keyword or reference ID..." oninput="handleNoticeSearch()">
             </div>
-            <div class="filter-pills" id="noticeCategoryFilters">
-              <button class="filter-pill active" onclick="filterNoticeCat('ALL')">All</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Admission')">Admission</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Examination')">Examination</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Holiday')">Holiday</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Tender')">Tenders / NIQ</button>
-              <button class="filter-pill" onclick="filterNoticeCat('Research')">Research &amp; PhD</button>
+            <div class="filter-group" id="noticeCategoryFilters">
+              <button class="filter-chip active" onclick="filterNoticeCat('ALL')">All</button>
+              <button class="filter-chip" onclick="filterNoticeCat('Admission')">Admission</button>
+              <button class="filter-chip" onclick="filterNoticeCat('Examination')">Examination</button>
+              <button class="filter-chip" onclick="filterNoticeCat('Holiday')">Holiday</button>
+              <button class="filter-chip" onclick="filterNoticeCat('Tender')">Tenders / NIQ</button>
+              <button class="filter-chip" onclick="filterNoticeCat('Research')">Research &amp; PhD</button>
             </div>
           </div>
 
-          <div class="panel-body p-0">
-            <div class="table-responsive">
-              <table class="data-table">
+          <div class="card-body p-0">
+            <div class="table-wrap">
+              <table class="data-grid">
                 <thead>
                   <tr>
                     <th>Ref / ID</th>
@@ -492,16 +484,16 @@
 
       <!-- ================= TAB 3: STUDENT DIRECTORY ================= -->
       <section class="tab-pane" id="tab-students">
-        <div class="panel-card">
-          <div class="panel-header flex-between">
+        <div class="card">
+          <div class="card-header">
             <div>
-              <div class="panel-title">
-                <i class="fa-solid fa-user-graduate"></i>
+              <div class="card-title">
+                <i class="fa-solid fa-user-graduate" style="color: var(--accent-cyan);"></i>
                 <span>Enrolled Student Recipients</span>
               </div>
-              <div class="panel-desc">Individual student recipients directory (used for direct delivery or fallback).</div>
+              <div class="card-desc">Individual student recipients directory (used for direct delivery or fallback).</div>
             </div>
-            <div class="panel-actions">
+            <div style="display: flex; gap: 8px;">
               <button class="btn btn-secondary btn-sm" onclick="seedSampleStudents()">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Load Demo Students
               </button>
@@ -515,18 +507,18 @@
           </div>
 
           <div class="table-toolbar">
-            <div class="search-box">
+            <div class="search-input-wrap">
               <i class="fa-solid fa-magnifying-glass"></i>
               <input type="text" id="studentSearchInput" placeholder="Search by student name, email, department, roll number..." oninput="handleStudentSearch()">
             </div>
-            <div class="toolbar-stats">
+            <div class="table-stats-count">
               Showing <strong id="studentTableCount">0</strong> students
             </div>
           </div>
 
-          <div class="panel-body p-0">
-            <div class="table-responsive">
-              <table class="data-table">
+          <div class="card-body p-0">
+            <div class="table-wrap">
+              <table class="data-grid">
                 <thead>
                   <tr>
                     <th>Student Name</th>
@@ -553,12 +545,12 @@
 
       <!-- ================= TAB 4: GOOGLE GROUP & SETTINGS ================= -->
       <section class="tab-pane" id="tab-smtp">
-        <div class="smtp-grid">
+        <div class="settings-split-grid">
           
           <!-- Google Group Settings Form -->
-          <div class="panel-card">
-            <div class="panel-header flex-between">
-              <div class="panel-title">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
                 <i class="fa-brands fa-google" style="color: #4285F4;"></i>
                 <span>Google Group Broadcast Configuration</span>
               </div>
@@ -566,15 +558,15 @@
                 <i class="fa-solid fa-users"></i> Google Groups Broadcast Mode
               </span>
             </div>
-            <div class="panel-body">
+            <div class="card-body">
               <form id="smtpConfigForm" onsubmit="saveSmtpConfig(event)">
                 
                 <!-- Google Group Callout -->
-                <div class="google-group-hero">
-                  <div class="hero-icon">
+                <div class="hero-callout-box">
+                  <div class="callout-icon">
                     <i class="fa-solid fa-people-group"></i>
                   </div>
-                  <div class="hero-content">
+                  <div class="callout-body">
                     <h4>Direct Broadcast to 1,000+ Students via Google Groups</h4>
                     <p>When new notices are found, the engine sends <strong>1 single email</strong> to your Google Group. Google distributes the alert and all downloadable circulars to every enrolled member with zero Gmail rate limits or daily throttling.</p>
                   </div>
@@ -583,7 +575,7 @@
                 <!-- Google Group Address -->
                 <div class="form-group">
                   <label class="form-label" for="smtpGoogleGroupEmail">
-                    <i class="fa-solid fa-users" style="color: #38bdf8;"></i> Target Google Group Email Address <span class="text-danger">*</span>
+                    <i class="fa-solid fa-users" style="color: var(--accent-cyan);"></i> Target Google Group Email Address <span class="text-danger">*</span>
                   </label>
                   <input type="email" id="smtpGoogleGroupEmail" class="form-input" placeholder="e.g. rgu-notices@googlegroups.com" required>
                   <div class="form-help">Enter your Google Group address. All students in this group receive new notices and PDF attachments automatically.</div>
@@ -593,14 +585,14 @@
                 <div class="form-row">
                   <div class="form-group col-6">
                     <label class="form-label" for="smtpSenderEmail">
-                      <i class="fa-solid fa-at" style="color: #a78bfa;"></i> Sender / Dispatcher Gmail <span class="text-danger">*</span>
+                      <i class="fa-solid fa-at" style="color: var(--violet-light);"></i> Sender / Dispatcher Gmail <span class="text-danger">*</span>
                     </label>
                     <input type="email" id="smtpSenderEmail" class="form-input" required placeholder="e.g. rgunotices@gmail.com">
                     <div class="form-help">The Gmail account authorized to post to the Google Group.</div>
                   </div>
                   <div class="form-group col-6">
                     <label class="form-label" for="smtpSenderName">
-                      <i class="fa-solid fa-signature" style="color: #34d399;"></i> Sender Display Name <span class="text-danger">*</span>
+                      <i class="fa-solid fa-signature" style="color: var(--emerald-light);"></i> Sender Display Name <span class="text-danger">*</span>
                     </label>
                     <input type="text" id="smtpSenderName" class="form-input" required value="Raiganj University Notice Board">
                     <div class="form-help">Name displayed in students' inboxes.</div>
@@ -610,11 +602,11 @@
                 <!-- Gmail App Password -->
                 <div class="form-group">
                   <label class="form-label" for="smtpCustomPass">
-                    <i class="fa-solid fa-key" style="color: #fbbf24;"></i> Gmail App Password (16 Characters) <span class="text-danger">*</span>
+                    <i class="fa-solid fa-key" style="color: var(--amber-light);"></i> Gmail App Password (16 Characters) <span class="text-danger">*</span>
                   </label>
-                  <div class="input-with-toggle">
+                  <div class="input-with-action">
                     <input type="password" id="smtpCustomPass" class="form-input" placeholder="•••• •••• •••• ••••" autocomplete="new-password">
-                    <button type="button" class="btn-pw-toggle" onclick="togglePasswordVisibility('smtpCustomPass', this)" title="Show/Hide Password">
+                    <button type="button" class="btn-input-action" onclick="togglePasswordVisibility('smtpCustomPass', this)" title="Show/Hide Password">
                       <i class="fa-regular fa-eye"></i>
                     </button>
                   </div>
@@ -626,11 +618,11 @@
                 <!-- Gemini API Key -->
                 <div class="form-group">
                   <label class="form-label" for="smtpGeminiKey">
-                    <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini AI API Key (Optional Multimodal OCR &amp; Polisher)
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--fuchsia);"></i> Gemini AI API Key (Optional Multimodal OCR &amp; Polisher)
                   </label>
-                  <div class="input-with-toggle">
+                  <div class="input-with-action">
                     <input type="password" id="smtpGeminiKey" class="form-input" placeholder="AIzaSy..." autocomplete="off">
-                    <button type="button" class="btn-pw-toggle" onclick="togglePasswordVisibility('smtpGeminiKey', this)" title="Show/Hide Key">
+                    <button type="button" class="btn-input-action" onclick="togglePasswordVisibility('smtpGeminiKey', this)" title="Show/Hide Key">
                       <i class="fa-regular fa-eye"></i>
                     </button>
                   </div>
@@ -639,12 +631,12 @@
                   </div>
                 </div>
 
-                <!-- Advanced SMTP Settings Accordion -->
-                <details class="advanced-settings-accordion">
-                  <summary class="advanced-toggle">
+                <!-- Advanced Settings Accordion -->
+                <details class="settings-accordion">
+                  <summary>
                     <i class="fa-solid fa-sliders"></i> Advanced SMTP Host &amp; Port Settings (Optional)
                   </summary>
-                  <div class="advanced-settings-body">
+                  <div class="settings-accordion-body">
                     <div class="form-row">
                       <div class="form-group col-8">
                         <label class="form-label">Custom SMTP Host</label>
@@ -655,7 +647,7 @@
                         <input type="number" id="smtpCustomPort" class="form-input" placeholder="587" value="587">
                       </div>
                     </div>
-                    <div class="form-checkbox-row">
+                    <div class="checkbox-row">
                       <label class="checkbox-label">
                         <input type="checkbox" id="smtpCustomTls" checked>
                         <span>Enable STARTTLS (Port 587)</span>
@@ -682,41 +674,41 @@
           </div>
 
           <!-- Right Column: Setup Guide & Captured Outbox -->
-          <div class="smtp-right-col">
+          <div class="settings-right-col">
             <!-- 4-Step Setup Guide -->
-            <div class="panel-card mb-4">
-              <div class="panel-header">
-                <div class="panel-title">
-                  <i class="fa-solid fa-circle-question"></i>
+            <div class="card mb-4">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="fa-solid fa-circle-question" style="color: var(--accent-cyan);"></i>
                   <span>How Google Groups Broadcast Works</span>
                 </div>
               </div>
-              <div class="panel-body">
-                <div class="setup-steps">
-                  <div class="setup-step">
-                    <div class="step-num">1</div>
-                    <div class="step-info">
+              <div class="card-body">
+                <div class="step-list">
+                  <div class="step-item">
+                    <div class="step-badge">1</div>
+                    <div class="step-details">
                       <strong>Create Google Group</strong>
                       <span>Visit <a href="https://groups.google.com" target="_blank" class="accent-link">groups.google.com</a> &rarr; "Create group" (e.g. <code>rgu-notices@googlegroups.com</code>).</span>
                     </div>
                   </div>
-                  <div class="setup-step">
-                    <div class="step-num">2</div>
-                    <div class="step-info">
+                  <div class="step-item">
+                    <div class="step-badge">2</div>
+                    <div class="step-details">
                       <strong>Add Students</strong>
                       <span>Invite or directly add your 1,000+ student email addresses to the group.</span>
                     </div>
                   </div>
-                  <div class="setup-step">
-                    <div class="step-num">3</div>
-                    <div class="step-info">
+                  <div class="step-item">
+                    <div class="step-badge">3</div>
+                    <div class="step-details">
                       <strong>Set Posting Permissions</strong>
                       <span>In Group Settings &rarr; Posting permissions, authorize your Dispatcher Gmail address to post messages.</span>
                     </div>
                   </div>
-                  <div class="setup-step">
-                    <div class="step-num">4</div>
-                    <div class="step-info">
+                  <div class="step-item">
+                    <div class="step-badge">4</div>
+                    <div class="step-details">
                       <strong>Save &amp; Verify</strong>
                       <span>Save your Google Group address and App Password, then click <strong>"Send Test Notice to Group"</strong>!</span>
                     </div>
@@ -726,23 +718,23 @@
             </div>
 
             <!-- Captured Outbox Emails -->
-            <div class="panel-card">
-              <div class="panel-header flex-between">
+            <div class="card">
+              <div class="card-header">
                 <div>
-                  <div class="panel-title">
-                    <i class="fa-solid fa-inbox"></i>
+                  <div class="card-title">
+                    <i class="fa-solid fa-inbox" style="color: var(--amber-light);"></i>
                     <span>Captured Outbox &amp; Test Emails</span>
                   </div>
-                  <div class="panel-desc">Emails delivered or captured for verification.</div>
+                  <div class="card-desc">Emails delivered or captured for verification.</div>
                 </div>
                 <button class="btn btn-ghost btn-xs text-danger" onclick="clearLocalInbox()">
                   <i class="fa-solid fa-trash"></i> Clear
                 </button>
               </div>
 
-              <div class="panel-body p-0">
-                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
-                  <table class="data-table">
+              <div class="card-body p-0">
+                <div class="table-wrap" style="max-height: 360px; overflow-y: auto;">
+                  <table class="data-grid">
                     <thead>
                       <tr>
                         <th>Time</th>
@@ -767,16 +759,16 @@
 
       <!-- ================= TAB 5: AUDIT LOGS ================= -->
       <section class="tab-pane" id="tab-logs">
-        <div class="panel-card">
-          <div class="panel-header flex-between">
+        <div class="card">
+          <div class="card-header">
             <div>
-              <div class="panel-title">
-                <i class="fa-solid fa-terminal"></i>
+              <div class="card-title">
+                <i class="fa-solid fa-terminal" style="color: var(--emerald-light);"></i>
                 <span>Execution &amp; Audit Logs</span>
               </div>
-              <div class="panel-desc">Real-time log trail of portal scans, 7 AM &amp; 7 PM IST cron runs, SMTP dispatch, and AI processing.</div>
+              <div class="card-desc">Real-time log trail of portal scans, 7 AM &amp; 7 PM IST cron runs, SMTP dispatch, and AI processing.</div>
             </div>
-            <div class="panel-actions">
+            <div style="display: flex; gap: 8px;">
               <button class="btn btn-secondary btn-sm" onclick="loadLogs()">
                 <i class="fa-solid fa-rotate"></i> Refresh
               </button>
@@ -787,18 +779,18 @@
           </div>
 
           <div class="table-toolbar">
-            <div class="filter-pills" id="logLevelFilters">
-              <button class="filter-pill active" onclick="filterLogLevel('ALL')">All</button>
-              <button class="filter-pill" onclick="filterLogLevel('SUCCESS')">Success</button>
-              <button class="filter-pill" onclick="filterLogLevel('INFO')">Info</button>
-              <button class="filter-pill" onclick="filterLogLevel('WARNING')">Warning</button>
-              <button class="filter-pill" onclick="filterLogLevel('ERROR')">Error</button>
+            <div class="filter-group" id="logLevelFilters">
+              <button class="filter-chip active" onclick="filterLogLevel('ALL')">All</button>
+              <button class="filter-chip" onclick="filterLogLevel('SUCCESS')">Success</button>
+              <button class="filter-chip" onclick="filterLogLevel('INFO')">Info</button>
+              <button class="filter-chip" onclick="filterLogLevel('WARNING')">Warning</button>
+              <button class="filter-chip" onclick="filterLogLevel('ERROR')">Error</button>
             </div>
           </div>
 
-          <div class="panel-body p-0">
-            <div class="logs-console" id="logsConsole">
-              <div class="log-entry"><span class="log-msg">Loading logs...</span></div>
+          <div class="card-body p-0">
+            <div class="terminal-console" id="logsConsole">
+              <div class="terminal-row"><span class="terminal-message">Loading logs...</span></div>
             </div>
           </div>
         </div>
@@ -806,8 +798,8 @@
 
     </main>
 
-    <!-- ================= FOOTER ================= -->
-    <footer class="app-footer">
+    <!-- ================= SITE FOOTER ================= -->
+    <footer class="site-footer">
       <div>
         <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; Developed with Python Flask, APScheduler, SQLite &amp; Google Groups
       </div>
@@ -821,14 +813,14 @@
   <!-- ================= MODALS ================= -->
 
   <!-- Modal 1: Add Single Student -->
-  <div class="modal-overlay" id="addStudentModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="fa-solid fa-user-plus"></i> Add Student Recipient</h3>
-        <button class="modal-close" onclick="closeModal('addStudentModal')">&times;</button>
+  <div class="modal-backdrop" id="addStudentModal">
+    <div class="modal-box">
+      <div class="modal-box-header">
+        <h3 class="modal-box-title"><i class="fa-solid fa-user-plus"></i> Add Student Recipient</h3>
+        <button class="modal-close-btn" onclick="closeModal('addStudentModal')">&times;</button>
       </div>
       <form id="addStudentForm" onsubmit="submitAddStudent(event)">
-        <div class="modal-body">
+        <div class="modal-box-body">
           <div class="form-group">
             <label class="form-label">Full Name</label>
             <input type="text" id="newStudentName" class="form-input" placeholder="e.g. Subhajit Roy" required>
@@ -848,7 +840,7 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-box-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('addStudentModal')">Cancel</button>
           <button type="submit" class="btn btn-primary">Enroll Student</button>
         </div>
@@ -857,15 +849,15 @@
   </div>
 
   <!-- Modal 2: Bulk Import Students -->
-  <div class="modal-overlay" id="bulkStudentModal">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="fa-solid fa-file-import"></i> Bulk Import Student Emails</h3>
-        <button class="modal-close" onclick="closeModal('bulkStudentModal')">&times;</button>
+  <div class="modal-backdrop" id="bulkStudentModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-box-header">
+        <h3 class="modal-box-title"><i class="fa-solid fa-file-import"></i> Bulk Import Student Emails</h3>
+        <button class="modal-close-btn" onclick="closeModal('bulkStudentModal')">&times;</button>
       </div>
       <form id="bulkStudentForm" onsubmit="submitBulkStudents(event)">
-        <div class="modal-body">
-          <p class="modal-intro">
+        <div class="modal-box-body">
+          <p class="modal-lead">
             Paste student emails or CSV lines below. Formats supported:<br>
             <code>Name, email@domain.com, Department, RollNo</code><br>
             or one email per line: <code>student@domain.com</code>
@@ -874,7 +866,7 @@
             <textarea id="bulkDataInput" class="form-textarea" rows="8" placeholder="Souvik Mukherjee, souvik@rgu.ac.in, Computer Science, CS-101&#10;Ananya Roy, ananya@rgu.ac.in, Mathematics, MATH-202&#10;student3@gmail.com"></textarea>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-box-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('bulkStudentModal')">Cancel</button>
           <button type="submit" class="btn btn-primary">Import All Emails</button>
         </div>
@@ -883,15 +875,15 @@
   </div>
 
   <!-- Modal 3: Test Broadcast Email -->
-  <div class="modal-overlay" id="testSmtpModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title"><i class="fa-solid fa-paper-plane"></i> Test Notice Broadcast</h3>
-        <button class="modal-close" onclick="closeModal('testSmtpModal')">&times;</button>
+  <div class="modal-backdrop" id="testSmtpModal">
+    <div class="modal-box">
+      <div class="modal-box-header">
+        <h3 class="modal-box-title"><i class="fa-solid fa-paper-plane"></i> Test Notice Broadcast</h3>
+        <button class="modal-close-btn" onclick="closeModal('testSmtpModal')">&times;</button>
       </div>
       <form id="testSmtpForm" onsubmit="submitTestSmtp(event)">
-        <div class="modal-body">
-          <p class="modal-intro">
+        <div class="modal-box-body">
+          <p class="modal-lead">
             Sends an official sample notice email with attachment indicators to verify your Google Group broadcast pipeline.
           </p>
           <div class="form-group">
@@ -899,9 +891,9 @@
             <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. rgu-notices@googlegroups.com">
             <div class="form-help">Enter your Google Group email address to verify delivery.</div>
           </div>
-          <div id="testResultBox" class="test-result-box" style="display: none; padding: 12px; border-radius: 8px; font-size: 0.82rem; margin-top: 10px;"></div>
+          <div id="testResultBox" class="test-result-box" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-top: 10px;"></div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-box-footer">
           <button type="button" class="btn btn-ghost" onclick="closeModal('testSmtpModal')">Close</button>
           <button type="submit" class="btn btn-primary" id="btnRunTest">
             <i class="fa-solid fa-paper-plane"></i> Send Test Alert
@@ -912,61 +904,61 @@
   </div>
 
   <!-- Modal 4: View Captured Email HTML -->
-  <div class="modal-overlay" id="viewEmailModal">
-    <div class="modal-card modal-xl">
-      <div class="modal-header">
-        <h3 class="modal-title" id="viewEmailTitle"><i class="fa-solid fa-envelope"></i> Captured Email View</h3>
-        <button class="modal-close" onclick="closeModal('viewEmailModal')">&times;</button>
+  <div class="modal-backdrop" id="viewEmailModal">
+    <div class="modal-box modal-xl">
+      <div class="modal-box-header">
+        <h3 class="modal-box-title" id="viewEmailTitle"><i class="fa-solid fa-envelope"></i> Captured Email View</h3>
+        <button class="modal-close-btn" onclick="closeModal('viewEmailModal')">&times;</button>
       </div>
-      <div class="modal-body p-0">
-        <iframe id="emailIframe" class="email-iframe" src="about:blank"></iframe>
+      <div class="modal-box-body p-0">
+        <iframe id="emailIframe" class="email-iframe-viewer" src="about:blank"></iframe>
       </div>
-      <div class="modal-footer">
+      <div class="modal-box-footer">
         <button type="button" class="btn btn-primary" onclick="closeModal('viewEmailModal')">Close</button>
       </div>
     </div>
   </div>
 
   <!-- Modal 5: Notice AI Breakdown & Markdown Inspector -->
-  <div class="modal-overlay" id="noticeAiModal">
-    <div class="modal-card modal-xl">
-      <div class="modal-header flex-between">
-        <div style="display: flex; align-items: center; gap: 14px;">
-          <img src="/static/images/logo.png" alt="Raiganj University Logo" style="width: 44px; height: 44px; border-radius: 8px; background: #ffffff; padding: 2px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.35); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2);">
+  <div class="modal-backdrop" id="noticeAiModal">
+    <div class="modal-box modal-xl">
+      <div class="modal-box-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="/static/images/logo.png" alt="Raiganj University Logo" style="width: 38px; height: 38px; border-radius: 6px; background: #ffffff; padding: 2px; object-fit: contain;">
           <div>
-            <h3 class="modal-title" id="modalNoticeAiTitle">
-              <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i>
+            <h3 class="modal-box-title" id="modalNoticeAiTitle">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--fuchsia);"></i>
               <span>Notice AI &amp; Markdown Inspector</span>
             </h3>
-            <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <div style="display: flex; gap: 6px; margin-top: 4px;">
               <span class="badge badge-info" id="modalNoticeIdBadge">Notice #--</span>
               <span class="badge badge-neutral" id="modalNoticeCatBadge">General</span>
               <span class="badge badge-success" id="modalNoticeAiBadge">✨ Gemini Polished</span>
             </div>
           </div>
         </div>
-        <button class="modal-close" onclick="closeModal('noticeAiModal')">&times;</button>
+        <button class="modal-close-btn" onclick="closeModal('noticeAiModal')">&times;</button>
       </div>
 
       <!-- Segmented Mode Switcher -->
-      <div class="preview-mode-bar" style="border-left: none; border-right: none;">
-        <button class="preview-tab active" id="modalTabAi" onclick="setModalTab('ai')">
+      <div class="inspector-tabs" style="border-left: none; border-right: none;">
+        <button class="inspector-tab active" id="modalTabAi" onclick="setModalTab('ai')">
           <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini AI Breakdown
         </button>
-        <button class="preview-tab" id="modalTabMd" onclick="setModalTab('md')">
+        <button class="inspector-tab" id="modalTabMd" onclick="setModalTab('md')">
           <i class="fa-solid fa-file-code"></i> 📝 Raw Markdown (.md)
         </button>
-        <button class="preview-tab" id="modalTabAttachment" onclick="setModalTab('att')">
+        <button class="inspector-tab" id="modalTabAttachment" onclick="setModalTab('att')">
           <i class="fa-solid fa-paperclip"></i> 📎 Attached Document
         </button>
       </div>
 
-      <div class="modal-body" style="max-height: 520px; overflow-y: auto; padding: 20px;">
+      <div class="modal-box-body" style="max-height: 520px; overflow-y: auto; padding: 18px;">
         <!-- Tab 1: AI Polish -->
         <div id="modalViewAi" class="modal-tab-content">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 0.82rem; color: #fff; font-weight: 600;">
-              <i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> Gemini Polished Student Announcement:
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.78rem; color: #fff; font-weight: 600;">
+              <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--fuchsia);"></i> Gemini Polished Student Announcement
             </span>
             <button class="btn btn-ghost btn-xs" onclick="copyModalPolishedText()">
               <i class="fa-regular fa-copy"></i> Copy Polished Text
@@ -998,10 +990,10 @@
 
         <!-- Tab 3: Attachment -->
         <div id="modalViewAtt" class="modal-tab-content" style="display: none;">
-          <div class="attachment-preview-box" id="modalAttachmentBox" style="text-align: center; padding: 32px 16px; background: rgba(9, 14, 26, 0.7); border: 1px solid var(--border-medium); border-radius: var(--radius-md);">
-            <i class="fa-solid fa-file-pdf" style="font-size: 42px; color: #f43f5e; margin-bottom: 12px; display: block;"></i>
-            <h4 id="modalAttFilename" style="color: #fff; margin-bottom: 8px;">document.pdf</h4>
-            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Official university circular file downloaded from the portal.</p>
+          <div style="text-align: center; padding: 28px 16px; background: rgba(8, 11, 17, 0.85); border: 1px solid var(--border-default); border-radius: 8px;">
+            <i class="fa-solid fa-file-pdf" style="font-size: 38px; color: var(--rose-light); margin-bottom: 10px; display: block;"></i>
+            <h4 id="modalAttFilename" style="color: #fff; margin-bottom: 6px; font-size: 0.95rem;">document.pdf</h4>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 16px;">Official university circular file downloaded from the portal.</p>
             <a href="#" id="modalAttDownloadLink" target="_blank" class="btn btn-primary btn-sm">
               <i class="fa-solid fa-download"></i> Open / Download File
             </a>
@@ -1009,8 +1001,8 @@
         </div>
       </div>
 
-      <div class="modal-footer flex-between">
-        <div style="display: flex; gap: 8px;">
+      <div class="modal-box-footer flex-between">
+        <div style="display: flex; gap: 6px;">
           <button type="button" class="btn btn-secondary btn-sm" id="btnModalRegen" onclick="regenerateModalAi()">
             <i class="fa-solid fa-arrows-rotate"></i> Regenerate with Gemini
           </button>
@@ -1018,7 +1010,7 @@
             <i class="fa-solid fa-arrow-up-right-from-square"></i> Open RGU Portal
           </a>
         </div>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 6px;">
           <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('noticeAiModal')">Close</button>
           <button type="button" class="btn btn-primary btn-sm" id="btnModalDispatch" onclick="dispatchModalNotice()">
             <i class="fa-solid fa-paper-plane"></i> Dispatch to Google Group
@@ -1028,10 +1020,10 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div class="toast-container" id="toastContainer"></div>
+  <!-- Toast Notification Shelf -->
+  <div class="toast-shelf" id="toastContainer"></div>
 
-  <!-- Application JS Controller -->
+  <!-- Application Controller -->
   <script src="/static/js/app.js"></script>
 </body>
 </html>
