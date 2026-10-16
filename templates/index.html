@@ -18,7 +18,7 @@
   <link rel="icon" type="image/png" href="/static/images/logo.png">
 
   <!-- Linear-Grade SaaS Design System -->
-  <link rel="stylesheet" href="/static/css/style.css?v=4.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=5.0">
 </head>
 <body>
 
@@ -74,6 +74,11 @@
         <button class="btn btn-secondary btn-sm" onclick="openTestModal()" title="Send verification notice email">
           <i class="fa-solid fa-paper-plane"></i>
           <span>Test Email</span>
+        </button>
+
+        <!-- Theme Mode Switcher (Vibrant Aurora vs Crisp Executive Light) -->
+        <button class="btn btn-icon theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle between Vibrant Aurora and Crisp Executive Light Mode">
+          <i class="fa-solid fa-sun" id="themeToggleIcon"></i>
         </button>
       </div>
     </header>
@@ -1027,6 +1032,6 @@
   <div class="toast-shelf" id="toastContainer"></div>
 
   <!-- Application Controller -->
-  <script src="/static/js/app.js?v=4.0"></script>
+  <script src="/static/js/app.js?v=5.0"></script>
 </body>
 </html>

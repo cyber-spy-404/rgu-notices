@@ -12,11 +12,35 @@ let currentCountdownSeconds = 0;
 let currentLiveNotice = null;
 let currentModalNoticeId = null;
 
+// ----------------- Theme Switcher (Vibrant Aurora vs Crisp Light) ----------------- //
+function initTheme() {
+  const saved = localStorage.getItem('rgu_theme') || 'dark';
+  applyTheme(saved);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const next = current === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  localStorage.setItem('rgu_theme', next);
+  showToast(`Switched to ${next === 'light' ? 'Crisp Executive Light' : 'Vibrant Aurora Dark'} mode`, 'info');
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = document.getElementById('themeToggleIcon');
+  if (icon) {
+    icon.className = theme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initApp();
 });
 
 async function initApp() {
+  initTheme();
   await fetchSystemStatus();
   await loadRecentAiNotice();
   await loadStudents();
