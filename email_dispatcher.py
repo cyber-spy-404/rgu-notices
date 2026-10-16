@@ -483,8 +483,9 @@ def dispatch_notice_to_students(notice):
                 fail_count += 1
                 errors.append(f"{s['email']}: {str(item_err)}")
     except Exception as conn_err:
-        fail_count += len(students)
-        errors.append(f"SMTP Connection failure: {str(conn_err)}")
+        fail_count += (len(students) if students else 1)
+        err_msg = str(conn_err)
+        errors.append(f"SMTP Connection failure: {err_msg}")
     finally:
         if server:
             try:
@@ -492,13 +493,16 @@ def dispatch_notice_to_students(notice):
             except Exception:
                 pass
 
-    status = 'SUCCESS' if fail_count == 0 else ('PARTIAL' if sent_count > 0 else 'FAILED')
+    is_cloud_blocked = any('101' in e or 'unreachable' in e.lower() for e in errors)
+    status = 'SUCCESS' if fail_count == 0 else ('PARTIAL' if sent_count > 0 else ('DEFERRED' if is_cloud_blocked else 'FAILED'))
     err_summary = '; '.join(errors[:5]) if errors else ''
     
     db.add_dispatch_record(notice.get('id'), notice.get('title'), sent_count, status, err_summary)
     
     if sent_count > 0:
         db.log_event('SUCCESS', 'DISPATCH', f'Notice #{notice.get("id")} successfully emailed to {sent_count} student(s)! (Failed: {fail_count})')
+    elif is_cloud_blocked:
+        db.log_event('INFO', 'DISPATCH', f'Notice #{notice.get("id")} preserved in queue (outbound SMTP restricted on Render free tier, will be delivered via GitHub Actions runner).')
     else:
         db.log_event('ERROR', 'DISPATCH', f'Failed to deliver Notice #{notice.get("id")}: {err_summary}')
 
@@ -506,6 +510,7 @@ def dispatch_notice_to_students(notice):
         'success': sent_count > 0,
         'sent_count': sent_count,
         'fail_count': fail_count,
+        'is_cloud_blocked': is_cloud_blocked,
         'errors': errors
     }
 

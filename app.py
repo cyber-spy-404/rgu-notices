@@ -77,15 +77,20 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
                         gemini_polisher.process_notice_complete(notice)
 
                     res = email_dispatcher.dispatch_notice_to_students(notice)
-                    status = 'sent' if res.get('success') else 'failed'
-                    db.mark_notice_emailed(notice['id'], status)
                     if res.get('success'):
+                        db.mark_notice_emailed(notice['id'], 'sent')
                         sent_count += 1
+                    elif res.get('is_cloud_blocked'):
+                        # Outbound SMTP restricted on Render free tier; keep in pending queue for GitHub Actions
+                        pass
+                    else:
+                        db.mark_notice_emailed(notice['id'], 'failed')
                     time.sleep(1.2)  # respectful SMTP pacing between emails
                 except Exception as de:
                     db.log_event('ERROR', 'DISPATCH', f"Auto-dispatch error on notice #{notice.get('id')}: {de}")
                     db.mark_notice_emailed(notice['id'], 'failed')
-            db.log_event('SUCCESS', 'DISPATCH', f"[{source}] Automatic delivery complete: {sent_count}/{len(unmailed)} unmailed notice(s) delivered to Google Group.")
+            if sent_count > 0:
+                db.log_event('SUCCESS', 'DISPATCH', f"[{source}] Automatic delivery complete: {sent_count}/{len(unmailed)} unmailed notice(s) delivered to Google Group.")
         except Exception as e:
             db.log_event('ERROR', 'DISPATCH', f"Background unmailed worker exception: {e}")
         finally:
@@ -266,10 +271,13 @@ def api_dispatch_pending():
     for notice in unmailed:
         try:
             res = email_dispatcher.dispatch_notice_to_students(notice)
-            status = 'sent' if res.get('success') else 'failed'
-            db.mark_notice_emailed(notice['id'], status)
             if res.get('success'):
+                db.mark_notice_emailed(notice['id'], 'sent')
                 sent_count += 1
+            elif res.get('is_cloud_blocked'):
+                pass
+            else:
+                db.mark_notice_emailed(notice['id'], 'failed')
             time.sleep(1)
         except Exception as e:
             db.log_event('ERROR', 'DISPATCH', f"Dispatch error for notice #{notice.get('id')}: {e}")

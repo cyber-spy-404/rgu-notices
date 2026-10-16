@@ -191,9 +191,13 @@ def run_notice_check(force_email=False):
             try:
                 res = dispatch_notice_to_students(n)
                 dispatched_results.append(res)
-                status = 'sent' if res.get('success') else 'failed'
-                db.mark_notice_emailed(nid, status)
-                newly_handled_count += 1
+                if res.get('success'):
+                    db.mark_notice_emailed(nid, 'sent')
+                    newly_handled_count += 1
+                elif res.get('is_cloud_blocked'):
+                    pass
+                else:
+                    db.mark_notice_emailed(nid, 'failed')
                 time.sleep(1.2)  # respectful SMTP pacing
             except Exception as de:
                 db.log_event('ERROR', 'DISPATCH', f"Instant dispatch failed for notice #{nid}: {de}")
@@ -219,9 +223,13 @@ def run_notice_check(force_email=False):
             try:
                 res = dispatch_notice_to_students(notice)
                 dispatched_results.append(res)
-                status = 'sent' if res.get('success') else 'failed'
-                db.mark_notice_emailed(nid, status)
-                newly_handled_count += 1
+                if res.get('success'):
+                    db.mark_notice_emailed(nid, 'sent')
+                    newly_handled_count += 1
+                elif res.get('is_cloud_blocked'):
+                    pass
+                else:
+                    db.mark_notice_emailed(nid, 'failed')
                 time.sleep(1.2)
             except Exception as de:
                 db.log_event('ERROR', 'DISPATCH', f"Failed delivering pending notice #{nid}: {de}")
