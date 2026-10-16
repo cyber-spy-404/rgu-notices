@@ -612,6 +612,14 @@ body {
   align-items: start;
 }
 
+.dash-left-col,
+.dash-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
 @media (max-width: 1080px) {
   .dashboard-layout { grid-template-columns: 1fr; }
 }
@@ -915,8 +923,9 @@ body {
    ============================================================================== */
 
 .inspector-card {
-  position: sticky;
-  top: var(--space-4);
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .inspector-tabs {
