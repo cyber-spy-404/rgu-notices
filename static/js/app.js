@@ -15,10 +15,10 @@ let currentModalNoticeId = null;
 // ----------------- Separate Dark & Light Theme Controller ----------------- //
 function initTheme() {
   const saved = localStorage.getItem('rgu_theme') || 'dark';
-  setTheme(saved, false);
+  setTheme(saved);
 }
 
-function setTheme(mode, showNotification = true) {
+function setTheme(mode) {
   const targetTheme = (mode === 'light') ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', targetTheme);
   localStorage.setItem('rgu_theme', targetTheme);
@@ -34,15 +34,11 @@ function setTheme(mode, showNotification = true) {
   if (icon) {
     icon.className = targetTheme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
   }
-
-  if (showNotification) {
-    showToast(`Switched to ${targetTheme === 'light' ? 'Crisp Executive Light' : 'Executive Obsidian Dark'} mode`, 'info');
-  }
 }
 
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-  setTheme(current === 'light' ? 'dark' : 'light', true);
+  setTheme(current === 'light' ? 'dark' : 'light');
 }
 
 // ----------------- Refined Clean Hover Physics (Stable, Executive) ----------------- //
