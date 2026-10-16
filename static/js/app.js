@@ -34,13 +34,103 @@ function applyTheme(theme) {
   }
 }
 
+// ----------------- Interactive Mouse Hover & 3D Tilt Physics ----------------- //
+function initMouseHoverEffects() {
+  const cursor = document.getElementById('cursorGlow');
+  let mouseX = window.innerWidth / 2;
+  let mouseY = window.innerHeight / 2;
+  let cursorX = mouseX;
+  let cursorY = mouseY;
+
+  // Ultra-smooth lerp ambient follower (60fps)
+  window.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  function renderCursor() {
+    if (cursor) {
+      cursorX += (mouseX - cursorX) * 0.12;
+      cursorY += (mouseY - cursorY) * 0.12;
+      cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
+    }
+    requestAnimationFrame(renderCursor);
+  }
+  requestAnimationFrame(renderCursor);
+
+  // Spotlight Border & Glow Tracking for Cards, Navbar, Stepper
+  function setupSpotlightTargets() {
+    const targets = document.querySelectorAll('.card, .metric-card, .step-node, .navbar, .inspector-card, .pipeline-stepper');
+    targets.forEach(el => {
+      if (el.dataset.spotlightBound) return;
+      el.dataset.spotlightBound = 'true';
+
+      el.addEventListener('mousemove', (e) => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        el.style.setProperty('--mouse-x', `${x}px`);
+        el.style.setProperty('--mouse-y', `${y}px`);
+      });
+
+      el.addEventListener('mouseleave', () => {
+        el.style.setProperty('--mouse-x', '-999px');
+        el.style.setProperty('--mouse-y', '-999px');
+      });
+    });
+
+    // 3D Perspective Tilt on Metric Cards (Emil Kowalski Physics)
+    document.querySelectorAll('.metric-card').forEach(card => {
+      if (card.dataset.tiltBound) return;
+      card.dataset.tiltBound = 'true';
+
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -6;
+        const rotateY = ((x - centerX) / centerX) * 6;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px) scale3d(1.02, 1.02, 1.02)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0) scale3d(1, 1, 1)';
+      });
+    });
+
+    // Magnetic micro-hover on primary and action buttons
+    document.querySelectorAll('.btn-primary, .btn-secondary, #themeToggleBtn').forEach(btn => {
+      if (btn.dataset.magneticBound) return;
+      btn.dataset.magneticBound = 'true';
+
+      btn.addEventListener('mousemove', (e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        btn.style.transform = `translate(${x * 0.16}px, ${y * 0.16}px)`;
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = '';
+      });
+    });
+  }
+
+  setupSpotlightTargets();
+  setInterval(setupSpotlightTargets, 3000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initMouseHoverEffects();
   initApp();
 });
 
 async function initApp() {
   initTheme();
+  initMouseHoverEffects();
   await fetchSystemStatus();
   await loadRecentAiNotice();
   await loadStudents();

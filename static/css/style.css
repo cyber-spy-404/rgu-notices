@@ -321,6 +321,58 @@ body {
 }
 
 /* ==============================================================================
+   AMBIENT CURSOR GLOW & INTERACTIVE SPOTLIGHT MOUSE HOVER
+   ============================================================================== */
+
+.cursor-glow-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 550px;
+  height: 550px;
+  margin-left: -275px;
+  margin-top: -275px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-glow) 0%, rgba(56, 189, 248, 0.08) 35%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(50px);
+  opacity: 0.85;
+  will-change: transform;
+}
+
+[data-theme="light"] .cursor-glow-follower {
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, rgba(2, 132, 199, 0.06) 35%, transparent 70%);
+}
+
+/* Linear-Grade Spotlight Border Tracking on Cards */
+.card, .step-node, .navbar, .app-header {
+  position: relative;
+}
+
+/* Spotlight Border Glow Layer that tracks mouse */
+.card::after, .step-node::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    360px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(99, 102, 241, 0.14) 0%,
+    rgba(236, 72, 153, 0.07) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card:hover::after, .step-node:hover::after {
+  opacity: 1;
+}
+
+/* ==============================================================================
    6. LAYOUT & STAGGER REVEAL (Emil Kowalski Physics)
    ============================================================================== */
 
@@ -760,7 +812,9 @@ body {
   align-items: center;
   gap: var(--space-4);
   box-shadow: var(--shadow-sm), var(--shadow-inset-top);
-  transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
   position: relative;
   overflow: hidden;
 }
@@ -775,15 +829,27 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
   opacity: 0;
   transition: opacity var(--transition-normal);
+  z-index: 2;
 }
 
-.metric-card:hover {
-  transform: translateY(-3.5px);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-lg), var(--shadow-inset-top);
+.metric-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    280px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.metric-card:hover::before {
+.metric-card:hover::before,
+.metric-card:hover::after {
   opacity: 1;
 }
 
@@ -1235,12 +1301,14 @@ body {
 
 .data-grid tbody tr {
   border-bottom: 1px solid var(--border-subtle);
-  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+  transition: background-color 0.16s var(--ease-spring), transform 0.16s var(--ease-spring), box-shadow 0.16s var(--ease-spring);
 }
 
 .data-grid tbody tr:hover {
   background-color: var(--bg-surface-hover);
-  box-shadow: inset 3.5px 0 0 0 var(--primary);
+  transform: translateX(4px);
+  box-shadow: inset 4px 0 0 0 var(--primary), 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .data-grid td {
