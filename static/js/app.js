@@ -41,13 +41,28 @@ function toggleTheme() {
   setTheme(current === 'light' ? 'dark' : 'light');
 }
 
-// ----------------- Refined Clean Hover Physics (Stable, Executive) ----------------- //
+// ----------------- Refined Clean Hover Physics (Linear Spotlight) ----------------- //
 function initMouseHoverEffects() {
-  // Stable, zero-wobble executive hover experience
+  const cards = document.querySelectorAll('.card, .metric-card, .step-node');
+  cards.forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.setProperty('--mouse-x', `${x}px`);
+      card.style.setProperty('--mouse-y', `${y}px`);
+    }, { passive: true });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--mouse-x', '-999px');
+      card.style.setProperty('--mouse-y', '-999px');
+    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initMouseHoverEffects();
   initApp();
 });
 

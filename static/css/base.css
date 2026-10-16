@@ -554,6 +554,40 @@ body {
   position: relative;
 }
 
+/* Linear-style Cursor Spotlight Hover Effect */
+.card::before,
+.metric-card::before,
+.step-node::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(380px circle at var(--mouse-x, -999px) var(--mouse-y, -999px), rgba(255, 255, 255, 0.06), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover::before,
+.metric-card:hover::before,
+.step-node:hover::before {
+  opacity: 1;
+}
+
+[data-theme="light"] .card::before,
+[data-theme="light"] .metric-card::before,
+[data-theme="light"] .step-node::before {
+  background: radial-gradient(380px circle at var(--mouse-x, -999px) var(--mouse-y, -999px), rgba(15, 23, 42, 0.035), transparent 70%);
+}
+
+.card > *,
+.metric-card > *,
+.step-node > * {
+  position: relative;
+  z-index: 2;
+}
+
 .card-header {
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
