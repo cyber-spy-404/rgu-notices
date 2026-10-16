@@ -2,8 +2,8 @@ name: Daily Raiganj University Notice Scan
 
 on:
   schedule:
-    # Runs at 18:28 UTC every day (which is 23:58:00 IST - 2 minutes before midnight to wake sleeping servers)
-    - cron: '28 18 * * *'
+    # Runs at 04:28 UTC every day (which is 09:58:00 AM IST - 2 minutes before 10:00 AM to wake sleeping servers)
+    - cron: '28 4 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
     inputs:
       force_send_sample:
