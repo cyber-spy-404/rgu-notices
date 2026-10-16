@@ -176,20 +176,55 @@ def api_scan_now():
     res = scraper.run_notice_check()
     return jsonify(res)
 
+def check_sync_auth():
+    """
+    Validates sync token if configured in environment (SYNC_TOKEN or CRON_SECRET).
+    Supports 'X-Sync-Token', 'X-Cron-Key', 'Authorization: Bearer <token>', or '?token=' / '?key=' query param.
+    """
+    expected_token = os.getenv('SYNC_TOKEN') or os.getenv('CRON_SECRET')
+    if not expected_token:
+        # Permit sync if no token configured
+        return True
+
+    provided = (
+        request.headers.get('X-Sync-Token') or 
+        request.headers.get('X-Cron-Key') or 
+        request.args.get('token') or 
+        request.args.get('key') or 
+        (request.headers.get('Authorization', '').startswith('Bearer ') and request.headers.get('Authorization', '')[7:].strip())
+    )
+    return provided == expected_token
+
 @app.route('/api/cron/trigger', methods=['GET', 'POST'])
 def api_cron_trigger():
     """
-    Webhook trigger endpoint for GitHub Actions or external cron services.
-    Validates optional CRON_SECRET if configured.
+    Webhook trigger endpoint for external cron services (cron-job.org, UptimeRobot, etc.)
+    or GitHub Actions.
+    Validates optional SYNC_TOKEN / CRON_SECRET if configured.
     """
-    cron_key = os.getenv('CRON_SECRET')
-    provided_key = request.args.get('key') or request.headers.get('X-Cron-Key')
-    if cron_key and provided_key != cron_key:
-        return jsonify({'success': False, 'error': 'Unauthorized: Invalid cron key'}), 401
+    if not check_sync_auth():
+        return jsonify({'success': False, 'error': 'Unauthorized: Invalid cron key or sync token'}), 401
 
-    db.log_event('INFO', 'WEBHOOK', 'External cron webhook triggered notice scan.')
+    db.log_event('INFO', 'WEBHOOK', 'External precision cron webhook triggered notice scan.')
     res = scraper.run_notice_check()
-    return jsonify({'success': True, 'result': res})
+
+    # Also dispatch any pending unmailed notices
+    unmailed = db.get_unmailed_notices(limit=50)
+    dispatched_count = 0
+    if unmailed:
+        from email_dispatcher import dispatch_notice_to_students
+        for notice in unmailed:
+            m_res = dispatch_notice_to_students(notice)
+            db.mark_notice_emailed(notice['id'], 'sent' if m_res.get('success') else 'failed')
+            if m_res.get('success'):
+                dispatched_count += 1
+
+    return jsonify({
+        'success': True,
+        'result': res,
+        'unmailed_dispatched': dispatched_count,
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
 
 @app.route('/api/health', methods=['GET'])
 def api_health():
@@ -201,23 +236,6 @@ def api_health():
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'service': 'Raiganj University Notice Dispatcher'
     })
-
-def check_sync_auth():
-    """
-    Validates sync token if configured in environment (SYNC_TOKEN or CRON_SECRET).
-    Supports 'X-Sync-Token', 'Authorization: Bearer <token>', or '?token=' query param.
-    """
-    expected_token = os.getenv('SYNC_TOKEN') or os.getenv('CRON_SECRET')
-    if not expected_token:
-        # Permit sync if no token configured
-        return True
-
-    provided = (
-        request.headers.get('X-Sync-Token') or 
-        request.args.get('token') or 
-        (request.headers.get('Authorization', '').startswith('Bearer ') and request.headers.get('Authorization', '')[7:].strip())
-    )
-    return provided == expected_token
 
 # ----------------- Cloud / GitHub Actions Sync API ----------------- #
 

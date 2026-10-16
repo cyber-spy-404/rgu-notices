@@ -3,8 +3,9 @@ import os
 import json
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rgu_smtp.db')
-SEEN_IDS_PATH = os.path.join(os.path.dirname(__file__), 'data', 'seen_ids.txt')
+DATA_DIR = os.getenv('DATA_DIR') or os.path.join(os.path.dirname(__file__), 'data')
+DB_PATH = os.path.join(DATA_DIR, 'rgu_smtp.db')
+SEEN_IDS_PATH = os.path.join(DATA_DIR, 'seen_ids.txt')
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
