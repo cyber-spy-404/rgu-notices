@@ -72,9 +72,11 @@ def api_status():
     smtp_cfg = db.get_smtp_config()
     group_email = os.getenv('GOOGLE_GROUP_EMAIL') or smtp_cfg.get('google_group_email', '')
 
+    import zoneinfo
+    kolkata_tz = zoneinfo.ZoneInfo('Asia/Kolkata')
     return jsonify({
         'status': 'ok',
-        'server_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'server_time': datetime.now(kolkata_tz).strftime('%Y-%m-%d %H:%M:%S'),
         'stats': stats,
         'scheduler': sched_status,
         'smtp_server': smtp_status,
