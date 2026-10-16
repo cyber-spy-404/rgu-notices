@@ -232,9 +232,9 @@ Guidelines:
         parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
 
     models_to_try = [
-        'gemini-2.5-flash',
-        'gemini-flash-latest',
-        'gemini-pro-latest'
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro'
     ]
     polished_text = None
 
