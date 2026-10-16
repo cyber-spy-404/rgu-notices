@@ -27,7 +27,7 @@
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-default: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-interactive: rgba(37, 99, 235, 0.4);
+  --border-interactive: rgba(255, 255, 255, 0.28);
 
   /* High-Contrast Neutral Typography */
   --text-white: #ffffff;
@@ -36,11 +36,17 @@
   --text-tertiary: #64748b;
   --text-quaternary: #475569;
 
-  /* Ambient Lighting: Single Quiet Sapphire Glow */
-  --beam-color-1: rgba(37, 99, 235, 0.08);
-  --beam-color-2: rgba(255, 255, 255, 0.02);
-  --dots-color: rgba(255, 255, 255, 0.04);
-  --cursor-glow-color: rgba(255, 255, 255, 0.03);
+  /* Executive Primary Action Tokens (Solid Pure White in Dark Mode) */
+  --primary: #ffffff;
+  --primary-hover: #f4f4f5;
+  --primary-text: #09090b;
+  --primary-glow: rgba(255, 255, 255, 0.12);
+
+  /* Ambient Lighting: Quiet Zero-Glow Foundation */
+  --beam-color-1: rgba(255, 255, 255, 0.02);
+  --beam-color-2: rgba(255, 255, 255, 0.01);
+  --dots-color: rgba(255, 255, 255, 0.03);
+  --cursor-glow-color: transparent;
 
   /* Deep Multi-Layered Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -137,8 +143,9 @@
 }
 
 [data-theme="dark"] .metric-card:hover .metric-icon-box {
-  color: var(--primary);
-  border-color: var(--border-interactive);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--bg-surface-3);
 }
 
 [data-theme="dark"] .metric-meta {
@@ -182,7 +189,7 @@
 }
 
 [data-theme="dark"] .tab-btn.active .tab-counter {
-  background: var(--primary);
+  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
 }
 
@@ -229,7 +236,7 @@
 [data-theme="dark"] .step-icon {
   background: rgba(255, 255, 255, 0.04);
   border-color: var(--border-default);
-  color: var(--primary);
+  color: var(--text-secondary);
 }
 
 [data-theme="dark"] .step-copy strong {
@@ -274,8 +281,7 @@
 
 [data-theme="dark"] .data-grid tbody tr:hover {
   background-color: var(--bg-surface-hover);
-  transform: translateX(3px);
-  box-shadow: inset 3.5px 0 0 0 var(--primary);
+  box-shadow: inset 2.5px 0 0 0 #ffffff;
 }
 
 [data-theme="dark"] .data-grid td {
@@ -352,12 +358,32 @@
 [data-theme="dark"] .form-input:focus,
 [data-theme="dark"] .form-textarea:focus,
 [data-theme="dark"] .gemini-message-textarea:focus {
-  border-color: var(--primary);
+  border-color: rgba(255, 255, 255, 0.35);
   background: var(--input-focus-bg);
-  box-shadow: 0 0 0 2px var(--primary-glow);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 /* Dark Mode: Buttons */
+[data-theme="dark"] .btn-primary {
+  background: #ffffff !important;
+  color: #09090b !important;
+  border: 1px solid #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: #f4f4f5 !important;
+  color: #09090b !important;
+  border-color: #f4f4f5 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .btn-primary i,
+[data-theme="dark"] .btn-primary span {
+  color: #09090b !important;
+}
+
 [data-theme="dark"] .btn-secondary {
   background: var(--bg-surface-2);
   color: var(--text-primary);
@@ -423,8 +449,25 @@
 }
 
 [data-theme="dark"] .gemini-polish-box h3 {
-  color: #93c5fd;
+  color: #ffffff;
   border-bottom-color: var(--border-subtle);
+}
+
+[data-theme="dark"] .gemini-polish-box a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+[data-theme="dark"] .accent-link {
+  color: #e4e4e7;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="dark"] .accent-link:hover {
+  color: #ffffff;
+  text-decoration-color: #ffffff;
 }
 
 [data-theme="dark"] .md-toolbar {

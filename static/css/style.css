@@ -3,6 +3,6 @@
    MODULAR ARCHITECTURE (SEPARATE BASE, DARK & LIGHT STYLESHEETS)
    ============================================================================== */
 
-@import url('base.css?v=9.0');
-@import url('dark.css?v=9.0');
-@import url('light.css?v=9.0');
+@import url('base.css?v=10.0');
+@import url('dark.css?v=10.0');
+@import url('light.css?v=10.0');
