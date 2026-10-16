@@ -23,7 +23,7 @@ function toggleTheme() {
   const next = current === 'light' ? 'dark' : 'light';
   applyTheme(next);
   localStorage.setItem('rgu_theme', next);
-  showToast(`Switched to ${next === 'light' ? 'Crisp Executive Light' : 'Vibrant Aurora Dark'} mode`, 'info');
+  showToast(`Switched to ${next === 'light' ? 'Crisp Executive Light' : 'Executive Obsidian'} mode`, 'info');
 }
 
 function applyTheme(theme) {
@@ -195,13 +195,9 @@ async function fetchSystemStatus() {
     const btnDeliver = document.getElementById('btnDeliverPending');
     if (btnDeliver) {
       if (pendingCount > 0) {
-        btnDeliver.classList.add('pulse-badge');
-        btnDeliver.style.borderColor = 'rgba(245, 158, 11, 0.6)';
-        btnDeliver.style.color = '#fbbf24';
+        btnDeliver.classList.add('has-pending');
       } else {
-        btnDeliver.classList.remove('pulse-badge');
-        btnDeliver.style.borderColor = '';
-        btnDeliver.style.color = '';
+        btnDeliver.classList.remove('has-pending');
       }
     }
 
@@ -342,7 +338,7 @@ function renderStudentsTable(students) {
             <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleStudentActive(${s.id}, this.checked)">
             <span class="slider"></span>
           </label>
-          <span style="margin-left: 8px; font-size: 12px; color: ${s.is_active ? 'var(--accent-emerald)' : 'var(--text-subtle)'};">
+          <span style="margin-left: 8px; font-size: 12px; color: ${s.is_active ? 'var(--emerald)' : 'var(--text-tertiary)'};">
             ${s.is_active ? 'Subscribed' : 'Paused'}
           </span>
         </td>
@@ -502,18 +498,18 @@ function renderNoticesTable(notices) {
 
 function renderNoticeStatusBadge(status) {
   if (status === 'sent') {
-    return `<span class="badge badge-success" title="Delivered to Google Group / Students"><i class="fa-solid fa-circle-check"></i> Emailed</span>`;
+    return `<span class="badge badge-status status-sent" title="Delivered to Google Group"><span class="status-dot dot-emerald"></span> Delivered</span>`;
   } else if (status === 'failed') {
-    return `<span class="badge badge-danger" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);" title="Delivery failed on last attempt"><i class="fa-solid fa-triangle-exclamation"></i> Delivery Failed</span>`;
+    return `<span class="badge badge-status status-failed" title="Delivery failed on last attempt"><span class="status-dot dot-rose"></span> Failed</span>`;
   } else {
-    return `<span class="badge badge-warning" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);" title="Unmailed notice - automatically delivered when webapp is accessed"><i class="fa-solid fa-envelope"></i> Unmailed / Queued</span>`;
+    return `<span class="badge badge-status status-queued" title="Queued for automated delivery"><span class="status-dot dot-amber"></span> Queued</span>`;
   }
 }
 
   tbody.innerHTML = notices.map(n => {
     return `
       <tr>
-        <td><span class="badge badge-info" style="font-family: var(--font-mono);">${escapeHtml(n.id)}</span></td>
+        <td><span class="notice-id-chip">#${escapeHtml(n.id)}</span></td>
         <td>
           <div style="display: flex; align-items: center; gap: 10px;">
             <img src="/static/images/logo.png" alt="RGU" style="width: 26px; height: 26px; border-radius: 6px; background: #ffffff; padding: 2px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15);">
@@ -562,7 +558,7 @@ function renderDashboardNotices(notices) {
 
   tbody.innerHTML = notices.map(n => `
     <tr>
-      <td><span class="badge badge-info" style="font-family: var(--font-mono);">${escapeHtml(n.id)}</span></td>
+      <td><span class="notice-id-chip">#${escapeHtml(n.id)}</span></td>
       <td>
         <div style="display: flex; align-items: center; gap: 8px;">
           <img src="/static/images/logo.png" alt="RGU" style="width: 22px; height: 22px; border-radius: 5px; background: #ffffff; padding: 2px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25);">
@@ -818,7 +814,7 @@ function renderInboxTable(emails) {
     <tr>
       <td style="font-size: 12px; color: var(--text-subtle); white-space: nowrap;">${m.received_at || 'Recent'}</td>
       <td style="font-size: 13px;"><code>${escapeHtml(m.recipients || 'student@rgu.ac.in')}</code></td>
-      <td style="font-weight: 500; color: #fff;">${escapeHtml(m.subject || '(No Subject)')}</td>
+      <td style="font-weight: 600; color: var(--text-white);">${escapeHtml(m.subject || '(No Subject)')}</td>
       <td>
         <button class="btn btn-secondary btn-xs" onclick="viewCapturedEmail(${m.id}, '${escapeHtml(m.subject)}')">
           <i class="fa-regular fa-eye"></i> View HTML
@@ -1225,7 +1221,7 @@ async function openNoticeAiModal(noticeId) {
     }
 
     const n = data.notice;
-    document.getElementById('modalNoticeAiTitle').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles" style="color: #ec4899;"></i> <span>${escapeHtml(n.title)}</span>`;
+    document.getElementById('modalNoticeAiTitle').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles header-icon"></i> <span>${escapeHtml(n.title)}</span>`;
     document.getElementById('modalNoticeIdBadge').innerText = `Notice #${n.id}`;
     document.getElementById('modalNoticeCatBadge').innerText = n.category || 'General';
     
