@@ -829,7 +829,7 @@ async function loadLogs() {
 function renderLogsConsole(logs) {
   const consoleElem = document.getElementById('logsConsole');
   if (!logs || logs.length === 0) {
-    consoleElem.innerHTML = `<div class="log-line" style="color: var(--text-subtle);">No execution logs recorded yet.</div>`;
+    consoleElem.innerHTML = `<div class="log-line"><i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>No execution logs recorded yet.</div>`;
     return;
   }
 

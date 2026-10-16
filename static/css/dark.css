@@ -544,19 +544,34 @@
 
 /* Dark Mode: Terminal Console */
 [data-theme="dark"] .terminal-console {
-  background: var(--bg-surface-0);
+  background: #090a0f !important;
+  border: 1px solid var(--border-default) !important;
+  color: #f4f4f5 !important;
 }
 
-[data-theme="dark"] .terminal-message {
-  color: var(--text-primary);
+[data-theme="dark"] .terminal-console .terminal-row,
+[data-theme="dark"] .terminal-console .log-entry {
+  color: #f4f4f5 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-[data-theme="dark"] .terminal-ts {
-  color: var(--text-quaternary);
+[data-theme="dark"] .terminal-console .terminal-message,
+[data-theme="dark"] .terminal-console .log-msg {
+  color: #f4f4f5 !important;
 }
 
-[data-theme="dark"] .terminal-module {
-  color: #94a3b8;
+[data-theme="dark"] .terminal-console .terminal-ts,
+[data-theme="dark"] .terminal-console .log-ts {
+  color: #71717a !important;
+}
+
+[data-theme="dark"] .terminal-console .terminal-module,
+[data-theme="dark"] .terminal-console .log-cat {
+  color: #a1a1aa !important;
+}
+
+[data-theme="dark"] .terminal-console .log-line {
+  color: #71717a !important;
 }
 
 /* Dark Mode: Footer */

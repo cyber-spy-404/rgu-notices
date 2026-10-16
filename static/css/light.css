@@ -537,22 +537,36 @@
   background: #f1f5f9;
 }
 
-/* Light Mode: Terminal Console */
+/* Light Mode: Terminal Console (Executive High-Contrast Developer Console) */
 [data-theme="light"] .terminal-console {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: #090a0f !important;
+  border: 1px solid #1e293b !important;
+  color: #f4f4f5 !important;
 }
 
-[data-theme="light"] .terminal-message {
-  color: #e2e8f0;
+[data-theme="light"] .terminal-console .terminal-row,
+[data-theme="light"] .terminal-console .log-entry {
+  color: #f4f4f5 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-[data-theme="light"] .terminal-ts {
-  color: #64748b;
+[data-theme="light"] .terminal-console .terminal-message,
+[data-theme="light"] .terminal-console .log-msg {
+  color: #f4f4f5 !important;
 }
 
-[data-theme="light"] .terminal-module {
-  color: #94a3b8;
+[data-theme="light"] .terminal-console .terminal-ts,
+[data-theme="light"] .terminal-console .log-ts {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .terminal-console .terminal-module,
+[data-theme="light"] .terminal-console .log-cat {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .terminal-console .log-line {
+  color: #94a3b8 !important;
 }
 
 /* Light Mode: Footer */
