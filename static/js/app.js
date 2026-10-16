@@ -12,26 +12,37 @@ let currentCountdownSeconds = 0;
 let currentLiveNotice = null;
 let currentModalNoticeId = null;
 
-// ----------------- Theme Switcher (Vibrant Aurora vs Crisp Light) ----------------- //
+// ----------------- Separate Dark & Light Theme Controller ----------------- //
 function initTheme() {
   const saved = localStorage.getItem('rgu_theme') || 'dark';
-  applyTheme(saved);
+  setTheme(saved, false);
+}
+
+function setTheme(mode, showNotification = true) {
+  const targetTheme = (mode === 'light') ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', targetTheme);
+  localStorage.setItem('rgu_theme', targetTheme);
+
+  // Synchronize separate segmented buttons in navbar
+  const btnDark = document.getElementById('btnThemeDark');
+  const btnLight = document.getElementById('btnThemeLight');
+  if (btnDark) btnDark.classList.toggle('active', targetTheme === 'dark');
+  if (btnLight) btnLight.classList.toggle('active', targetTheme === 'light');
+
+  // Maintain backwards compatibility for single toggle button if present
+  const icon = document.getElementById('themeToggleIcon');
+  if (icon) {
+    icon.className = targetTheme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  }
+
+  if (showNotification) {
+    showToast(`Switched to ${targetTheme === 'light' ? 'Crisp Executive Light' : 'Executive Obsidian Dark'} mode`, 'info');
+  }
 }
 
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-  const next = current === 'light' ? 'dark' : 'light';
-  applyTheme(next);
-  localStorage.setItem('rgu_theme', next);
-  showToast(`Switched to ${next === 'light' ? 'Crisp Executive Light' : 'Executive Obsidian'} mode`, 'info');
-}
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  const icon = document.getElementById('themeToggleIcon');
-  if (icon) {
-    icon.className = theme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-  }
+  setTheme(current === 'light' ? 'dark' : 'light', true);
 }
 
 // ----------------- Interactive Mouse Hover & 3D Tilt Physics ----------------- //

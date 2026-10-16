@@ -17,8 +17,11 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/static/images/logo.png">
 
-  <!-- Executive Linear-Grade SaaS Design System -->
-  <link rel="stylesheet" href="/static/css/style.css?v=8.0">
+  <!-- Executive Linear-Grade SaaS Design System: Separate Architecture -->
+  <link rel="stylesheet" href="/static/css/base.css?v=9.0">
+  <link rel="stylesheet" href="/static/css/dark.css?v=9.0">
+  <link rel="stylesheet" href="/static/css/light.css?v=9.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=9.0">
 </head>
 <body>
 
@@ -75,10 +78,17 @@
           <span>Test Email</span>
         </button>
 
-        <!-- Theme Mode Switcher (Vibrant Aurora vs Crisp Executive Light) -->
-        <button class="btn btn-icon theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle between Vibrant Aurora and Crisp Executive Light Mode">
-          <i class="fa-solid fa-sun" id="themeToggleIcon"></i>
-        </button>
+        <!-- Dedicated Segmented Appearance Controller: Separate Dark & Light Buttons -->
+        <div class="theme-segmented-control" role="group" aria-label="Appearance Mode">
+          <button type="button" class="theme-seg-btn active" id="btnThemeDark" onclick="setTheme('dark')" title="Switch to Executive Dark Mode">
+            <i class="fa-solid fa-moon"></i>
+            <span>Dark</span>
+          </button>
+          <button type="button" class="theme-seg-btn" id="btnThemeLight" onclick="setTheme('light')" title="Switch to Crisp Executive Light Mode">
+            <i class="fa-solid fa-sun"></i>
+            <span>Light</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -1031,6 +1041,6 @@
   <div class="toast-shelf" id="toastContainer"></div>
 
   <!-- Application Controller -->
-  <script src="/static/js/app.js?v=8.0"></script>
+  <script src="/static/js/app.js?v=9.0"></script>
 </body>
 </html>
