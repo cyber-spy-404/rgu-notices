@@ -231,6 +231,38 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
 </body>
 </html>"""
 
+_smtp_availability_cache = None
+_smtp_last_checked_time = 0
+
+def check_smtp_availability(force_recheck=False):
+    """
+    Fast pre-flight check to test if outbound SMTP port 587 or 465 is reachable from this host.
+    Caches the result for 120 seconds to prevent hammering firewall-blocked ports on cloud containers.
+    Returns (is_available, message_or_error).
+    """
+    global _smtp_availability_cache, _smtp_last_checked_time
+    import time
+    import socket
+    now = time.time()
+    if not force_recheck and _smtp_availability_cache is not None and (now - _smtp_last_checked_time < 120):
+        return _smtp_availability_cache
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.5)
+        # Quick probe to smtp.gmail.com port 587
+        res = s.connect_ex(('smtp.gmail.com', 587))
+        s.close()
+        if res == 0:
+            _smtp_availability_cache = (True, "OK")
+        else:
+            _smtp_availability_cache = (False, f"Socket error code {res}")
+    except Exception as e:
+        _smtp_availability_cache = (False, str(e))
+
+    _smtp_last_checked_time = now
+    return _smtp_availability_cache
+
 def get_smtp_connection():
     """
     Establishes SMTP client connection according to environment variables (for GitHub Actions / Cloud)
@@ -384,6 +416,20 @@ def dispatch_notice_to_students(notice):
     sent_count = 0
     fail_count = 0
     errors = []
+
+    # Fast pre-flight SMTP check: if running on Render free tier where outbound port 587/465 is blocked,
+    # keep notice in pending queue without spamming errors or wasting AI quota.
+    can_connect, reason = check_smtp_availability()
+    if not can_connect and ('101' in reason or 'unreachable' in reason.lower() or 'blocked' in reason.lower() or 'denied' in reason.lower() or 'error code' in reason.lower()):
+        db.add_dispatch_record(notice.get('id'), notice.get('title'), 0, 'DEFERRED', f'Outbound SMTP restricted on hosting ({reason})')
+        db.log_event('INFO', 'DISPATCH', f'Notice #{notice.get("id")} safely preserved in queue (outbound SMTP restricted on Render free tier, will be delivered via GitHub Actions runner).')
+        return {
+            'success': False,
+            'sent_count': 0,
+            'fail_count': 0,
+            'is_cloud_blocked': True,
+            'errors': [f"Cloud SMTP restricted: {reason}"]
+        }
 
     # Step 1: Grab notice file (PDF, DOCX, Image) and convert to .md
     # Step 2: Give to Gemini Multimodal AI to polish properly

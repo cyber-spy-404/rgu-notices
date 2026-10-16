@@ -58,8 +58,13 @@ def check_pending_notices_queue():
         unmailed = db.get_unmailed_notices(limit=50)
         if not unmailed:
             return
-        db.log_event('INFO', 'SCHEDULER', f'Queue watcher detected {len(unmailed)} unmailed notice(s). Checking polish and starting instant delivery...')
+
         import email_dispatcher
+        can_connect, reason = email_dispatcher.check_smtp_availability()
+        if not can_connect and ('101' in reason or 'unreachable' in reason.lower() or 'blocked' in reason.lower() or 'denied' in reason.lower() or 'error code' in reason.lower()):
+            return
+
+        db.log_event('INFO', 'SCHEDULER', f'Queue watcher detected {len(unmailed)} unmailed notice(s). Checking polish and starting instant delivery...')
         import gemini_polisher
         import time
         for notice in unmailed:
@@ -68,7 +73,12 @@ def check_pending_notices_queue():
                 if not notice.get('polished_markdown') and not notice.get('has_gemini_polish'):
                     gemini_polisher.process_notice_complete(notice)
                 res = email_dispatcher.dispatch_notice_to_students(notice)
-                db.mark_notice_emailed(notice['id'], 'sent' if res.get('success') else 'failed')
+                if res.get('success'):
+                    db.mark_notice_emailed(notice['id'], 'sent')
+                elif res.get('is_cloud_blocked'):
+                    pass
+                else:
+                    db.mark_notice_emailed(notice['id'], 'failed')
                 time.sleep(1.2)
             except Exception as e:
                 db.log_event('ERROR', 'DISPATCH', f"Queue delivery error on notice #{notice.get('id')}: {e}")

@@ -141,8 +141,8 @@ def init_db():
                 seed_data = json.load(f)
                 for item in seed_data:
                     cursor.execute('''
-                    INSERT INTO notices (id, title, link, published_on, category, is_new, email_status)
-                    VALUES (?, ?, ?, ?, ?, 1, 'pending')
+                    INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at)
+                    VALUES (?, ?, ?, ?, ?, 0, 'sent', CURRENT_TIMESTAMP)
                     ON CONFLICT(id) DO UPDATE SET
                         title = excluded.title,
                         link = excluded.link,
@@ -165,16 +165,16 @@ def init_db():
                     nid = line.strip()
                     if nid:
                         cursor.execute('''
-                        INSERT OR IGNORE INTO notices (id, title, link, published_on, category, is_new, email_status)
-                        VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 1, 'pending')
+                        INSERT OR IGNORE INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at)
+                        VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 0, 'sent', CURRENT_TIMESTAMP)
                         ''', (nid, f"Notice #{nid}", nid))
             conn.commit()
         except Exception as e:
             print(f"Warning: seen_ids sync note: {e}")
 
-    # Ensure any unmailed notices marked 'synced' or 'failed' (from cold-start network warmup) are upgraded to 'pending' so they are delivered
+    # Mark all existing pre-loaded notices as sent since they have already been delivered to the Google Group
     try:
-        cursor.execute("UPDATE notices SET email_status = 'pending' WHERE email_status IN ('synced', 'failed')")
+        cursor.execute("UPDATE notices SET email_status = 'sent', emailed_at = COALESCE(emailed_at, CURRENT_TIMESTAMP) WHERE email_status != 'sent'")
         conn.commit()
     except Exception as e:
         print(f"Warning: notice status migration note: {e}")

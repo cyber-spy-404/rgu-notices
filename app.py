@@ -66,8 +66,13 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
             if not unmailed:
                 return
 
-            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} unmailed notice(s) in database. Starting instant delivery to students / Google Group...")
             import email_dispatcher
+            can_connect, reason = email_dispatcher.check_smtp_availability()
+            if not can_connect and ('101' in reason or 'unreachable' in reason.lower() or 'blocked' in reason.lower() or 'denied' in reason.lower() or 'error code' in reason.lower()):
+                db.log_event('INFO', 'DISPATCH', f"[{source}] Outbound SMTP port is restricted on cloud host ({reason}). Safely preserving {len(unmailed)} notice(s) in queue for GitHub Actions dispatcher.")
+                return
+
+            db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} unmailed notice(s) in database. Starting instant delivery to students / Google Group...")
             import gemini_polisher
             sent_count = 0
             for notice in unmailed:
@@ -135,7 +140,6 @@ def email_preview(msg_id):
 
 @app.route('/api/status', methods=['GET'])
 def api_status():
-    trigger_pending_mail_dispatch_async("WEB_POLL")
     import os
     stats = db.get_stats()
     sched_status = scheduler_engine.get_scheduler_status()
