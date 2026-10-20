@@ -7,9 +7,10 @@ from flask import Flask, render_template, request, jsonify, send_file, Response
 import database as db
 import scraper
 import scheduler_engine
+import importlib
 import local_smtp_server
 import security
-from email_dispatcher import test_smtp_connection, dispatch_notice_to_students
+import email_dispatcher
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -348,9 +349,9 @@ def api_cron_trigger():
     unmailed = db.get_unmailed_notices(limit=50)
     dispatched_count = 0
     if unmailed:
-        from email_dispatcher import dispatch_notice_to_students
+        importlib.reload(email_dispatcher)
         for notice in unmailed:
-            m_res = dispatch_notice_to_students(notice)
+            m_res = email_dispatcher.dispatch_notice_to_students(notice)
             db.mark_notice_emailed(notice['id'], 'sent' if m_res.get('success') else 'failed')
             if m_res.get('success'):
                 dispatched_count += 1
@@ -467,7 +468,8 @@ def api_resend_notice(notice_id):
     if not notice:
         return jsonify({'success': False, 'error': 'Notice not found in database'}), 404
     
-    res = dispatch_notice_to_students(notice)
+    importlib.reload(email_dispatcher)
+    res = email_dispatcher.dispatch_notice_to_students(notice)
     db.mark_notice_emailed(notice_id, 'sent' if res.get('success') else 'failed')
     return jsonify(res)
 
@@ -611,7 +613,8 @@ def api_save_smtp_config():
 def api_test_smtp():
     data = request.get_json() or {}
     test_recipient = data.get('test_recipient', '').strip()
-    result = test_smtp_connection(test_recipient if test_recipient else None)
+    importlib.reload(email_dispatcher)
+    result = email_dispatcher.test_smtp_connection(test_recipient if test_recipient else None)
     return jsonify(result)
 
 @app.route('/api/smtp/server/toggle', methods=['POST'])
