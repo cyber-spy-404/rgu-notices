@@ -304,6 +304,14 @@ def get_smtp_connection():
         cfg_effective['sender_email'] = env_sender or env_user
         cfg_effective['google_group_email'] = os.getenv('GOOGLE_GROUP_EMAIL') or cfg.get('google_group_email', '')
 
+    # Deliverability / Anti-Spam protection:
+    # Ensure sender_email matches the authenticated SMTP user if sending via Gmail or custom relay,
+    # so SPF, DKIM, and DMARC alignment passes without triggering phishing/spoofing spam filters.
+    if user and '@' in user:
+        current_sender = (cfg_effective.get('sender_email') or '').strip()
+        if not current_sender or 'raiganjuniversity.ac.in' in current_sender or current_sender == user:
+            cfg_effective['sender_email'] = user
+
     configured_port = int(env_port or cfg.get('custom_port') or 587)
 
     # Sequence of connection strategies:
@@ -346,6 +354,25 @@ def get_smtp_connection():
 
     raise Exception(f"SMTP Connection failure: {last_exc}")
 
+def apply_email_deliverability_headers(msg_obj, sender_name, sender_email, to_header, subject):
+    """
+    Applies strict anti-spam & deliverability headers conforming to modern RFC and Gmail/Yahoo policies:
+    - Message-ID domain matching sender's authenticated domain to pass SPF/DKIM/DMARC alignment.
+    - Reply-To header pointing to monitored sender address.
+    - Auto-Submitted & X-Auto-Response-Suppress headers to identify official transactional notices.
+    """
+    msg_obj['Subject'] = subject
+    msg_obj['From'] = f'{sender_name} <{sender_email}>'
+    msg_obj['To'] = to_header
+    msg_obj['Date'] = formatdate(localtime=True)
+    msg_obj['Reply-To'] = sender_email
+    msg_obj['Auto-Submitted'] = 'auto-generated'
+    msg_obj['X-Auto-Response-Suppress'] = 'All'
+    msg_obj['Precedence'] = 'bulk'
+
+    sender_domain = sender_email.split('@')[-1].strip() if '@' in sender_email else None
+    msg_obj['Message-ID'] = make_msgid(domain=sender_domain)
+
 def send_single_email(recipient_email, recipient_name, subject, html_content, text_content=None):
     """
     Sends one email via the configured SMTP server.
@@ -357,11 +384,7 @@ def send_single_email(recipient_email, recipient_name, subject, html_content, te
         sender_name = cfg.get('sender_name', 'Raiganj University Notice Board')
 
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = f'{sender_name} <{sender_email}>'
-        msg['To'] = f'{recipient_name} <{recipient_email}>'
-        msg['Date'] = formatdate(localtime=True)
-        msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
+        apply_email_deliverability_headers(msg, sender_name, sender_email, f'{recipient_name} <{recipient_email}>', subject)
 
         if not text_content:
             text_content = f"New Notice from Raiganj University: {subject}\nPlease visit https://raiganjuniversity.ac.in/ to read."
@@ -481,11 +504,7 @@ def dispatch_notice_to_students(notice):
             text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
             
             msg = MIMEMultipart('mixed')
-            msg['Subject'] = subject
-            msg['From'] = f'{sender_name} <{sender_email}>'
-            msg['To'] = f"RGU Department Students <{group_email}>"
-            msg['Date'] = formatdate(localtime=True)
-            msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
+            apply_email_deliverability_headers(msg, sender_name, sender_email, f"RGU Department Students <{group_email}>", subject)
 
             alt_part = MIMEMultipart('alternative')
             alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
@@ -509,11 +528,7 @@ def dispatch_notice_to_students(notice):
                 text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
                 
                 msg = MIMEMultipart('mixed')
-                msg['Subject'] = subject
-                msg['From'] = f'{sender_name} <{sender_email}>'
-                msg['To'] = f"{s.get('name', 'Student')} <{s['email']}>"
-                msg['Date'] = formatdate(localtime=True)
-                msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
+                apply_email_deliverability_headers(msg, sender_name, sender_email, f"{s.get('name', 'Student')} <{s['email']}>", subject)
 
                 alt_part = MIMEMultipart('alternative')
                 alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
@@ -591,11 +606,8 @@ def test_smtp_connection(test_email=None):
         html = generate_notice_html(sample_notice, student_name='Administrator')
 
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = '[TEST] Raiganj University Notice Dispatcher: Test Alert'
-        msg['From'] = f'{sender_name} <{sender_email}>'
-        msg['To'] = f"Google Group <{target}>" if '@googlegroups.com' in target else target
-        msg['Date'] = formatdate(localtime=True)
-        msg['Message-ID'] = make_msgid(domain='raiganjuniversity.ac.in')
+        target_to = f"Google Group <{target}>" if '@googlegroups.com' in target else target
+        apply_email_deliverability_headers(msg, sender_name, sender_email, target_to, '[TEST] Raiganj University Notice Dispatcher: Test Alert')
 
         msg.attach(MIMEText('This is a test notification confirming your Google Group notice broadcast system is fully active.', 'plain'))
         msg.attach(MIMEText(html, 'html'))

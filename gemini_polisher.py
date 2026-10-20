@@ -59,7 +59,7 @@ def grab_notice_file_and_text(notice):
     file_bytes = None
 
     try:
-        resp = requests.get(link, headers=HEADERS, timeout=3)
+        resp = requests.get(link, headers=HEADERS, timeout=12)
         content = resp.content
         ctype = resp.headers.get('Content-Type', '').lower()
 
@@ -232,9 +232,9 @@ Guidelines:
         parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
 
     models_to_try = [
-        'gemini-3.6-flash',
-        'gemini-3.7-flash',
-        'gemini-3.8-flash'
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash'
     ]
     polished_text = None
 
@@ -378,6 +378,9 @@ def process_notice_complete(notice, force_ai=False):
                 has_gemini = True
         except Exception:
             pass
+    elif not force_ai and notice.get('polished_markdown'):
+        polished_md = notice.get('polished_markdown')
+        has_gemini = bool(notice.get('has_gemini_polish'))
 
     if not polished_md or force_ai:
         cfg = db.get_smtp_config()
