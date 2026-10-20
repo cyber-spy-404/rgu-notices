@@ -53,7 +53,7 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
   {attachment_part}
 
   <p>
-    <strong>Official Portal Link:</strong><br>
+    <strong>Official Notice Link:</strong><br>
     <a href="{link}">{link}</a>
   </p>
 
@@ -352,7 +352,7 @@ Category: {notice.get('category', 'General')}
 Reason / Purpose: {reason_val}
 Applicable To: {audience_val}
 {sum_text}{att_text}
-Official Portal Link:
+Official Notice Link:
 {notice.get('link')}
 
 Regards,
@@ -463,7 +463,7 @@ def test_smtp_connection(test_email=None):
         sample_notice = {
             'id': 'TEST-999',
             'title': 'Raiganj University Notice Dispatcher: Connection Test',
-            'link': 'https://raiganjuniversity.ac.in/',
+            'link': 'https://raiganjuniversity.ac.in/Website/AllNotices',
             'published_on': datetime.now().strftime('%b %d, %Y %I:%M %p'),
             'category': 'System Verification'
         }
@@ -480,8 +480,8 @@ Category: {sample_notice['category']}
 Reason / Purpose: System Connection & Delivery Verification
 Applicable To: System Administrator / Department Group
 
-Official Portal Link:
-{sample_notice['link']}
+Official Notice Link:
+https://raiganjuniversity.ac.in/Website/AllNotices
 
 Regards,
 Office of the Registrar / Secretary
