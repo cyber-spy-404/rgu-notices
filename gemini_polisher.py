@@ -34,12 +34,54 @@ def extract_docx_text(file_bytes):
     except Exception as e:
         return f"(Could not parse DOCX text: {e})"
 
+def ocr_with_tesseract(file_bytes, mime_type='image/png'):
+    """
+    Performs OCR using Tesseract (pytesseract) on image or PDF bytes.
+    Automatically discovers tesseract executable in standard Windows & Linux paths.
+    """
+    if not file_bytes:
+        return ""
+    try:
+        import pytesseract
+        from PIL import Image
+
+        # Auto-configure tesseract path on Windows
+        if os.name == 'nt':
+            for p in [
+                r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+                r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+                os.path.expanduser(r'~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'),
+            ]:
+                if os.path.exists(p):
+                    pytesseract.pytesseract.tesseract_cmd = p
+                    break
+
+        if 'pdf' in mime_type:
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            texts = []
+            for page in reader.pages:
+                for img_obj in page.images:
+                    try:
+                        pil_img = Image.open(io.BytesIO(img_obj.data))
+                        txt = pytesseract.image_to_string(pil_img)
+                        if txt.strip():
+                            texts.append(txt.strip())
+                    except Exception:
+                        pass
+            return "\n\n".join(texts).strip()
+        else:
+            pil_img = Image.open(io.BytesIO(file_bytes))
+            return pytesseract.image_to_string(pil_img).strip()
+    except Exception as e:
+        print(f"Tesseract OCR note: {e}")
+        return ""
+
 def grab_notice_file_and_text(notice):
     """
     1. Downloads the notice file (PDF, DOCX, Image, or HTML).
     2. If it's an HTML page embedding a PDF, follows and grabs the actual PDF document.
     3. Saves the original file into notices_files/{notice_id}.ext
-    4. Extracts text from the document.
+    4. Extracts text from the document (using pypdf and Tesseract OCR).
     5. Generates structured raw markdown and saves into notices_md/{notice_id}.md
     Returns: (raw_md, md_path, file_path, mime_type, file_bytes)
     """
@@ -74,7 +116,14 @@ def grab_notice_file_and_text(notice):
             # Extract text via pypdf
             reader = pypdf.PdfReader(io.BytesIO(content))
             pages = [p.extract_text() for p in reader.pages if p.extract_text() and p.extract_text().strip()]
-            extracted_body = "\n\n".join(pages) if pages else "(Scanned image document/circular)"
+            extracted_body = "\n\n".join(pages) if pages else ""
+            if not extracted_body or len(extracted_body.strip()) < 30:
+                ocr_text = ocr_with_tesseract(content, 'application/pdf')
+                if ocr_text:
+                    extracted_body = ocr_text
+                    db.log_event('INFO', 'OCR', f"Notice #{notice_id}: Extracted text via Tesseract OCR.")
+                else:
+                    extracted_body = "(Official scanned notice document attached)"
 
         # Check for Images (JPEG/PNG)
         elif content[:3] == b'\xff\xd8\xff' or 'image/jpeg' in ctype:
@@ -83,14 +132,21 @@ def grab_notice_file_and_text(notice):
             saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.jpg")
             with open(saved_filepath, 'wb') as f:
                 f.write(content)
-            extracted_body = "(Official scanned notice image attached)"
+            ocr_text = ocr_with_tesseract(content, 'image/jpeg')
+            extracted_body = ocr_text if ocr_text else "(Official notice image attached)"
+            if ocr_text:
+                db.log_event('INFO', 'OCR', f"Notice #{notice_id}: Extracted text from image via Tesseract OCR.")
+
         elif content[:4] == b'\x89PNG' or 'image/png' in ctype:
             mime_type = 'image/png'
             file_bytes = content
             saved_filepath = os.path.join(NOTICES_FILES_DIR, f"{notice_id}.png")
             with open(saved_filepath, 'wb') as f:
                 f.write(content)
-            extracted_body = "(Official scanned notice image attached)"
+            ocr_text = ocr_with_tesseract(content, 'image/png')
+            extracted_body = ocr_text if ocr_text else "(Official notice image attached)"
+            if ocr_text:
+                db.log_event('INFO', 'OCR', f"Notice #{notice_id}: Extracted text from image via Tesseract OCR.")
 
         # Check for DOCX / Office files
         elif content[:4] == b'PK\x03\x04' and ('word' in ctype or link.endswith('.docx')):
@@ -127,7 +183,14 @@ def grab_notice_file_and_text(notice):
                             f.write(pdf_resp.content)
                         reader = pypdf.PdfReader(io.BytesIO(pdf_resp.content))
                         pages = [p.extract_text() for p in reader.pages if p.extract_text() and p.extract_text().strip()]
-                        extracted_body = "\n\n".join(pages) if pages else "(Scanned document)"
+                        extracted_body = "\n\n".join(pages) if pages else ""
+                        if not extracted_body or len(extracted_body.strip()) < 30:
+                            ocr_text = ocr_with_tesseract(pdf_resp.content, 'application/pdf')
+                            if ocr_text:
+                                extracted_body = ocr_text
+                                db.log_event('INFO', 'OCR', f"Notice #{notice_id}: Extracted text from embedded PDF via Tesseract OCR.")
+                            else:
+                                extracted_body = "(Official scanned document attached)"
                 except Exception as inner_e:
                     print(f"Inner PDF download note: {inner_e}")
 
@@ -302,24 +365,27 @@ def generate_structured_fallback_md(notice, raw_extracted_text=""):
     if not link or link.strip().rstrip('/') in ['https://raiganjuniversity.ac.in', 'http://raiganjuniversity.ac.in']:
         link = f"https://raiganjuniversity.ac.in/Website/ViewNotice/{notice_id}"
 
+    content_excerpt = ""
+    if raw_extracted_text and len(raw_extracted_text.strip()) > 30:
+        lines = [l.strip() for l in raw_extracted_text.splitlines() if l.strip() and not l.strip().startswith('#') and not l.strip().startswith('**')]
+        if lines:
+            sample = "\n".join(lines[:12])
+            content_excerpt = f"\n\n### 📄 Notice Highlights (Extracted via OCR)\n{sample}\n"
+
     return f"""### 📌 Executive Summary
-Official notice announcement published by **Raiganj University** under the **{category}** section regarding **{title}**.
+Official notice published by **Raiganj University** under **{category}** regarding **{title}**.
 
 ### 👥 Who is Affected?
-All students, scholars, and department members associated with **{category}** directives.
+Students and members associated with **{category}** notifications.
 
 ### ⚡ Official Notice Direct Access & Instructions
-- **Official Reference:** Notice #{notice_id}
+- **Reference:** Notice #{notice_id}
 - **Publication Date:** {pub_date}
-- **Direct Notice Portal Link:** [{link}]({link})
-- Detailed circular document has been downloaded and attached (if available from portal).
-- Please click the direct portal link above to view full notifications, schedules, and application links.
-
-### 📅 Important Dates & Deadlines
+- **Direct Portal Link:** [{link}]({link})
+- Official circular file has been attached directly to this email.
+{content_excerpt}
+### 📅 Important Dates
 - **Published On:** {pub_date}
-
-### 🔗 Portal Link & Document Access
-- Official University Source Link: [{link}]({link})
 """
 
 def process_notice_complete(notice, force_ai=False):

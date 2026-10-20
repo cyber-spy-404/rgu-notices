@@ -8,8 +8,8 @@ import database as db
 
 def generate_notice_html(notice, student_name="Student", polished_html=None, attachment_name=None):
     """
-    Renders an elegant, modern, responsive HTML email template for Raiganj University notices,
-    with embedded Gemini AI polished breakdown and attachment indicator.
+    Renders a clean, direct, official HTML email notification for Raiganj University notices.
+    Avoids heavy dark styling, gradients, and bloated CSS to maximize deliverability and avoid spam classification.
     """
     title = notice.get('title', 'Official University Notice')
     link = notice.get('link', 'https://raiganjuniversity.ac.in/')
@@ -20,19 +20,19 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
     attachment_banner = ""
     if attachment_name:
         attachment_banner = f"""
-        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px 18px; margin: 18px 0; color: #a7f3d0; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
-          <span>📎 <strong>Official Document Attached:</strong> {attachment_name} (Downloadable directly from this email)</span>
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 10px 14px; margin: 16px 0; color: #166534; font-size: 13px;">
+          📎 <strong>Official Document Attached:</strong> {attachment_name} (Downloadable directly from this email)
         </div>
         """
 
-    polished_section = ""
+    summary_section = ""
     if polished_html:
-        polished_section = f"""
-        <div style="background: #172033; border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 12px; padding: 22px; margin: 24px 0; line-height: 1.65; color: #cbd5e1; box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: #a5b4fc; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid #334155; padding-bottom: 10px;">
-            <span>✨ AI Polished Student Breakdown</span>
-          </div>
-          <div class="polished-content" style="font-size: 14px;">
+        summary_section = f"""
+        <div style="margin: 20px 0; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+          <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #003366; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+            📌 Notice Summary &amp; Key Details
+          </h4>
+          <div style="font-size: 14px; color: #334155; line-height: 1.65;">
             {polished_html}
           </div>
         </div>
@@ -42,189 +42,48 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
-  <style>
-    body {{
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-      background-color: #0b1120;
-      color: #e2e8f0;
-      -webkit-font-smoothing: antialiased;
-    }}
-    .email-container {{
-      max-width: 640px;
-      margin: 25px auto;
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }}
-    .header-banner {{
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
-      padding: 32px 28px;
-      text-align: center;
-      border-bottom: 2px solid #6366f1;
-    }}
-    .uni-emblem {{
-      display: inline-block;
-      width: 54px;
-      height: 54px;
-      line-height: 54px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 2px solid rgba(255, 255, 255, 0.25);
-      border-radius: 50%;
-      font-size: 26px;
-      margin-bottom: 12px;
-    }}
-    .uni-title {{
-      margin: 0;
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #ffffff;
-      text-transform: uppercase;
-    }}
-    .uni-subtitle {{
-      margin: 6px 0 0 0;
-      font-size: 13px;
-      color: #c7d2fe;
-      letter-spacing: 0.8px;
-    }}
-    .content-body {{
-      padding: 32px 28px;
-    }}
-    .greeting {{
-      font-size: 15px;
-      color: #94a3b8;
-      margin-top: 0;
-    }}
-    .badge {{
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      margin-right: 6px;
-    }}
-    .badge-category {{
-      background: rgba(99, 102, 241, 0.2);
-      color: #a5b4fc;
-      border: 1px solid rgba(99, 102, 241, 0.4);
-    }}
-    .badge-id {{
-      background: rgba(16, 185, 129, 0.2);
-      color: #6ee7b7;
-      border: 1px solid rgba(16, 185, 129, 0.4);
-    }}
-    .notice-card {{
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 22px;
-      margin: 20px 0;
-    }}
-    .notice-title {{
-      margin: 0 0 14px 0;
-      font-size: 18px;
-      line-height: 1.45;
-      color: #f8fafc;
-      font-weight: 600;
-    }}
-    .meta-row {{
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: #94a3b8;
-      border-top: 1px solid #334155;
-      padding-top: 12px;
-      margin-top: 14px;
-    }}
-    .btn-container {{
-      text-align: center;
-      margin: 26px 0 10px 0;
-    }}
-    .btn-action {{
-      display: inline-block;
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-      color: #ffffff !important;
-      text-decoration: none;
-      padding: 14px 32px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
-    }}
-    .footer {{
-      background: #0f172a;
-      padding: 24px;
-      text-align: center;
-      border-top: 1px solid #1f2937;
-      font-size: 12px;
-      color: #64748b;
-      line-height: 1.6;
-    }}
-    .footer a {{
-      color: #818cf8;
-      text-decoration: none;
-    }}
-    .polished-content h3 {{
-      color: #93c5fd;
-      font-size: 15px;
-      margin-top: 16px;
-      margin-bottom: 8px;
-    }}
-    .polished-content ul, .polished-content ol {{
-      padding-left: 20px;
-      margin: 8px 0;
-    }}
-    .polished-content li {{
-      margin-bottom: 4px;
-    }}
-  </style>
 </head>
-<body>
-  <div class="email-container">
-    <div class="header-banner">
-      <div class="uni-emblem">🏛️</div>
-      <h1 class="uni-title">Raiganj University</h1>
-      <p class="uni-subtitle">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Official Notice Alert</p>
-    </div>
-    <div class="content-body">
-      <p class="greeting">Dear {student_name},</p>
-      <p style="color: #cbd5e1; line-height: 1.5;">A new official announcement has been published on the Raiganj University portal:</p>
-      
-      <div class="notice-card">
-        <div>
-          <span class="badge badge-category">{category}</span>
-          <span class="badge badge-id">Notice #{notice_id}</span>
-        </div>
-        <h2 class="notice-title" style="margin-top: 12px;">{title}</h2>
-        <div class="meta-row">
-          <span>📅 Published: <strong>{published_on}</strong></span>
-          <span>🏛️ Source: <strong>Raiganj University</strong></span>
-        </div>
+<body style="margin: 0; padding: 15px; font-family: Arial, Helvetica, sans-serif; background-color: #ffffff; color: #222222; -webkit-font-smoothing: antialiased;">
+  <div style="max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    
+    <!-- Official Header -->
+    <div style="border-bottom: 2px solid #003366; padding-bottom: 10px; margin-bottom: 18px;">
+      <h2 style="margin: 0; color: #003366; font-size: 20px; letter-spacing: 0.5px;">RAIGANJ UNIVERSITY</h2>
+      <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+        Official Notice Alert &bull; <strong>{category}</strong>
       </div>
+    </div>
 
-      {attachment_banner}
+    <p style="font-size: 14px; margin: 0 0 14px 0; color: #334155;">Dear {student_name},</p>
+    <p style="font-size: 14px; margin: 0 0 16px 0; color: #334155;">An official announcement has been published on the Raiganj University portal:</p>
 
-      {polished_section}
-
-      <div class="btn-container">
-        <a href="{link}" class="btn-action" target="_blank">📄 View Official Notice &amp; Download PDF</a>
+    <!-- Notice Card -->
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #003366; padding: 14px 16px; margin: 16px 0;">
+      <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #0f172a; line-height: 1.4;">{title}</h3>
+      <div style="font-size: 13px; color: #64748b;">
+        <strong>Notice ID:</strong> #{notice_id} &nbsp;|&nbsp;
+        <strong>Published:</strong> {published_on} &nbsp;|&nbsp;
+        <strong>Category:</strong> {category}
       </div>
-      <p style="text-align: center; font-size: 12px; color: #64748b; margin-top: 12px;">
-        Link: <a href="{link}" style="color: #818cf8; word-break: break-all;">{link}</a>
-      </p>
     </div>
-    <div class="footer">
-      <p>This automated alert is delivered by the <strong>Raiganj University Notice Dispatcher</strong>.<br>
-      Automated daily checks run at 00:00 midnight for newly added announcements.</p>
-      <p><a href="https://raiganjuniversity.ac.in/">Official University Website</a> &bull; P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134</p>
+
+    {attachment_banner}
+
+    {summary_section}
+
+    <!-- Official Portal Link -->
+    <div style="margin: 22px 0; padding: 12px 14px; background-color: #f1f5f9; border-radius: 6px; font-size: 13px;">
+      <strong>Official University Link:</strong><br>
+      <a href="{link}" style="color: #0284c7; word-break: break-all;" target="_blank">{link}</a>
     </div>
+
+    <!-- Footer -->
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 12px 0;">
+    <p style="font-size: 12px; color: #64748b; margin: 0; line-height: 1.5;">
+      This is an official automated alert from the <strong>Raiganj University Notice Dispatcher</strong>.<br>
+      Raiganj University &bull; P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
+    </p>
   </div>
 </body>
 </html>"""
