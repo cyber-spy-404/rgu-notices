@@ -331,21 +331,19 @@ def generate_key_details_and_summary(notice, raw_extracted_text=""):
     if instructions:
         instructions_block = "\n" + "\n".join(f"- {act}" for act in instructions)
     else:
-        instructions_block = "\n- Please review the attached circular document for specific procedures and directives."
+        instructions_block = "\n- Please refer to the attached official document for specific procedures and guidelines."
 
-    # 5. Build Final Clean Markdown
-    markdown_output = f"""**Notice Overview:**  
-Official circular issued by Raiganj University concerning **{reason}** for **{audience_str}**.
+    # 5. Build Formal University Notice Markdown
+    markdown_output = f"""**RAIGANJ UNIVERSITY NOTICE SUMMARY**
 
-**Key Details:**  
-- **Reason / Purpose:** {reason}  
-- **Target Audience:** {audience_str}  
-- **Category:** {category}  
-- **Important Dates / Timing:** {dates_str}  
-- **Official Document:** Official circular file is attached to this notification.
+**Subject / Reason:** {reason}  
+**Target Audience:** {audience_str}  
+**Category:** {category}  
+**Dates & Timing:** {dates_str}  
+**Attachment:** Official circular document is attached.
 
-**Key Instructions & Actions:**{instructions_block}
+**Directives & Instructions:**{instructions_block}
 
-Please refer to the attached document or official university link for complete schedule and instructions."""
+Please refer to the attached document or official university link for complete details and schedule."""
 
     return markdown_output

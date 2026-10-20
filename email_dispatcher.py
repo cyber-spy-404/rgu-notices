@@ -21,16 +21,16 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
     if attachment_name:
         attachment_banner = f"""
         <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 10px 14px; margin: 16px 0; color: #166534; font-size: 13px;">
-          📎 <strong>Official Document Attached:</strong> {attachment_name} (Downloadable directly from this email)
+          <strong>Official Document Attached:</strong> {attachment_name} (Downloadable directly from this email)
         </div>
         """
 
     summary_section = ""
     if polished_html:
         summary_section = f"""
-        <div style="margin: 20px 0; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
-          <h4 style="margin: 0 0 10px 0; font-size: 15px; color: #003366; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
-            📌 Notice Summary &amp; Key Details
+        <div style="margin: 20px 0; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+          <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #003366; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;">
+            Official Notice Summary &amp; Directives
           </h4>
           <div style="font-size: 14px; color: #334155; line-height: 1.65;">
             {polished_html}

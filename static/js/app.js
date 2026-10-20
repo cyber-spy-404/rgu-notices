@@ -12,45 +12,18 @@ let currentCountdownSeconds = 0;
 let currentLiveNotice = null;
 let currentModalNoticeId = null;
 
-// ----------------- Separate Dark & Light Theme Controller ----------------- //
+// ----------------- Formal University Display Controller ----------------- //
 function initTheme() {
-  const saved = localStorage.getItem('rgu_theme') || 'dark';
-  setTheme(saved);
+  document.documentElement.removeAttribute('data-theme');
+  localStorage.removeItem('rgu_theme');
 }
 
 function setTheme(mode) {
-  const targetTheme = (mode === 'light') ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', targetTheme);
-  localStorage.setItem('rgu_theme', targetTheme);
-
-  // Synchronize separate segmented buttons in navbar
-  const btnDark = document.getElementById('btnThemeDark');
-  const btnLight = document.getElementById('btnThemeLight');
-  if (btnDark) btnDark.classList.toggle('active', targetTheme === 'dark');
-  if (btnLight) btnLight.classList.toggle('active', targetTheme === 'light');
-
-  // Synchronize drawer theme buttons
-  const btnDrawerDark = document.getElementById('btnDrawerThemeDark');
-  const btnDrawerLight = document.getElementById('btnDrawerThemeLight');
-  if (btnDrawerDark) btnDrawerDark.classList.toggle('active', targetTheme === 'dark');
-  if (btnDrawerLight) btnDrawerLight.classList.toggle('active', targetTheme === 'light');
-
-  // Update mobile browser header theme-color
-  const metaTheme = document.getElementById('metaThemeColor');
-  if (metaTheme) {
-    metaTheme.setAttribute('content', targetTheme === 'light' ? '#ffffff' : '#090a0f');
-  }
-
-  // Maintain backwards compatibility for single toggle button if present
-  const icon = document.getElementById('themeToggleIcon');
-  if (icon) {
-    icon.className = targetTheme === 'light' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-  }
+  // Formal mode only
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-  setTheme(current === 'light' ? 'dark' : 'light');
+  // Formal mode only
 }
 
 // ----------------- Mobile Drawer Navigation Controller ----------------- //
