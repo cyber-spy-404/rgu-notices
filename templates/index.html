@@ -38,8 +38,10 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- Clean, Formal University Administration Stylesheet -->
-  <link rel="stylesheet" href="/static/css/base.css?v=12.0">
+  <!-- Executive Linear-Grade SaaS Design System -->
+  <link rel="stylesheet" href="/static/css/base.css?v=11.0">
+  <link rel="stylesheet" href="/static/css/dark.css?v=11.0">
+  <link rel="stylesheet" href="/static/css/light.css?v=11.0">
 </head>
 <body>
 
@@ -58,17 +60,24 @@
             Raiganj University <span class="badge-app">Notice Engine</span>
           </div>
           <div class="brand-subtext">
-            Official Automated Notice Management &amp; Broadcast System
+            রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Twice-Daily Automated Scraper &amp; Google Group Dispatcher
           </div>
         </div>
       </a>
 
       <!-- Controls & Status Hub -->
       <div class="nav-controls">
-        <!-- Next Scan Schedule -->
+        <!-- Countdown Chip -->
+        <div class="countdown-chip" id="countdownPill" title="Automated check executes twice daily at 7:00 AM & 7:00 PM IST">
+          <i class="fa-regular fa-clock icon-pulse"></i>
+          <span class="label">Next Scan:</span>
+          <span class="value" id="countdownTimer">--:--:--</span>
+        </div>
+
+        <!-- System Status Chips -->
         <div class="status-pill" id="schedulerBadge" title="Automated Twice-Daily Background Scheduler">
           <span class="dot-beacon active"></span>
-          <span>Scan: 7 AM &amp; 7 PM IST</span>
+          <span>7 AM &amp; 7 PM IST: Active</span>
         </div>
         <div class="status-pill" id="smtpBadge" title="Target Outbound Broadcast Channel">
           <span class="dot-beacon active"></span>
@@ -76,14 +85,26 @@
         </div>
 
         <!-- Action Buttons -->
-        <button class="btn btn-secondary btn-sm" id="btnQuickScan" onclick="triggerScanNow()" title="Check for new university notices right now">
-          <i class="fa-solid fa-rotate"></i>
-          <span>Check Notices</span>
+        <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()" title="Check for new university notices right now">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Scan Portal</span>
         </button>
         <button class="btn btn-secondary btn-sm" onclick="openTestModal()" title="Send verification notice email">
           <i class="fa-solid fa-paper-plane"></i>
           <span>Test Email</span>
         </button>
+
+        <!-- Dedicated Segmented Appearance Controller: Separate Dark & Light Buttons -->
+        <div class="theme-segmented-control" role="group" aria-label="Appearance Mode">
+          <button type="button" class="theme-seg-btn active" id="btnThemeDark" onclick="setTheme('dark')" title="Switch to Executive Dark Mode">
+            <i class="fa-solid fa-moon"></i>
+            <span>Dark</span>
+          </button>
+          <button type="button" class="theme-seg-btn" id="btnThemeLight" onclick="setTheme('light')" title="Switch to Crisp Executive Light Mode">
+            <i class="fa-solid fa-sun"></i>
+            <span>Light</span>
+          </button>
+        </div>
 
         <!-- Mobile Menu Toggle Button (Visible on Small Screens) -->
         <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
@@ -163,6 +184,17 @@
           </div>
         </div>
 
+        <div>
+          <div class="drawer-section-title">Appearance Mode</div>
+          <div class="theme-segmented-control" style="width: 100%; display: flex;" role="group">
+            <button type="button" class="theme-seg-btn active" id="btnDrawerThemeDark" style="flex: 1; justify-content: center;" onclick="setTheme('dark')">
+              <i class="fa-solid fa-moon"></i> <span>Dark</span>
+            </button>
+            <button type="button" class="theme-seg-btn" id="btnDrawerThemeLight" style="flex: 1; justify-content: center;" onclick="setTheme('light')">
+              <i class="fa-solid fa-sun"></i> <span>Light</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="drawer-footer-contacts">

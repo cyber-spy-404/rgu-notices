@@ -6,84 +6,111 @@ from email.utils import formatdate, make_msgid
 from datetime import datetime
 import database as db
 
-def generate_notice_html(notice, student_name="Student", polished_html=None, attachment_name=None):
-    """
-    Renders a clean, direct, official HTML email notification for Raiganj University notices.
-    Avoids heavy dark styling, gradients, and bloated CSS to maximize deliverability and avoid spam classification.
-    """
-    title = notice.get('title', 'Official University Notice')
-    link = notice.get('link', 'https://raiganjuniversity.ac.in/')
-    published_on = notice.get('published_on', datetime.now().strftime('%b %d, %Y'))
-    category = notice.get('category', 'General Notice')
-    notice_id = notice.get('id', 'N/A')
+import notice_extractor
 
-    attachment_banner = ""
+def generate_notice_html(notice, student_name="Student", polished_html=None, attachment_name=None, raw_text=None):
+    """
+    Renders a simple, formal, official HTML email notification for Raiganj University notices.
+    Completely removes fancy design, cards, themes, gradients, and box-shadows.
+    Strictly follows formal university circular letterhead formatting.
+    """
+    title = notice.get('title', 'Official University Notice').strip()
+    link = notice.get('link', 'https://raiganjuniversity.ac.in/').strip()
+    published_on = notice.get('published_on', datetime.now().strftime('%b %d, %Y')).strip()
+    category = notice.get('category', 'General Notice').strip()
+    notice_id = str(notice.get('id', 'N/A')).replace('/', '_')
+    raw_content = raw_text or notice.get('raw_markdown', '') or notice.get('polished_markdown', '')
+
+    # Extract specific reason and target audience
+    reason = notice_extractor.extract_notice_reason(title, category, raw_content)
+    audiences = notice_extractor.extract_target_audience(title, raw_content, category)
+    audience_str = ", ".join(audiences)
+
+    attachment_line = ""
     if attachment_name:
-        attachment_banner = f"""
-        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 10px 14px; margin: 16px 0; color: #166534; font-size: 13px;">
-          <strong>Official Document Attached:</strong> {attachment_name} (Downloadable directly from this email)
-        </div>
+        attachment_line = f"""
+        <p style="margin: 12px 0; font-size: 13px;">
+          <strong>Official Attachment:</strong> {attachment_name} (Attached to this email)
+        </p>
         """
 
-    summary_section = ""
-    if polished_html:
-        summary_section = f"""
-        <div style="margin: 20px 0; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
-          <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #003366; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;">
-            Official Notice Summary &amp; Directives
-          </h4>
-          <div style="font-size: 14px; color: #334155; line-height: 1.65;">
-            {polished_html}
-          </div>
-        </div>
-        """
+    summary_content = polished_html or ""
 
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>{title}</title>
 </head>
-<body style="margin: 0; padding: 15px; font-family: Arial, Helvetica, sans-serif; background-color: #ffffff; color: #222222; -webkit-font-smoothing: antialiased;">
-  <div style="max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-    
-    <!-- Official Header -->
-    <div style="border-bottom: 2px solid #003366; padding-bottom: 10px; margin-bottom: 18px;">
-      <h2 style="margin: 0; color: #003366; font-size: 20px; letter-spacing: 0.5px;">RAIGANJ UNIVERSITY</h2>
-      <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
-        Official Notice Alert &bull; <strong>{category}</strong>
+<body style="margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #000000; background-color: #ffffff;">
+  <div style="max-width: 650px; margin: 0 auto;">
+
+    <!-- University Letterhead Header -->
+    <div style="border-bottom: 2px solid #000000; padding-bottom: 8px; margin-bottom: 16px;">
+      <h2 style="margin: 0; font-size: 19px; font-weight: bold; color: #000000; letter-spacing: 0.5px;">RAIGANJ UNIVERSITY</h2>
+      <div style="font-size: 12px; color: #444444; margin-top: 2px;">
+        P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134 &bull; Official Circular Notification
       </div>
     </div>
 
-    <p style="font-size: 14px; margin: 0 0 14px 0; color: #334155;">Dear {student_name},</p>
-    <p style="font-size: 14px; margin: 0 0 16px 0; color: #334155;">An official announcement has been published on the Raiganj University portal:</p>
+    <p style="margin: 0 0 12px 0;">Dear {student_name},</p>
+    <p style="margin: 0 0 16px 0;">An official university notification has been published on the portal with the following details:</p>
 
-    <!-- Notice Card -->
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #003366; padding: 14px 16px; margin: 16px 0;">
-      <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #0f172a; line-height: 1.4;">{title}</h3>
-      <div style="font-size: 13px; color: #64748b;">
-        <strong>Notice ID:</strong> #{notice_id} &nbsp;|&nbsp;
-        <strong>Published:</strong> {published_on} &nbsp;|&nbsp;
-        <strong>Category:</strong> {category}
+    <!-- Formal Details Table -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px;">
+      <tbody>
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #374151;">Notice Title:</td>
+          <td style="padding: 6px 0; color: #000000;">{title}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Notice Ref / ID:</td>
+          <td style="padding: 6px 0; color: #000000;">#{notice_id}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Date of Notice:</td>
+          <td style="padding: 6px 0; color: #000000;">{published_on}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Category:</td>
+          <td style="padding: 6px 0; color: #000000;">{category}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 0; font-weight: bold; color: #000000;">Reason / Purpose:</td>
+          <td style="padding: 6px 0; color: #000000; font-weight: bold;">{reason}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Applicable To:</td>
+          <td style="padding: 6px 0; color: #000000;">{audience_str}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Notice Summary & Directives Section -->
+    <div style="border-top: 1px solid #cccccc; border-bottom: 1px solid #cccccc; padding: 14px 0; margin: 16px 0;">
+      <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; text-transform: uppercase; color: #000000;">
+        Summary &amp; Key Directives:
+      </h4>
+      <div style="font-size: 13.5px; line-height: 1.6; color: #111111;">
+        {summary_content}
       </div>
     </div>
 
-    {attachment_banner}
-
-    {summary_section}
+    {attachment_line}
 
     <!-- Official Portal Link -->
-    <div style="margin: 22px 0; padding: 12px 14px; background-color: #f1f5f9; border-radius: 6px; font-size: 13px;">
-      <strong>Official University Link:</strong><br>
-      <a href="{link}" style="color: #0284c7; word-break: break-all;" target="_blank">{link}</a>
+    <p style="margin: 16px 0 6px 0; font-size: 13px;">
+      <strong>Official University Portal Link:</strong><br>
+      <a href="{link}" style="color: #0033cc; word-break: break-all;" target="_blank">{link}</a>
+    </p>
+
+    <!-- Formal University Footer -->
+    <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #cccccc; font-size: 12px; color: #555555; line-height: 1.5;">
+      Office of the Registrar / Secretary &bull; Raiganj University<br>
+      P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134<br>
+      <em>Official automated notification broadcast.</em>
     </div>
 
-    <!-- Footer -->
-    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0 12px 0;">
-    <p style="font-size: 12px; color: #64748b; margin: 0; line-height: 1.5;">
-      This is an official automated alert from the <strong>Raiganj University Notice Dispatcher</strong>.<br>
-      Raiganj University &bull; P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
-    </p>
   </div>
 </body>
 </html>"""
@@ -354,11 +381,41 @@ def dispatch_notice_to_students(notice):
         sender_email = cfg.get('sender_email', 'notices@raiganjuniversity.ac.in')
         sender_name = cfg.get('sender_name', 'Raiganj University Notice Board')
 
+        # Extract reason & audience for plain text fallback
+        reason_val = notice_extractor.extract_notice_reason(notice.get('title', ''), notice.get('category', 'General'), raw_md or '')
+        audience_list = notice_extractor.extract_target_audience(notice.get('title', ''), raw_md or '', notice.get('category', 'General'))
+        audience_val = ", ".join(audience_list)
+
+        def build_formal_text(recipient_label):
+            return f"""RAIGANJ UNIVERSITY - OFFICIAL CIRCULAR NOTIFICATION
+============================================================
+Dear {recipient_label},
+
+An official university notification has been published on the portal:
+
+Notice Title    : {notice.get('title')}
+Notice Ref / ID : #{notice.get('id')}
+Date of Notice  : {notice.get('published_on', '')}
+Category        : {notice.get('category', 'General')}
+Reason / Purpose: {reason_val}
+Applicable To   : {audience_val}
+Official Portal : {notice.get('link')}
+
+SUMMARY & DIRECTIVES:
+------------------------------------------------------------
+{polished_md}
+------------------------------------------------------------
+
+Official Attachment: {attachment_name or 'None'}
+Office of the Registrar / Secretary, Raiganj University
+P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
+"""
+
         if group_email:
             # High-efficiency Google Group broadcast (1 email reaches 1000+ students)
             db.log_event('INFO', 'DISPATCH', f'Broadcasting Notice #{notice.get("id")} to Google Group: {group_email}')
-            html = generate_notice_html(notice, student_name="Student", polished_html=polished_html, attachment_name=attachment_name)
-            text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
+            html = generate_notice_html(notice, student_name="Student", polished_html=polished_html, attachment_name=attachment_name, raw_text=raw_md)
+            text_content = build_formal_text("Students & Faculty")
             
             msg = MIMEMultipart('mixed')
             apply_email_deliverability_headers(msg, sender_name, sender_email, f"RGU Department Students <{group_email}>", subject)
@@ -381,8 +438,8 @@ def dispatch_notice_to_students(notice):
         db.log_event('INFO', 'DISPATCH', f'Starting email dispatch of Notice #{notice.get("id")} to {len(students)} active student(s)...')
         for s in students:
             try:
-                html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html, attachment_name=attachment_name)
-                text_content = f"New Notice from Raiganj University: {notice.get('title')}\nReference: #{notice.get('id')}\nOfficial Link: {notice.get('link')}\n\n{polished_md}"
+                html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html, attachment_name=attachment_name, raw_text=raw_md)
+                text_content = build_formal_text(s.get('name', 'Student'))
                 
                 msg = MIMEMultipart('mixed')
                 apply_email_deliverability_headers(msg, sender_name, sender_email, f"{s.get('name', 'Student')} <{s['email']}>", subject)
