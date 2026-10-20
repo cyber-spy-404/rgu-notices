@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import pypdf
 import markdown
 import database as db
+import notice_extractor
 
 NOTICES_MD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'notices_md')
 NOTICES_FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'notices_files')
@@ -342,43 +343,15 @@ def convert_md_to_html(md_text):
 
 def generate_structured_fallback_md(notice, raw_extracted_text=""):
     """
-    Creates a clean, structured student announcement markdown when Gemini API fails for any reason
-    or is not yet configured. Direct notice portal link is prominently featured.
+    Creates rich Key Details and Summary using local notice_extractor tool
+    (Target Audience, Dates/Timings, Action Items, Document attachment) without Gemini AI.
     """
-    title = notice.get('title', 'Official University Notice')
-    pub_date = notice.get('published_on', 'Recent')
-    category = notice.get('category', 'General')
-    notice_id = str(notice.get('id', 'N/A')).replace('/', '_')
-
-    content_excerpt = ""
-    if raw_extracted_text and len(raw_extracted_text.strip()) > 30:
-        clean_lines = []
-        for l in raw_extracted_text.splitlines():
-            s = l.strip()
-            if not s or s.startswith('#') or s.startswith('**') or 'Downloaded from' in s or 'Copyright' in s or 'https://' in s or 'Official Notice' in s:
-                continue
-            if len(s) > 15 and s not in clean_lines:
-                clean_lines.append(s)
-        if clean_lines:
-            sample = "\n".join(f"- {line}" for line in clean_lines[:4])
-            content_excerpt = f"\n\n**Notice Highlights:**\n{sample}"
-
-    return f"""**Notice Overview:**  
-Official announcement published by Raiganj University under **{category}**:  
-*{title}*
-
-**Key Details:**  
-- **Category:** {category}  
-- **Published On:** {pub_date}  
-- **Document Attached:** Official circular file is attached to this email.  
-{content_excerpt}
-
-Please refer to the attached document or official link for complete instructions."""
+    return notice_extractor.generate_key_details_and_summary(notice, raw_extracted_text)
 
 def process_notice_complete(notice, force_ai=False):
     """
-    Ensures notice file is grabbed, raw markdown is generated, and Gemini AI polish is run.
-    Saves to disk and updates SQLite database.
+    Grabs notice file, extracts text via pypdf + Tesseract OCR, and generates
+    rich key details and summary using notice_extractor (completely standalone without Gemini).
     """
     notice_id = str(notice.get('id', 'notice')).replace('/', '_')
     md_filepath = os.path.join(NOTICES_MD_DIR, f"{notice_id}.md")
@@ -420,33 +393,20 @@ def process_notice_complete(notice, force_ai=False):
         except Exception as e:
             raw_md = f"# Notice #{notice_id}: {notice.get('title')}\n\n(Could not retrieve file: {str(e)})"
 
-    # Step 2: Check or run Gemini Polish
-    has_gemini = False
+    # Step 2: Generate Key Details & Summary locally using notice_extractor
     polished_md = ""
-
     if os.path.exists(polished_filepath) and not force_ai:
         try:
             with open(polished_filepath, 'r', encoding='utf-8') as f:
                 polished_md = f.read()
-                has_gemini = True
         except Exception:
             pass
     elif not force_ai and notice.get('polished_markdown'):
         polished_md = notice.get('polished_markdown')
-        has_gemini = bool(notice.get('has_gemini_polish'))
 
     if not polished_md or force_ai:
-        cfg = db.get_smtp_config()
-        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or cfg.get('gemini_api_key', '').strip()
-
-        if api_key:
-            res = polish_with_gemini(raw_md, notice, file_bytes=file_bytes, mime_type=mime_type)
-            if res and res != raw_md:
-                polished_md = res
-                has_gemini = True
-
-        if not polished_md:
-            polished_md = generate_structured_fallback_md(notice, raw_md)
+        # Standalone local extraction with zero cloud AI dependency
+        polished_md = notice_extractor.generate_key_details_and_summary(notice, raw_md)
 
     polished_html = convert_md_to_html(polished_md)
 
@@ -469,7 +429,7 @@ def process_notice_complete(notice, force_ai=False):
             polished_md=polished_md,
             polished_html=polished_html,
             attachment_path=saved_filepath or '',
-            has_gemini=1 if has_gemini else 0
+            has_gemini=0
         )
     except Exception as e:
         print(f"Database update notice AI note: {e}")
@@ -486,13 +446,13 @@ def process_notice_complete(notice, force_ai=False):
         'polished_html': polished_html,
         'saved_filepath': saved_filepath,
         'attachment_name': attachment_name,
-        'has_gemini': has_gemini
+        'has_gemini': False
     }
 
 def simplify_all_stored_notices():
     """
-    Regenerates simple, clean markdown and HTML summaries for all notices in the database and on disk.
-    Strips away legacy bloated emoji headers and replaces with clean, concise summaries.
+    Extracts rich Key Details and clean Summaries for all notices in the database and on disk
+    using notice_extractor tool (running 100% locally without Gemini).
     """
     notices = db.get_notices(limit=500)
     updated = 0
@@ -507,7 +467,24 @@ def simplify_all_stored_notices():
             except Exception:
                 pass
 
-        simple_md = generate_structured_fallback_md(n, raw_md)
+        # If raw_md is minimal, attempt to extract directly from notices_files PDF
+        if not raw_md or len(raw_md.strip()) < 50:
+            if os.path.exists(NOTICES_FILES_DIR):
+                for fname in os.listdir(NOTICES_FILES_DIR):
+                    if fname.startswith(f"{nid}."):
+                        fpath = os.path.join(NOTICES_FILES_DIR, fname)
+                        if fname.endswith('.pdf'):
+                            try:
+                                reader = pypdf.PdfReader(fpath)
+                                pages = [p.extract_text() for p in reader.pages if p.extract_text() and p.extract_text().strip()]
+                                if pages:
+                                    raw_md = f"# Notice #{nid}: {n.get('title')}\n\n" + "\n".join(pages)
+                            except Exception:
+                                pass
+                        break
+
+        # Generate Key Details & Summary locally
+        simple_md = notice_extractor.generate_key_details_and_summary(n, raw_md)
         simple_html = convert_md_to_html(simple_md)
 
         # Update disk file
@@ -529,6 +506,6 @@ def simplify_all_stored_notices():
         )
         updated += 1
 
-    db.log_event('SUCCESS', 'AI', f'Simplified all {updated} notices in database to clean format.')
+    db.log_event('SUCCESS', 'AI', f'Extracted key details and updated all {updated} notices in database.')
     return updated
 
