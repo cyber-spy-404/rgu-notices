@@ -189,9 +189,7 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
 <body>
   <div class="email-container">
     <div class="header-banner">
-      <div style="margin-bottom: 12px;">
-        <img src="https://rgu-notices.onrender.com/static/images/logo.png" alt="Raiganj University Logo" width="56" height="56" style="border-radius: 10px; background: #ffffff; padding: 3px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.3);">
-      </div>
+      <div class="uni-emblem">🏛️</div>
       <h1 class="uni-title">Raiganj University</h1>
       <p class="uni-subtitle">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Official Notice Alert</p>
     </div>
