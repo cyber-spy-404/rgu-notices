@@ -333,17 +333,9 @@ def generate_key_details_and_summary(notice, raw_extracted_text=""):
     else:
         instructions_block = "\n- Please refer to the attached official document for specific procedures and guidelines."
 
-    # 5. Build Formal University Notice Markdown
-    markdown_output = f"""**RAIGANJ UNIVERSITY NOTICE SUMMARY**
+    # 5. Build Simple, Formal Notice Summary Markdown
+    markdown_output = f"""**Dates & Timing:** {dates_str}
 
-**Subject / Reason:** {reason}  
-**Target Audience:** {audience_str}  
-**Category:** {category}  
-**Dates & Timing:** {dates_str}  
-**Attachment:** Official circular document is attached.
-
-**Directives & Instructions:**{instructions_block}
-
-Please refer to the attached document or official university link for complete details and schedule."""
+**Directives & Instructions:**{instructions_block}"""
 
     return markdown_output

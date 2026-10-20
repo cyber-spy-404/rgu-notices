@@ -10,9 +10,8 @@ import notice_extractor
 
 def generate_notice_html(notice, student_name="Student", polished_html=None, attachment_name=None, raw_text=None):
     """
-    Renders a simple, formal, official HTML email notification for Raiganj University notices.
-    Completely removes fancy design, cards, themes, gradients, and box-shadows.
-    Strictly follows formal university circular letterhead formatting.
+    Renders a clean, formal email with NO background, NO themes, and NO tables or decorative elements.
+    Strictly standard formal university notification.
     """
     title = notice.get('title', 'Official University Notice').strip()
     link = notice.get('link', 'https://raiganjuniversity.ac.in/').strip()
@@ -21,97 +20,49 @@ def generate_notice_html(notice, student_name="Student", polished_html=None, att
     notice_id = str(notice.get('id', 'N/A')).replace('/', '_')
     raw_content = raw_text or notice.get('raw_markdown', '') or notice.get('polished_markdown', '')
 
-    # Extract specific reason and target audience
     reason = notice_extractor.extract_notice_reason(title, category, raw_content)
     audiences = notice_extractor.extract_target_audience(title, raw_content, category)
     audience_str = ", ".join(audiences)
 
-    attachment_line = ""
+    attachment_part = ""
     if attachment_name:
-        attachment_line = f"""
-        <p style="margin: 12px 0; font-size: 13px;">
-          <strong>Official Attachment:</strong> {attachment_name} (Attached to this email)
-        </p>
-        """
+        attachment_part = f"<p><strong>Attachment:</strong> {attachment_name} (Attached to this email)</p>"
 
-    summary_content = polished_html or ""
+    summary_part = ""
+    if polished_html and polished_html.strip():
+        summary_part = f"{polished_html}"
 
     return f"""<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <title>{title}</title>
-</head>
-<body style="margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #000000; background-color: #ffffff;">
-  <div style="max-width: 650px; margin: 0 auto;">
+<body style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #000000;">
+  <p>Dear {student_name},</p>
 
-    <!-- University Letterhead Header -->
-    <div style="border-bottom: 2px solid #000000; padding-bottom: 8px; margin-bottom: 16px;">
-      <h2 style="margin: 0; font-size: 19px; font-weight: bold; color: #000000; letter-spacing: 0.5px;">RAIGANJ UNIVERSITY</h2>
-      <div style="font-size: 12px; color: #444444; margin-top: 2px;">
-        P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134 &bull; Official Circular Notification
-      </div>
-    </div>
+  <p>An official notice has been published by Raiganj University.</p>
 
-    <p style="margin: 0 0 12px 0;">Dear {student_name},</p>
-    <p style="margin: 0 0 16px 0;">An official university notification has been published on the portal with the following details:</p>
+  <p>
+    <strong>Notice Title:</strong> {title}<br>
+    <strong>Notice ID:</strong> #{notice_id}<br>
+    <strong>Date of Notice:</strong> {published_on}<br>
+    <strong>Category:</strong> {category}<br>
+    <strong>Reason / Purpose:</strong> {reason}<br>
+    <strong>Applicable To:</strong> {audience_str}
+  </p>
 
-    <!-- Formal Details Table -->
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px;">
-      <tbody>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #374151;">Notice Title:</td>
-          <td style="padding: 6px 0; color: #000000;">{title}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Notice Ref / ID:</td>
-          <td style="padding: 6px 0; color: #000000;">#{notice_id}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Date of Notice:</td>
-          <td style="padding: 6px 0; color: #000000;">{published_on}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Category:</td>
-          <td style="padding: 6px 0; color: #000000;">{category}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 0; font-weight: bold; color: #000000;">Reason / Purpose:</td>
-          <td style="padding: 6px 0; color: #000000; font-weight: bold;">{reason}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 0; font-weight: bold; color: #374151;">Applicable To:</td>
-          <td style="padding: 6px 0; color: #000000;">{audience_str}</td>
-        </tr>
-      </tbody>
-    </table>
+  {summary_part}
 
-    <!-- Notice Summary & Directives Section -->
-    <div style="border-top: 1px solid #cccccc; border-bottom: 1px solid #cccccc; padding: 14px 0; margin: 16px 0;">
-      <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; text-transform: uppercase; color: #000000;">
-        Summary &amp; Key Directives:
-      </h4>
-      <div style="font-size: 13.5px; line-height: 1.6; color: #111111;">
-        {summary_content}
-      </div>
-    </div>
+  {attachment_part}
 
-    {attachment_line}
+  <p>
+    <strong>Official Portal Link:</strong><br>
+    <a href="{link}">{link}</a>
+  </p>
 
-    <!-- Official Portal Link -->
-    <p style="margin: 16px 0 6px 0; font-size: 13px;">
-      <strong>Official University Portal Link:</strong><br>
-      <a href="{link}" style="color: #0033cc; word-break: break-all;" target="_blank">{link}</a>
-    </p>
-
-    <!-- Formal University Footer -->
-    <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #cccccc; font-size: 12px; color: #555555; line-height: 1.5;">
-      Office of the Registrar / Secretary &bull; Raiganj University<br>
-      P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134<br>
-      <em>Official automated notification broadcast.</em>
-    </div>
-
-  </div>
+  <p>
+    Regards,<br>
+    Office of the Registrar / Secretary<br>
+    Raiganj University<br>
+    P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
+  </p>
 </body>
 </html>"""
 
@@ -387,27 +338,26 @@ def dispatch_notice_to_students(notice):
         audience_val = ", ".join(audience_list)
 
         def build_formal_text(recipient_label):
-            return f"""RAIGANJ UNIVERSITY - OFFICIAL CIRCULAR NOTIFICATION
-============================================================
-Dear {recipient_label},
+            att_text = f"\nAttachment: {attachment_name} (Attached to this email)\n" if attachment_name else ""
+            sum_text = f"\nSummary & Instructions:\n{polished_md}\n" if polished_md and polished_md.strip() else ""
 
-An official university notification has been published on the portal:
+            return f"""Dear {recipient_label},
 
-Notice Title    : {notice.get('title')}
-Notice Ref / ID : #{notice.get('id')}
-Date of Notice  : {notice.get('published_on', '')}
-Category        : {notice.get('category', 'General')}
+An official notice has been published by Raiganj University.
+
+Notice Title: {notice.get('title')}
+Notice ID: #{notice.get('id')}
+Date of Notice: {notice.get('published_on', '')}
+Category: {notice.get('category', 'General')}
 Reason / Purpose: {reason_val}
-Applicable To   : {audience_val}
-Official Portal : {notice.get('link')}
+Applicable To: {audience_val}
+{sum_text}{att_text}
+Official Portal Link:
+{notice.get('link')}
 
-SUMMARY & DIRECTIVES:
-------------------------------------------------------------
-{polished_md}
-------------------------------------------------------------
-
-Official Attachment: {attachment_name or 'None'}
-Office of the Registrar / Secretary, Raiganj University
+Regards,
+Office of the Registrar / Secretary
+Raiganj University
 P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
 """
 
@@ -512,19 +462,39 @@ def test_smtp_connection(test_email=None):
 
         sample_notice = {
             'id': 'TEST-999',
-            'title': 'Raiganj University Notice Dispatcher: Google Group Connection Verified',
+            'title': 'Raiganj University Notice Dispatcher: Connection Test',
             'link': 'https://raiganjuniversity.ac.in/',
             'published_on': datetime.now().strftime('%b %d, %Y %I:%M %p'),
             'category': 'System Verification'
         }
         html = generate_notice_html(sample_notice, student_name='Administrator')
 
+        plain_test = f"""Dear Administrator,
+
+This is a formal test notification confirming that the Raiganj University notice broadcast system is operational.
+
+Notice Title: {sample_notice['title']}
+Notice ID: #{sample_notice['id']}
+Date: {sample_notice['published_on']}
+Category: {sample_notice['category']}
+Reason / Purpose: System Connection & Delivery Verification
+Applicable To: System Administrator / Department Group
+
+Official Portal Link:
+{sample_notice['link']}
+
+Regards,
+Office of the Registrar / Secretary
+Raiganj University
+P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
+"""
+
         msg = MIMEMultipart('alternative')
         target_to = f"Google Group <{target}>" if '@googlegroups.com' in target else target
         apply_email_deliverability_headers(msg, sender_name, sender_email, target_to, '[TEST] Raiganj University Notice Dispatcher: Test Alert')
 
-        msg.attach(MIMEText('This is a test notification confirming your Google Group notice broadcast system is fully active.', 'plain'))
-        msg.attach(MIMEText(html, 'html'))
+        msg.attach(MIMEText(plain_test, 'plain', 'utf-8'))
+        msg.attach(MIMEText(html, 'html', 'utf-8'))
 
         server.sendmail(sender_email, [target], msg.as_string())
         server.quit()
