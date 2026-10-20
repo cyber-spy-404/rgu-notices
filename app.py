@@ -662,7 +662,22 @@ def api_get_dispatches():
     records = db.get_dispatch_history(limit=limit)
     return jsonify({'dispatches': records, 'count': len(records)})
 
+# ----------------- Favicon & Error Handlers ----------------- #
+
+@app.route('/favicon.ico')
+def favicon():
+    import os
+    from flask import send_from_directory
+    return send_from_directory(os.path.join(app.root_path, 'static', 'images'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+@app.errorhandler(404)
+def page_not_found(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'success': False, 'error': 'Endpoint not found', 'path': request.path}), 404
+    return render_template('404.html'), 404
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"Raiganj University SMTP Automation Dashboard running at http://127.0.0.1:{port}")
     app.run(host='0.0.0.0', port=port, debug=False)
+

@@ -1556,19 +1556,146 @@ body {
    18. SITE FOOTER
    ============================================================================== */
 
+/* ==============================================================================
+   18. SITE FOOTER & CLICKABLE CONTACTS
+   ============================================================================== */
+
 .site-footer {
-  margin-top: var(--space-4);
-  padding: var(--space-4) 0;
+  margin-top: var(--space-6);
+  padding: var(--space-6) 0 var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  font-size: 0.76rem;
+  width: 100%;
+}
+
+.site-footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1.2fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .site-footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+}
+
+@media (max-width: 580px) {
+  .site-footer-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.footer-col-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  margin-bottom: var(--space-2);
+}
+
+.footer-brand-wrap .brand-emblem {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+.footer-brand-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.footer-brand-sub {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.footer-lead {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.footer-links-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-links-list a,
+.footer-contact-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  transition: all var(--transition-fast);
+  padding: 2px 0;
+}
+
+.footer-links-list a:hover,
+.footer-contact-link:hover {
+  color: var(--text-primary);
+  transform: translateX(2px);
+}
+
+.footer-contact-link i {
+  color: var(--text-tertiary);
+  width: 16px;
+  text-align: center;
+}
+
+.footer-contact-link:hover i {
+  color: var(--text-primary);
+}
+
+.footer-bottom-bar {
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.74rem;
   flex-wrap: wrap;
   gap: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
 }
 
-.site-footer a { text-decoration: none; transition: color var(--transition-fast); }
+.footer-bottom-bar a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-bottom-bar a:hover {
+  color: var(--text-primary);
+}
 
 /* ==============================================================================
    19. AUXILIARY UTILITIES & INTERACTIVE COMPONENTS
@@ -1634,4 +1761,331 @@ body {
   align-items: center;
   gap: 6px;
 }
+
+/* ==============================================================================
+   20. MOBILE DRAWER & RESPONSIVE OVERHAUL (ZERO HORIZONTAL OVERFLOW)
+   ============================================================================== */
+
+/* Clickable Logo Hover */
+.nav-brand {
+  cursor: pointer;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+.nav-brand:hover {
+  opacity: 0.92;
+}
+
+/* Mobile Menu Toggle Button */
+.mobile-menu-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  transition: all var(--transition-fast);
+  z-index: 105;
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.mobile-menu-toggle .hamburger-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform var(--transition-normal), opacity var(--transition-fast);
+}
+
+.mobile-menu-toggle.active .hamburger-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.mobile-menu-toggle.active .hamburger-bar:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.mobile-menu-toggle.active .hamburger-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile Drawer Backdrop & Container */
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-spring);
+  z-index: 1500;
+}
+
+.mobile-drawer-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 86%;
+  max-width: 360px;
+  background: var(--bg-surface-1);
+  border-left: 1px solid var(--border-default);
+  box-shadow: -10px 0 32px rgba(0, 0, 0, 0.4);
+  transform: translateX(100%);
+  transition: transform 0.35s var(--ease-spring);
+  z-index: 1501;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-drawer.active {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-header .brand-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-fast);
+}
+
+.drawer-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.drawer-body {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  flex: 1;
+}
+
+.drawer-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-2);
+}
+
+.drawer-nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.drawer-nav-btn:hover,
+.drawer-nav-btn.active {
+  background: var(--bg-surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.drawer-nav-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drawer-nav-btn-left i {
+  width: 18px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.drawer-nav-btn.active .drawer-nav-btn-left i {
+  color: var(--primary);
+}
+
+.drawer-actions-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-actions-box .btn {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 10px 14px;
+}
+
+.drawer-footer-contacts {
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-surface-0);
+}
+
+.drawer-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.77rem;
+  transition: color var(--transition-fast);
+}
+
+.drawer-contact-item:hover {
+  color: var(--text-primary);
+}
+
+.drawer-contact-item i {
+  width: 18px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* Strict Zero-Overflow & Responsive Media Queries */
+@media (max-width: 992px) {
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
+  .nav-controls #btnQuickScan,
+  .nav-controls button[onclick*="openTestModal"],
+  .nav-controls .countdown-chip,
+  .nav-controls .status-pill {
+    display: none !important;
+  }
+  .nav-controls .theme-segmented-control {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .brand-subtext {
+    display: none;
+  }
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .search-input-wrap {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .table-toolbar .filter-group {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .modal-box {
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100vh - 30px);
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+  }
+  .modal-box-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-box-footer {
+    flex-wrap: wrap;
+  }
+  .toast-shelf {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
+  .toast {
+    width: 100%;
+    font-size: 0.78rem;
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-heading {
+    font-size: 0.88rem;
+  }
+  .brand-heading .badge-app {
+    display: none;
+  }
+  .brand-emblem {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .brand-emblem img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  .nav-controls .theme-segmented-control {
+    display: none;
+  }
+  .inspector-actions-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .inspector-actions-footer .btn {
+    width: 100%;
+  }
+}
+
 

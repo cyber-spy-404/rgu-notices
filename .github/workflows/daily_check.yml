@@ -47,7 +47,6 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FORCE_SEND_SAMPLE: ${{ github.event.inputs.force_send_sample }}
         run: |
           python cron_task.py

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 &bull; Page Not Found &bull; Raiganj University Notice Engine</title>
+  <meta name="description" content="The page or notice you are looking for does not exist or has been relocated. Return to the Raiganj University Notice Automation Engine dashboard.">
+  <meta name="robots" content="noindex, follow">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="/static/images/logo.png">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core Theme CSS -->
+  <link rel="stylesheet" href="/static/css/base.css?v=11.0">
+  <link rel="stylesheet" href="/static/css/dark.css?v=11.0">
+  <link rel="stylesheet" href="/static/css/light.css?v=11.0">
+
+  <style>
+    .error-container {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-6) var(--space-4);
+    }
+    .error-card {
+      max-width: 580px;
+      width: 100%;
+      text-align: center;
+      padding: var(--space-8) var(--space-6);
+      background: var(--bg-surface-1);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+      animation: kowalskiReveal 0.5s var(--ease-spring) both;
+    }
+    .error-badge-glint {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #ef4444;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-5);
+    }
+    .error-code {
+      font-family: var(--font-mono);
+      font-size: 5.5rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+      background: linear-gradient(180deg, var(--text-white) 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .error-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: var(--space-3);
+      color: var(--text-primary);
+    }
+    .error-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--space-6);
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .error-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-6);
+    }
+    .error-footer-contacts {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+      font-size: 0.76rem;
+      color: var(--text-tertiary);
+    }
+    .error-footer-contacts a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color var(--transition-fast);
+    }
+    .error-footer-contacts a:hover {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Navbar Header -->
+    <header class="navbar">
+      <a href="/" class="nav-brand" title="Return to Raiganj University Notice Engine">
+        <div class="brand-emblem" title="Raiganj University Official Emblem">
+          <img src="/static/images/logo.png" alt="RGU Official Logo" style="width: 38px; height: 38px; object-fit: contain;">
+        </div>
+        <div class="brand-info">
+          <div class="brand-heading">
+            Raiganj University <span class="badge-app">Notice Engine</span>
+          </div>
+          <div class="brand-subtext">
+            রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Twice-Daily Automated Scraper
+          </div>
+        </div>
+      </a>
+
+      <div class="nav-controls">
+        <div class="theme-segmented-control" role="group" aria-label="Appearance Mode">
+          <button type="button" class="theme-seg-btn active" id="btnThemeDark" onclick="setTheme('dark')" title="Executive Dark Mode">
+            <i class="fa-solid fa-moon"></i> <span>Dark</span>
+          </button>
+          <button type="button" class="theme-seg-btn" id="btnThemeLight" onclick="setTheme('light')" title="Crisp Light Mode">
+            <i class="fa-solid fa-sun"></i> <span>Light</span>
+          </button>
+        </div>
+        <a href="/" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-house"></i> <span>Dashboard</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Error Card Content -->
+    <main class="error-container">
+      <div class="error-card">
+        <div class="error-badge-glint">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>HTTP 404 &bull; Resource Relocated</span>
+        </div>
+        
+        <div class="error-code">404</div>
+        <h1 class="error-title">Notice or Page Not Found</h1>
+        <p class="error-desc">
+          The notice reference, document attachment, or URL path you requested could not be located on the server. It may have been archived or removed from the official university portal.
+        </p>
+
+        <div class="error-actions">
+          <a href="/" class="btn btn-primary">
+            <i class="fa-solid fa-house"></i> <span>Return to Dashboard</span>
+          </a>
+          <a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Official Notices Portal</span>
+          </a>
+          <a href="https://raiganjuniversity.ac.in/" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+            <i class="fa-solid fa-building-columns"></i> <span>University Home</span>
+          </a>
+        </div>
+
+        <div class="error-footer-contacts">
+          <span>Need help?</span>
+          <a href="tel:+913523244038" title="Call University Helpline">
+            <i class="fa-solid fa-phone"></i> +91 3523 244038
+          </a>
+          <a href="mailto:rgu-notices@googlegroups.com" title="Email Student Notices Desk">
+            <i class="fa-solid fa-envelope"></i> rgu-notices@googlegroups.com
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+      <div>
+        <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; &copy; <span id="errorCopyrightYear">2026</span> All Rights Reserved.
+      </div>
+      <div>
+        <a href="https://raiganjuniversity.ac.in/" target="_blank" rel="noopener noreferrer">raiganjuniversity.ac.in</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    function initTheme() {
+      const saved = localStorage.getItem('rgu_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateThemeButtons(saved);
+    }
+    function setTheme(mode) {
+      document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('rgu_theme', mode);
+      updateThemeButtons(mode);
+    }
+    function updateThemeButtons(mode) {
+      const darkBtn = document.getElementById('btnThemeDark');
+      const lightBtn = document.getElementById('btnThemeLight');
+      if (darkBtn) darkBtn.classList.toggle('active', mode === 'dark');
+      if (lightBtn) lightBtn.classList.toggle('active', mode === 'light');
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      const cy = document.getElementById('errorCopyrightYear');
+      if (cy) cy.textContent = new Date().getFullYear();
+    });
+  </script>
+</body>
+</html>

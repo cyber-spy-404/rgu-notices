@@ -4,7 +4,7 @@ Supports two operational modes:
 1. Cloud Sync Mode (When WEBAPP_URL is set, e.g. in GitHub Actions runner):
    - Phase 1: Queries web app (/api/sync/status) for seen_ids & unmailed_notices.
    - Phase 2: Scrapes official university portal (https://raiganjuniversity.ac.in/Website/AllNotices).
-   - Phase 3: Downloads new notices/PDFs, polishes with Gemini 2.5 Flash, and POSTs new notices to web app (/api/sync/push-notices).
+   - Phase 3: Downloads new notices/PDFs, extracts reason & key details locally, and POSTs new notices to web app (/api/sync/push-notices).
    - Phase 4: Dispatches ALL unmailed notices (both newly found + existing unmailed) to students / Google Group.
    - Phase 5: Updates web app with sent status (/api/sync/mark-sent).
 
@@ -86,10 +86,10 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
 
     print(f" -> Identified {len(new_notices)} NEW notice(s) not yet present in PythonAnywhere database.")
 
-    # Phase 3: Download & polish new notices with Gemini 2.5 Flash, then push to PythonAnywhere
+    # Phase 3: Download & extract key details locally, then push to web app
     pushed_notices = []
     if new_notices:
-        print(f"\n[PHASE 3] Polishing New Notices with Gemini 2.5 & Pushing to PythonAnywhere...")
+        print(f"\n[PHASE 3] Extracting Key Details & Notice Reasons locally and Pushing to Web App...")
         for notice in new_notices:
             print(f" -> Processing Notice #{notice.get('id')}: {notice.get('title')[:60]}...")
             try:

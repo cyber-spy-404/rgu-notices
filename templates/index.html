@@ -3,8 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Raiganj University &bull; Notice Automation Engine</title>
-  <meta name="description" content="Automated twice-daily (7:00 AM & 7:00 PM IST) notice scraper, Gemini AI polisher, and Google Groups SMTP broadcaster for Raiganj University.">
+  <title>Raiganj University &bull; Automated Notice Engine &amp; Dispatcher</title>
+  
+  <!-- Comprehensive SEO & Mobile Meta Tags -->
+  <meta name="description" content="Raiganj University Automated Notice Engine - Twice-daily (7:00 AM &amp; 7:00 PM IST) automated scraper, structured circular reason &amp; key details extractor, and Google Groups broadcaster for 1,000+ students.">
+  <meta name="keywords" content="Raiganj University, RGU, Notices, Notice Board, University Circulars, Student Notifications, Automation, Google Groups, West Bengal">
+  <meta name="author" content="Raiganj University Student Communications Desk">
+  <meta name="theme-color" content="#090a0f" id="metaThemeColor">
+  
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Raiganj University &bull; Automated Notice Engine">
+  <meta property="og:description" content="Twice-daily automated university notice scraper, structured circular key details &amp; reason extraction, and instant Google Groups broadcaster.">
+  <meta property="og:image" content="/static/images/logo.png">
+  <meta property="og:url" content="https://raiganjuniversity.ac.in/">
+
+  <!-- Twitter Meta -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Raiganj University Notice Engine">
+  <meta name="twitter:description" content="Twice-daily notice scraper, structured circular key details extractor, and Google Groups dispatcher.">
+  <meta name="twitter:image" content="/static/images/logo.png">
+
+  <!-- Multi-Resolution Favicons -->
+  <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/images/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="/static/images/logo.png">
   
   <!-- Premium Fonts: Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,26 +37,23 @@
   
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/static/images/logo.png">
 
-  <!-- Executive Linear-Grade SaaS Design System: Separate Architecture -->
-  <link rel="stylesheet" href="/static/css/base.css?v=10.4">
-  <link rel="stylesheet" href="/static/css/dark.css?v=10.4">
-  <link rel="stylesheet" href="/static/css/light.css?v=10.4">
+  <!-- Executive Linear-Grade SaaS Design System -->
+  <link rel="stylesheet" href="/static/css/base.css?v=11.0">
+  <link rel="stylesheet" href="/static/css/dark.css?v=11.0">
+  <link rel="stylesheet" href="/static/css/light.css?v=11.0">
 </head>
 <body>
-
 
   <!-- Main Viewport Layout -->
   <div class="app-wrapper">
     
     <!-- ================= NAVBAR ================= -->
     <header class="navbar">
-      <div class="nav-brand">
+      <!-- Clickable Logo -->
+      <a href="/" class="nav-brand" onclick="switchTab('dashboard'); window.scrollTo({top:0, behavior:'smooth'}); return false;" title="Return to Dashboard">
         <div class="brand-emblem" title="Raiganj University Official Emblem">
-          <img src="/static/images/logo.png" alt="RGU Logo" style="width: 40px; height: 40px; max-width: 40px; max-height: 40px; object-fit: contain; display: block;">
+          <img src="/static/images/logo.png" alt="RGU Logo" style="width: 38px; height: 38px; object-fit: contain; display: block;">
         </div>
         <div class="brand-info">
           <div class="brand-heading">
@@ -42,7 +63,7 @@
             রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Twice-Daily Automated Scraper &amp; Google Group Dispatcher
           </div>
         </div>
-      </div>
+      </a>
 
       <!-- Controls & Status Hub -->
       <div class="nav-controls">
@@ -84,8 +105,108 @@
             <span>Light</span>
           </button>
         </div>
+
+        <!-- Mobile Menu Toggle Button (Visible on Small Screens) -->
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" onclick="toggleMobileMenu()" aria-label="Toggle navigation menu" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
       </div>
     </header>
+
+    <!-- ================= MOBILE MENU DRAWER ================= -->
+    <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop" onclick="toggleMobileMenu(false)"></div>
+    <aside class="mobile-drawer" id="mobileDrawer" aria-label="Mobile Navigation Drawer">
+      <div class="drawer-header">
+        <a href="/" class="nav-brand" onclick="switchTab('dashboard'); toggleMobileMenu(false); return false;">
+          <div class="brand-emblem">
+            <img src="/static/images/logo.png" alt="RGU Logo" style="width: 32px; height: 32px; object-fit: contain;">
+          </div>
+          <div class="brand-info">
+            <div class="brand-heading" style="font-size: 0.95rem;">
+              Raiganj University
+            </div>
+            <div class="brand-subtext" style="display: block; font-size: 0.68rem;">
+              Notice Engine
+            </div>
+          </div>
+        </a>
+        <button class="drawer-close-btn" onclick="toggleMobileMenu(false)" aria-label="Close menu">&times;</button>
+      </div>
+      
+      <div class="drawer-body">
+        <div>
+          <div class="drawer-section-title">Navigation Tabs</div>
+          <ul class="drawer-nav-list">
+            <li>
+              <button class="drawer-nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard'); toggleMobileMenu(false);">
+                <span class="drawer-nav-btn-left"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></span>
+              </button>
+            </li>
+            <li>
+              <button class="drawer-nav-btn" data-tab="notices" onclick="switchTab('notices'); toggleMobileMenu(false);">
+                <span class="drawer-nav-btn-left"><i class="fa-solid fa-bullhorn"></i> <span>University Notices</span></span>
+                <span class="tab-counter" id="drawerNoticeCount">0</span>
+              </button>
+            </li>
+            <li>
+              <button class="drawer-nav-btn" data-tab="students" onclick="switchTab('students'); toggleMobileMenu(false);">
+                <span class="drawer-nav-btn-left"><i class="fa-solid fa-user-graduate"></i> <span>Student Directory</span></span>
+                <span class="tab-counter" id="drawerStudentCount">0</span>
+              </button>
+            </li>
+            <li>
+              <button class="drawer-nav-btn" data-tab="smtp" onclick="switchTab('smtp'); toggleMobileMenu(false);">
+                <span class="drawer-nav-btn-left"><i class="fa-solid fa-sliders"></i> <span>Google Group Settings</span></span>
+              </button>
+            </li>
+            <li>
+              <button class="drawer-nav-btn" data-tab="logs" onclick="switchTab('logs'); toggleMobileMenu(false);">
+                <span class="drawer-nav-btn-left"><i class="fa-solid fa-terminal"></i> <span>Audit &amp; Logs</span></span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="drawer-section-title">Quick Actions</div>
+          <div class="drawer-actions-box">
+            <button class="btn btn-primary btn-sm" onclick="triggerScanNow(); toggleMobileMenu(false);">
+              <i class="fa-solid fa-bolt"></i> <span>Scan Website Now</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openTestModal(); toggleMobileMenu(false);">
+              <i class="fa-solid fa-paper-plane"></i> <span>Send Test Email</span>
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="dispatchPendingNow(); toggleMobileMenu(false);">
+              <i class="fa-solid fa-envelope-circle-check"></i> <span>Deliver Pending Queue</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="drawer-section-title">Appearance Mode</div>
+          <div class="theme-segmented-control" style="width: 100%; display: flex;" role="group">
+            <button type="button" class="theme-seg-btn active" id="btnDrawerThemeDark" style="flex: 1; justify-content: center;" onclick="setTheme('dark')">
+              <i class="fa-solid fa-moon"></i> <span>Dark</span>
+            </button>
+            <button type="button" class="theme-seg-btn" id="btnDrawerThemeLight" style="flex: 1; justify-content: center;" onclick="setTheme('light')">
+              <i class="fa-solid fa-sun"></i> <span>Light</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-footer-contacts">
+        <div class="drawer-section-title" style="margin-bottom: 2px;">University Helpdesk</div>
+        <a href="tel:+913523244038" class="drawer-contact-item" title="Call University Helpdesk">
+          <i class="fa-solid fa-phone"></i> <span>+91 3523 244038</span>
+        </a>
+        <a href="mailto:rgu-notices@googlegroups.com" class="drawer-contact-item" title="Send email to Google Group">
+          <i class="fa-solid fa-envelope"></i> <span>rgu-notices@googlegroups.com</span>
+        </a>
+      </div>
+    </aside>
 
     <!-- ================= METRICS STRIP ================= -->
     <section class="metrics-strip">
@@ -208,10 +329,10 @@
                     </div>
                   </div>
                   <div class="step-node">
-                    <div class="step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div class="step-icon"><i class="fa-solid fa-list-check"></i></div>
                     <div class="step-copy">
-                      <strong>Gemini 3.6 OCR</strong>
-                      <span>AI Polisher</span>
+                      <strong>Extract Details</strong>
+                      <span>Reason &amp; Dates</span>
                     </div>
                   </div>
                   <div class="step-node">
@@ -336,11 +457,11 @@
                   </div>
                 </div>
 
-                <!-- View 1: Gemini AI Polished Breakdown -->
+                <!-- View 1: Structured Notice Breakdown -->
                 <div id="viewAiContent" class="preview-view active">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span style="font-size: 0.74rem; color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
-                      <i class="fa-solid fa-wand-magic-sparkles header-icon"></i> AI Structured Student Breakdown
+                      <i class="fa-solid fa-list-check header-icon"></i> Official Structured Notice Breakdown
                     </span>
                     <button class="btn btn-ghost btn-xs" onclick="copyLivePolishedText()">
                       <i class="fa-regular fa-copy"></i> Copy Text
@@ -348,7 +469,7 @@
                   </div>
                   <div class="gemini-polish-box" id="livePolishedHtml">
                     <div class="loading-placeholder">
-                      <i class="fa-solid fa-spinner fa-spin"></i> Loading Gemini AI breakdown...
+                      <i class="fa-solid fa-spinner fa-spin"></i> Loading notice breakdown...
                     </div>
                   </div>
 
@@ -360,7 +481,7 @@
                         <i class="fa-regular fa-copy"></i> Copy Field
                       </button>
                     </div>
-                    <textarea id="livePolishedTextarea" class="gemini-message-textarea" readonly placeholder="Gemini polished announcement text field..."></textarea>
+                    <textarea id="livePolishedTextarea" class="gemini-message-textarea" readonly placeholder="Structured announcement text field..."></textarea>
                   </div>
                 </div>
 
@@ -398,8 +519,8 @@
 
               <!-- Footer Actions -->
               <div class="inspector-actions-footer">
-                <button class="btn btn-secondary btn-xs" id="btnLiveRegenAi" onclick="regenerateLiveAi()" title="Re-run Gemini AI Polish">
-                  <i class="fa-solid fa-arrows-rotate"></i> Re-polish
+                <button class="btn btn-secondary btn-xs" id="btnLiveRegenAi" onclick="regenerateLiveAi()" title="Refresh Notice Summary & Key Details">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh Summary
                 </button>
                 <a href="#" id="btnLiveDownloadFile" target="_blank" class="btn btn-secondary btn-xs" style="display: none;">
                   <i class="fa-solid fa-file-arrow-down"></i> <span id="liveFileBtnLabel">Download File</span>
@@ -589,7 +710,7 @@
                   <label class="form-label" for="smtpGoogleGroupEmail">
                     <i class="fa-solid fa-users form-icon"></i> Target Google Group Email Address <span class="text-danger">*</span>
                   </label>
-                  <input type="email" id="smtpGoogleGroupEmail" class="form-input" placeholder="e.g. rgu-notices@googlegroups.com" required>
+                  <input type="email" id="smtpGoogleGroupEmail" class="form-input" placeholder="groupname@googlegroups.com" required>
                   <div class="form-help">Enter your Google Group address. All students in this group receive new notices and PDF attachments automatically.</div>
                 </div>
 
@@ -599,7 +720,7 @@
                     <label class="form-label" for="smtpSenderEmail">
                       <i class="fa-solid fa-at form-icon"></i> Sender / Dispatcher Gmail <span class="text-danger">*</span>
                     </label>
-                    <input type="email" id="smtpSenderEmail" class="form-input" required placeholder="e.g. rgunotices@gmail.com">
+                    <input type="email" id="smtpSenderEmail" class="form-input" required placeholder="dispatcher@gmail.com">
                     <div class="form-help">The Gmail account authorized to post to the Google Group.</div>
                   </div>
                   <div class="form-group col-6">
@@ -617,7 +738,7 @@
                     <i class="fa-solid fa-key form-icon"></i> Gmail App Password (16 Characters) <span class="text-danger">*</span>
                   </label>
                   <div class="input-with-action">
-                    <input type="password" id="smtpCustomPass" class="form-input" placeholder="•••• •••• •••• ••••" autocomplete="new-password">
+                    <input type="password" id="smtpCustomPass" class="form-input" placeholder="Enter 16-character App Password" autocomplete="new-password">
                     <button type="button" class="btn-input-action" onclick="togglePasswordVisibility('smtpCustomPass', this)" title="Show/Hide Password">
                       <i class="fa-regular fa-eye"></i>
                     </button>
@@ -627,20 +748,15 @@
                   </div>
                 </div>
 
-                <!-- Gemini API Key -->
+                <!-- Local Extraction Engine Status -->
                 <div class="form-group">
-                  <label class="form-label" for="smtpGeminiKey">
-                    <i class="fa-solid fa-wand-magic-sparkles form-icon"></i> Gemini AI API Key (Optional Multimodal OCR &amp; Polisher)
+                  <label class="form-label">
+                    <i class="fa-solid fa-microchip form-icon"></i> Circular Extraction Engine (100% Local &amp; Private)
                   </label>
-                  <div class="input-with-action">
-                    <input type="password" id="smtpGeminiKey" class="form-input" placeholder="AIzaSy..." autocomplete="off">
-                    <button type="button" class="btn-input-action" onclick="togglePasswordVisibility('smtpGeminiKey', this)" title="Show/Hide Key">
-                      <i class="fa-regular fa-eye"></i>
-                    </button>
+                  <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #10b981;">
+                    <i class="fa-solid fa-circle-check"></i> <strong>Zero Cloud AI Dependency:</strong> Notice reason, key dates, audience, and instructions are extracted locally using Tesseract OCR and native NLP heuristics without external API keys or rate limits.
                   </div>
-                  <div class="form-help">
-                    Performs OCR on scanned circulars and formats markdown summaries. Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="accent-link">Google AI Studio</a>.
-                  </div>
+                  <input type="hidden" id="smtpGeminiKey" value="">
                 </div>
 
                 <!-- Advanced Settings Accordion -->
@@ -812,11 +928,76 @@
 
     <!-- ================= SITE FOOTER ================= -->
     <footer class="site-footer">
-      <div>
-        <strong>Raiganj University Automated Notice Dispatcher</strong> &bull; Developed with Python Flask, APScheduler, SQLite &amp; Google Groups
+      <div class="site-footer-grid">
+        <!-- Col 1: University Identity -->
+        <div class="footer-col">
+          <a href="/" class="footer-brand-wrap" onclick="switchTab('dashboard'); window.scrollTo({top:0, behavior:'smooth'}); return false;" title="Return to Dashboard">
+            <div class="brand-emblem">
+              <img src="/static/images/logo.png" alt="RGU Official Crest" style="width: 32px; height: 32px; object-fit: contain;">
+            </div>
+            <div>
+              <div class="footer-brand-title">Raiganj University</div>
+              <div class="footer-brand-sub">রায়গঞ্জ বিশ্ববিদ্যালয় &bull; Estd. 2015</div>
+            </div>
+          </a>
+          <p class="footer-lead">
+            Official automated notice scraping, circular reason &amp; key details extraction, and Google Groups student broadcast engine. Executes twice daily at 7:00 AM &amp; 7:00 PM IST.
+          </p>
+        </div>
+
+        <!-- Col 2: Navigation & Portals -->
+        <div class="footer-col">
+          <div class="footer-col-title"><i class="fa-solid fa-compass"></i> Official Portals</div>
+          <ul class="footer-links-list">
+            <li><a href="https://raiganjuniversity.ac.in/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-globe"></i> Official University Website</a></li>
+            <li><a href="https://raiganjuniversity.ac.in/Website/AllNotices" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-bullhorn"></i> University Notices Archive</a></li>
+            <li><a href="https://groups.google.com" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-google"></i> Google Groups Broadcast Hub</a></li>
+            <li><a href="javascript:void(0)" onclick="switchTab('dashboard'); window.scrollTo({top:0, behavior:'smooth'});"><i class="fa-solid fa-chart-pie"></i> System Live Dashboard</a></li>
+            <li><a href="javascript:void(0)" onclick="switchTab('logs'); window.scrollTo({top:0, behavior:'smooth'});"><i class="fa-solid fa-terminal"></i> Audit &amp; Execution Trail</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Clickable Contacts & Administration -->
+        <div class="footer-col">
+          <div class="footer-col-title"><i class="fa-solid fa-headset"></i> University Contacts</div>
+          <ul class="footer-links-list">
+            <li>
+              <a href="tel:+913523244038" class="footer-contact-link" title="Call Main Helpdesk Helpline">
+                <i class="fa-solid fa-phone"></i> <span>+91 3523 244038 (Helpline)</span>
+              </a>
+            </li>
+            <li>
+              <a href="tel:+913523244039" class="footer-contact-link" title="Call University EPABX Exchange">
+                <i class="fa-solid fa-phone-volume"></i> <span>+91 3523 244039 (EPABX)</span>
+              </a>
+            </li>
+            <li>
+              <a href="mailto:rgu-notices@googlegroups.com" class="footer-contact-link" title="Email Student Notices Desk">
+                <i class="fa-solid fa-envelope"></i> <span>rgu-notices@googlegroups.com</span>
+              </a>
+            </li>
+            <li>
+              <a href="mailto:registrar@raiganjuniversity.ac.in" class="footer-contact-link" title="Email Registrar Office">
+                <i class="fa-solid fa-building-columns"></i> <span>registrar@raiganjuniversity.ac.in</span>
+              </a>
+            </li>
+            <li>
+              <span class="footer-contact-link" style="cursor: default;">
+                <i class="fa-solid fa-location-dot"></i> <span>PO: Raiganj, Uttar Dinajpur, WB 733134</span>
+              </span>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div>
-        Twice Daily schedule (7:00 AM &amp; 7:00 PM IST) &bull; <a href="https://raiganjuniversity.ac.in/" target="_blank">raiganjuniversity.ac.in</a>
+
+      <!-- Bottom Bar with Dynamic Copyright -->
+      <div class="footer-bottom-bar">
+        <div>
+          &copy; <span id="copyrightYear">2026</span> Raiganj University. All Rights Reserved &bull; Notice Automation Engine.
+        </div>
+        <div>
+          Twice-Daily Automated Schedule (7:00 AM &amp; 7:00 PM IST) &bull; <a href="https://raiganjuniversity.ac.in/" target="_blank" rel="noopener noreferrer">raiganjuniversity.ac.in</a>
+        </div>
       </div>
     </footer>
 
@@ -835,20 +1016,20 @@
         <div class="modal-box-body">
           <div class="form-group">
             <label class="form-label">Full Name</label>
-            <input type="text" id="newStudentName" class="form-input" placeholder="e.g. Subhajit Roy" required>
+            <input type="text" id="newStudentName" class="form-input" placeholder="Enter student full name" required>
           </div>
           <div class="form-group">
             <label class="form-label">Student Email Address</label>
-            <input type="email" id="newStudentEmail" class="form-input" placeholder="e.g. subhajit@rgu.ac.in" required>
+            <input type="email" id="newStudentEmail" class="form-input" placeholder="student@raiganjuniversity.ac.in" required>
           </div>
           <div class="form-row">
             <div class="form-group col-6">
               <label class="form-label">Department / Course</label>
-              <input type="text" id="newStudentDept" class="form-input" placeholder="e.g. Computer Science" value="General">
+              <input type="text" id="newStudentDept" class="form-input" placeholder="Department or Course name" value="General">
             </div>
             <div class="form-group col-6">
               <label class="form-label">Roll / Reg Number</label>
-              <input type="text" id="newStudentRoll" class="form-input" placeholder="e.g. CS-2026-001">
+              <input type="text" id="newStudentRoll" class="form-input" placeholder="University Registration or Roll No">
             </div>
           </div>
         </div>
@@ -875,7 +1056,7 @@
             or one email per line: <code>student@domain.com</code>
           </p>
           <div class="form-group">
-            <textarea id="bulkDataInput" class="form-textarea" rows="8" placeholder="Souvik Mukherjee, souvik@rgu.ac.in, Computer Science, CS-101&#10;Ananya Roy, ananya@rgu.ac.in, Mathematics, MATH-202&#10;student3@gmail.com"></textarea>
+            <textarea id="bulkDataInput" class="form-textarea" rows="8" placeholder="Souvik Mukherjee, souvik@raiganjuniversity.ac.in, Computer Science, CS-101&#10;Ananya Roy, ananya@raiganjuniversity.ac.in, Mathematics, MATH-202&#10;student@gmail.com"></textarea>
           </div>
         </div>
         <div class="modal-box-footer">
@@ -900,7 +1081,7 @@
           </p>
           <div class="form-group">
             <label class="form-label">Send Test Notice To</label>
-            <input type="email" id="testEmailRecipient" class="form-input" placeholder="e.g. rgu-notices@googlegroups.com">
+            <input type="email" id="testEmailRecipient" class="form-input" placeholder="recipient@googlegroups.com">
             <div class="form-help">Enter your Google Group email address to verify delivery.</div>
           </div>
           <div id="testResultBox" class="test-result-box" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-top: 10px;"></div>
@@ -945,7 +1126,7 @@
             <div style="display: flex; gap: 6px; margin-top: 4px;">
               <span class="badge badge-info" id="modalNoticeIdBadge">Notice #--</span>
               <span class="badge badge-neutral" id="modalNoticeCatBadge">General</span>
-              <span class="badge badge-success" id="modalNoticeAiBadge">✨ Gemini Polished</span>
+              <span class="badge badge-success" id="modalNoticeAiBadge">✓ Verified Summary</span>
             </div>
           </div>
         </div>
@@ -955,7 +1136,7 @@
       <!-- Segmented Mode Switcher -->
       <div class="inspector-tabs" style="border-left: none; border-right: none;">
         <button class="inspector-tab active" id="modalTabAi" onclick="setModalTab('ai')">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini AI Breakdown
+          <i class="fa-solid fa-list-check"></i> 📋 Notice Summary &amp; Reason
         </button>
         <button class="inspector-tab" id="modalTabMd" onclick="setModalTab('md')">
           <i class="fa-solid fa-file-code"></i> 📝 Raw Markdown (.md)
@@ -966,28 +1147,28 @@
       </div>
 
       <div class="modal-box-body" style="max-height: 520px; overflow-y: auto; padding: 18px;">
-        <!-- Tab 1: AI Polish -->
+        <!-- Tab 1: Structured Summary & Reason -->
         <div id="modalViewAi" class="modal-tab-content">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-size: 0.78rem; color: var(--text-primary); font-weight: 600;">
-              <i class="fa-solid fa-wand-magic-sparkles header-icon"></i> Gemini Polished Student Announcement
+              <i class="fa-solid fa-list-check header-icon"></i> Official Structured Announcement
             </span>
             <button class="btn btn-ghost btn-xs" onclick="copyModalPolishedText()">
-              <i class="fa-regular fa-copy"></i> Copy Polished Text
+              <i class="fa-regular fa-copy"></i> Copy Summary
             </button>
           </div>
 
           <div class="gemini-polish-box" id="modalPolishedHtml">
-            <div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> Loading AI breakdown...</div>
+            <div class="loading-placeholder"><i class="fa-solid fa-spinner fa-spin"></i> Loading notice breakdown...</div>
           </div>
 
           <!-- Dedicated Viewable / Copyable Message Text Field -->
           <div class="gemini-message-field-wrap">
             <div class="gemini-field-header">
-              <span><i class="fa-solid fa-code"></i> <strong>Polished Message Text Field (Direct Copy / Share):</strong></span>
+              <span><i class="fa-solid fa-code"></i> <strong>Notice Message Text Field (Direct Copy / Share):</strong></span>
               <button class="btn btn-ghost btn-xs" onclick="copyModalPolishedText()"><i class="fa-regular fa-copy"></i> Copy Field Text</button>
             </div>
-            <textarea id="modalPolishedTextarea" class="gemini-message-textarea" readonly placeholder="Gemini polished announcement text field..."></textarea>
+            <textarea id="modalPolishedTextarea" class="gemini-message-textarea" readonly placeholder="Structured notice announcement text field..."></textarea>
           </div>
         </div>
 
@@ -1016,7 +1197,7 @@
       <div class="modal-box-footer flex-between">
         <div style="display: flex; gap: 6px;">
           <button type="button" class="btn btn-secondary btn-sm" id="btnModalRegen" onclick="regenerateModalAi()">
-            <i class="fa-solid fa-arrows-rotate"></i> Regenerate with Gemini
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Summary
           </button>
           <a href="#" id="modalOfficialPortalLink" target="_blank" class="btn btn-ghost btn-sm">
             <i class="fa-solid fa-arrow-up-right-from-square"></i> Open RGU Portal

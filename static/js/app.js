@@ -29,6 +29,18 @@ function setTheme(mode) {
   if (btnDark) btnDark.classList.toggle('active', targetTheme === 'dark');
   if (btnLight) btnLight.classList.toggle('active', targetTheme === 'light');
 
+  // Synchronize drawer theme buttons
+  const btnDrawerDark = document.getElementById('btnDrawerThemeDark');
+  const btnDrawerLight = document.getElementById('btnDrawerThemeLight');
+  if (btnDrawerDark) btnDrawerDark.classList.toggle('active', targetTheme === 'dark');
+  if (btnDrawerLight) btnDrawerLight.classList.toggle('active', targetTheme === 'light');
+
+  // Update mobile browser header theme-color
+  const metaTheme = document.getElementById('metaThemeColor');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', targetTheme === 'light' ? '#ffffff' : '#090a0f');
+  }
+
   // Maintain backwards compatibility for single toggle button if present
   const icon = document.getElementById('themeToggleIcon');
   if (icon) {
@@ -39,6 +51,24 @@ function setTheme(mode) {
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   setTheme(current === 'light' ? 'dark' : 'light');
+}
+
+// ----------------- Mobile Drawer Navigation Controller ----------------- //
+function toggleMobileMenu(forceState) {
+  const toggleBtn = document.getElementById('mobileMenuToggle');
+  const drawer = document.getElementById('mobileDrawer');
+  const backdrop = document.getElementById('mobileDrawerBackdrop');
+  if (!drawer || !backdrop) return;
+
+  const isActive = (typeof forceState === 'boolean') ? forceState : !drawer.classList.contains('active');
+  
+  drawer.classList.toggle('active', isActive);
+  backdrop.classList.toggle('active', isActive);
+  if (toggleBtn) {
+    toggleBtn.classList.toggle('active', isActive);
+    toggleBtn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+  }
+  document.body.style.overflow = isActive ? 'hidden' : '';
 }
 
 // ----------------- Refined Clean Hover Physics (Linear Spotlight) ----------------- //
@@ -64,6 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initMouseHoverEffects();
   initApp();
+
+  // Populate dynamic current copyright year
+  const cy = document.getElementById('copyrightYear');
+  if (cy) cy.textContent = new Date().getFullYear();
 });
 
 async function initApp() {
@@ -82,14 +116,26 @@ async function initApp() {
   setInterval(loadLocalInbox, 12000);
 }
 
-// ----------------- Tab Navigation ----------------- //
+// ----------------- Tab Navigation & Dynamic Titles ----------------- //
 function switchTab(tabId) {
-  document.querySelectorAll('.tab-btn, .nav-tab').forEach(t => {
+  document.querySelectorAll('.tab-btn, .nav-tab, .drawer-nav-btn').forEach(t => {
     t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
   });
   document.querySelectorAll('.tab-pane').forEach(p => {
     p.classList.toggle('active', p.id === `tab-${tabId}`);
   });
+
+  // Dynamic Page Title
+  const tabTitles = {
+    'dashboard': 'Dashboard • Raiganj University Notice Engine',
+    'notices': 'University Notices Archive • Raiganj University',
+    'students': 'Student Directory • Raiganj University',
+    'smtp': 'Google Group & Broadcast Settings • Raiganj University',
+    'logs': 'Audit & Execution Logs • Raiganj University'
+  };
+  if (tabTitles[tabId]) {
+    document.title = tabTitles[tabId];
+  }
 
   if (tabId === 'students') loadStudents();
   if (tabId === 'notices') loadNotices();
@@ -120,9 +166,19 @@ async function fetchSystemStatus() {
       groupLinkElem.innerText = data.google_group_email;
     }
 
-    // Badges in header
-    document.getElementById('navStudentCount').innerText = data.stats.total_students || 0;
-    document.getElementById('navNoticeCount').innerText = data.stats.total_notices || 0;
+    // Badges in header and mobile drawer
+    const totalStudents = data.stats.total_students || 0;
+    const totalNotices = data.stats.total_notices || 0;
+
+    const navStudent = document.getElementById('navStudentCount');
+    if (navStudent) navStudent.innerText = totalStudents;
+    const drawerStudent = document.getElementById('drawerStudentCount');
+    if (drawerStudent) drawerStudent.innerText = totalStudents;
+
+    const navNotice = document.getElementById('navNoticeCount');
+    if (navNotice) navNotice.innerText = totalNotices;
+    const drawerNotice = document.getElementById('drawerNoticeCount');
+    if (drawerNotice) drawerNotice.innerText = totalNotices;
 
     const pendingCount = data.stats.pending_notices || 0;
     const pendingBadge = document.getElementById('pendingQueueCount');
@@ -198,9 +254,11 @@ function updateCountdownDisplay() {
 // ----------------- Scraper Manual Trigger ----------------- //
 async function triggerScanNow() {
   const btn = document.getElementById('btnQuickScan');
-  const origHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Scraping RGU...</span>`;
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Scraping RGU...</span>`;
+  }
 
   showToast('Connecting to raiganjuniversity.ac.in & scanning for notices...', 'info');
 
@@ -225,8 +283,10 @@ async function triggerScanNow() {
   } catch (err) {
     showToast('Failed to trigger scan: ' + err.message, 'error');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = origHtml;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
   }
 }
 
@@ -462,8 +522,8 @@ function renderNoticeStatusBadge(status) {
         </td>
         <td>
           <div style="display: flex; gap: 6px;">
-            <button class="btn btn-secondary btn-xs btn-ai" title="View Gemini Polished Announcement & Markdown" onclick="openNoticeAiModal('${n.id}')">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> View Polish
+            <button class="btn btn-secondary btn-xs btn-ai" title="View Notice Summary & Key Details" onclick="openNoticeAiModal('${n.id}')">
+              <i class="fa-solid fa-list-check"></i> View Summary
             </button>
             <a href="${escapeHtml(n.link)}" target="_blank" class="btn btn-icon" title="Open on Raiganj University Portal">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -508,8 +568,8 @@ function renderDashboardNotices(notices) {
       <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(n.published_on || '—')}</td>
       <td>
         <div style="display: flex; gap: 6px;">
-          <button class="btn btn-secondary btn-xs btn-ai" onclick="openNoticeAiModal('${n.id}')" title="Inspect Gemini Polish">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> View Polish
+          <button class="btn btn-secondary btn-xs btn-ai" onclick="openNoticeAiModal('${n.id}')" title="Inspect Notice Summary">
+            <i class="fa-solid fa-list-check"></i> View Summary
           </button>
           <button class="btn btn-secondary btn-xs" onclick="resendNotice('${n.id}', '${escapeHtml(n.title)}')">
             <i class="fa-solid fa-paper-plane"></i> Send
@@ -812,17 +872,20 @@ async function submitTestSmtp(e) {
     if (data.success) {
       box.className = 'test-result-box success';
       box.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>SUCCESS:</strong> ${escapeHtml(data.message)}`;
+      showToast('Test verification notice broadcasted successfully!', 'success');
       loadLocalInbox();
       loadLogs();
       fetchSystemStatus();
     } else {
       box.className = 'test-result-box error';
       box.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>FAILED:</strong> ${escapeHtml(data.message)}`;
+      showToast(data.message || 'Test broadcast failed', 'error');
     }
   } catch (err) {
     box.style.display = 'block';
     box.className = 'test-result-box error';
     box.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>ERROR:</strong> ${err.message}`;
+    showToast('Test error: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = origHtml;
@@ -955,10 +1018,11 @@ function showToast(message, type = 'info') {
   }, 4000);
 }
 
-// Close modals on Escape key
+// Close modals and mobile drawer on Escape key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    toggleMobileMenu(false);
+    document.querySelectorAll('.modal-overlay.active, .modal-backdrop.active').forEach(m => m.classList.remove('active'));
   }
 });
 
@@ -991,7 +1055,7 @@ async function loadRecentAiNotice() {
     if (aiBadge) {
       if (n.has_gemini_polish) {
         aiBadge.className = 'badge badge-success';
-        aiBadge.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini Polished`;
+        aiBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ✓ Verified Summary`;
       } else {
         aiBadge.className = 'badge badge-info';
         aiBadge.innerHTML = `<i class="fa-solid fa-file-lines"></i> 📝 Markdown Extracted`;
@@ -1089,11 +1153,11 @@ function copyLivePolishedText() {
   const ta = document.getElementById('livePolishedTextarea');
   const text = ta ? ta.value : (currentLiveNotice ? (currentLiveNotice.polished_markdown || currentLiveNotice.raw_markdown) : '');
   if (!text) {
-    showToast('No polished text available to copy', 'info');
+    showToast('No summary text available to copy', 'info');
     return;
   }
   navigator.clipboard.writeText(text).then(() => {
-    showToast('Gemini polished message copied to clipboard!', 'success');
+    showToast('Notice summary copied to clipboard!', 'success');
   }).catch(() => {
     showToast('Failed to copy to clipboard', 'error');
   });
@@ -1113,21 +1177,21 @@ async function regenerateLiveAi() {
   const btn = document.getElementById('btnLiveRegenAi');
   const origHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Polishing with Gemini...`;
-  showToast(`Polishing Notice #${currentLiveNotice.id} with Gemini AI...`, 'info');
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Refreshing Summary...`;
+  showToast(`Extracting summary & reason for Notice #${currentLiveNotice.id}...`, 'info');
 
   try {
     const res = await fetch(`/api/notices/${currentLiveNotice.id}/generate-polish`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast('Gemini AI polish refreshed!', 'success');
+      showToast('Notice summary and reason refreshed!', 'success');
       await loadRecentAiNotice();
       await loadLogs();
     } else {
-      showToast(data.message || 'Polishing failed', 'error');
+      showToast(data.message || 'Extraction failed', 'error');
     }
   } catch (err) {
-    showToast('Polishing error: ' + err.message, 'error');
+    showToast('Extraction error: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = origHtml;
@@ -1165,7 +1229,7 @@ async function openNoticeAiModal(noticeId) {
     const aiBadge = document.getElementById('modalNoticeAiBadge');
     if (n.has_gemini_polish) {
       aiBadge.className = 'badge badge-success';
-      aiBadge.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ✨ Gemini Polished`;
+      aiBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ✓ Verified Summary`;
     } else {
       aiBadge.className = 'badge badge-info';
       aiBadge.innerHTML = `<i class="fa-solid fa-file-lines"></i> 📝 Markdown Extracted`;
@@ -1194,7 +1258,7 @@ async function openNoticeAiModal(noticeId) {
 
     setModalTab('ai');
   } catch (err) {
-    showToast('Failed to load AI details: ' + err.message, 'error');
+    showToast('Failed to load summary details: ' + err.message, 'error');
   }
 }
 
@@ -1202,11 +1266,11 @@ function copyModalPolishedText() {
   const ta = document.getElementById('modalPolishedTextarea');
   const text = ta ? ta.value : '';
   if (!text) {
-    showToast('No polished text available to copy', 'info');
+    showToast('No summary text available to copy', 'info');
     return;
   }
   navigator.clipboard.writeText(text).then(() => {
-    showToast('Gemini polished announcement copied to clipboard!', 'success');
+    showToast('Notice summary copied to clipboard!', 'success');
   }).catch(() => {
     showToast('Failed to copy to clipboard', 'error');
   });
@@ -1240,21 +1304,21 @@ async function regenerateModalAi() {
   const btn = document.getElementById('btnModalRegen');
   const origHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Polishing with Gemini...`;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Refreshing Summary...`;
 
   try {
     const res = await fetch(`/api/notices/${currentModalNoticeId}/generate-polish`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast('Gemini AI polish refreshed!', 'success');
+      showToast('Notice summary and reason refreshed!', 'success');
       await openNoticeAiModal(currentModalNoticeId);
       await loadRecentAiNotice();
       await loadLogs();
     } else {
-      showToast(data.message || 'Polishing failed', 'error');
+      showToast(data.message || 'Extraction failed', 'error');
     }
   } catch (err) {
-    showToast('Polishing error: ' + err.message, 'error');
+    showToast('Extraction error: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = origHtml;

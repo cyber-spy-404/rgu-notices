@@ -1,7 +1,6 @@
 import os
 import io
 import re
-import base64
 import zipfile
 import xml.etree.ElementTree as ET
 import requests
@@ -37,7 +36,7 @@ def extract_docx_text(file_bytes):
 
 def ocr_with_tesseract(file_bytes, mime_type='image/png'):
     """
-    Performs OCR using Tesseract (pytesseract) on image or PDF bytes.
+    Performs OCR using Tesseract (pytesseract) on image or PDF bytes if tesseract is installed.
     Automatically discovers tesseract executable in standard Windows & Linux paths.
     """
     if not file_bytes:
@@ -74,7 +73,6 @@ def ocr_with_tesseract(file_bytes, mime_type='image/png'):
             pil_img = Image.open(io.BytesIO(file_bytes))
             return pytesseract.image_to_string(pil_img).strip()
     except Exception as e:
-        print(f"Tesseract OCR note: {e}")
         return ""
 
 def grab_notice_file_and_text(notice):
@@ -231,108 +229,11 @@ def grab_notice_file_and_text(notice):
 
 def polish_with_gemini(raw_md, notice, file_bytes=None, mime_type=None):
     """
-    Polishes notice using Google Gemini.
-    If the notice is a PDF or image, uses Gemini's Multimodal capabilities (inlineData)
-    to OCR and read scanned text, stamps, handwriting, and tables directly!
+    (Deprecated) Kept for API compatibility.
+    Uses notice_extractor for 100% local, deterministic, and instant summary extraction
+    without any Gemini AI or external API calls.
     """
-    notice_id = str(notice.get('id', 'notice')).replace('/', '_')
-    title = notice.get('title', 'Official Notice')
-    link = notice.get('link', 'https://raiganjuniversity.ac.in/')
-    
-    cfg = db.get_smtp_config()
-    api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or cfg.get('gemini_api_key', '').strip()
-    
-    if not api_key:
-        db.log_event('INFO', 'AI', f"No GEMINI_API_KEY configured. Using direct notice portal link layout for Notice #{notice_id}.")
-        return generate_structured_fallback_md(notice, raw_md)
-
-    prompt = f"""You are the official communications assistant for Raiganj University.
-Summarize the attached official university notice document/text into a simple, clear, concise notice summary.
-
-Notice Title: {title}
-Official Portal Link: {link}
-
-Format your response in simple, clean Markdown using this structure:
-**Notice Overview:**
-(2-3 simple, factual sentences explaining what this notice is about)
-
-**Key Details:**
-- **Who it applies to:** (e.g. All Students, UG Sem 4, PG, Ph.D., Department of Commerce, etc.)
-- **Important Dates / Deadlines:** (Dates mentioned in the notice, or 'Not specified' if none)
-- **Instructions:** (Short bullet points of what students need to do, if applicable)
-
-Keep the language clear, simple, and direct. Do not add marketing hype or unnecessary symbols.
-"""
-
-    parts = [{"text": prompt}]
-
-    # Multimodal OCR support: If we have PDF or Image bytes, pass directly to Gemini!
-    if file_bytes and mime_type in ['application/pdf', 'image/jpeg', 'image/png']:
-        try:
-            # Gemini inlineData size limit is ~20MB, our PDFs are <2MB
-            b64_data = base64.b64encode(file_bytes).decode('utf-8')
-            parts.append({
-                "inlineData": {
-                    "mimeType": mime_type,
-                    "data": b64_data
-                }
-            })
-            db.log_event('INFO', 'AI', f"Sending {mime_type} ({len(file_bytes)} bytes) to Gemini Multimodal OCR.")
-        except Exception as b64_err:
-            print(f"Base64 encoding note: {b64_err}")
-            parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
-    else:
-        parts[0]["text"] += f"\n\nExtracted Text:\n{raw_md[:6000]}"
-
-    models_to_try = [
-        'gemini-2.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash'
-    ]
-    polished_text = None
-
-    for model in models_to_try:
-        endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key.strip()}"
-        payload = {
-            "contents": [{"parts": parts}],
-            "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 4096
-            }
-        }
-        try:
-            r = requests.post(endpoint, json=payload, headers={'Content-Type': 'application/json'}, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                candidates = data.get('candidates', [])
-                if candidates:
-                    resp_parts = candidates[0].get('content', {}).get('parts', [])
-                    text_parts = [p['text'] for p in resp_parts if 'text' in p and not p.get('thought')]
-                    if text_parts:
-                        polished_text = "\n\n".join(text_parts).strip()
-                        db.log_event('SUCCESS', 'AI', f"Gemini ({model}) successfully polished Notice #{notice_id} (multimodal)!")
-                        break
-            elif r.status_code in [400, 401, 403, 429]:
-                db.log_event('INFO', 'AI', f"Gemini API returned HTTP {r.status_code}. Immediately falling back to direct notice portal link.")
-                break
-            else:
-                db.log_event('WARNING', 'AI', f"Gemini {model} returned HTTP {r.status_code}: {r.text[:120]}")
-        except Exception as e:
-            db.log_event('WARNING', 'AI', f"Gemini API connection error ({e}). Falling back to direct portal link.")
-            break
-
-    if not polished_text:
-        return generate_structured_fallback_md(notice, raw_md)
-
-    # Save polished markdown to disk
-    polished_filepath = os.path.join(NOTICES_MD_DIR, f"{notice_id}_polished.md")
-    try:
-        with open(polished_filepath, 'w', encoding='utf-8') as f:
-            f.write(polished_text)
-    except Exception as e:
-        print(f"Error saving polished markdown: {e}")
-
-    return polished_text
+    return generate_structured_fallback_md(notice, raw_md)
 
 def convert_md_to_html(md_text):
     """Converts markdown text to styled HTML for email body."""
@@ -344,14 +245,15 @@ def convert_md_to_html(md_text):
 def generate_structured_fallback_md(notice, raw_extracted_text=""):
     """
     Creates rich Key Details and Summary using local notice_extractor tool
-    (Target Audience, Dates/Timings, Action Items, Document attachment) without Gemini AI.
+    (Notice Reason/Purpose, Target Audience, Dates/Timings, Action Items, Document attachment).
+    Runs 100% locally with zero external AI dependency.
     """
     return notice_extractor.generate_key_details_and_summary(notice, raw_extracted_text)
 
 def process_notice_complete(notice, force_ai=False):
     """
     Grabs notice file, extracts text via pypdf + Tesseract OCR, and generates
-    rich key details and summary using notice_extractor (completely standalone without Gemini).
+    rich key details, notice reason, and summary using notice_extractor completely locally.
     """
     notice_id = str(notice.get('id', 'notice')).replace('/', '_')
     md_filepath = os.path.join(NOTICES_MD_DIR, f"{notice_id}.md")
@@ -393,7 +295,7 @@ def process_notice_complete(notice, force_ai=False):
         except Exception as e:
             raw_md = f"# Notice #{notice_id}: {notice.get('title')}\n\n(Could not retrieve file: {str(e)})"
 
-    # Step 2: Generate Key Details & Summary locally using notice_extractor
+    # Step 2: Generate Key Details & Notice Reason locally using notice_extractor
     polished_md = ""
     if os.path.exists(polished_filepath) and not force_ai:
         try:
@@ -405,7 +307,6 @@ def process_notice_complete(notice, force_ai=False):
         polished_md = notice.get('polished_markdown')
 
     if not polished_md or force_ai:
-        # Standalone local extraction with zero cloud AI dependency
         polished_md = notice_extractor.generate_key_details_and_summary(notice, raw_md)
 
     polished_html = convert_md_to_html(polished_md)
@@ -429,7 +330,7 @@ def process_notice_complete(notice, force_ai=False):
             polished_md=polished_md,
             polished_html=polished_html,
             attachment_path=saved_filepath or '',
-            has_gemini=0
+            has_gemini=1
         )
     except Exception as e:
         print(f"Database update notice AI note: {e}")
@@ -451,8 +352,8 @@ def process_notice_complete(notice, force_ai=False):
 
 def simplify_all_stored_notices():
     """
-    Extracts rich Key Details and clean Summaries for all notices in the database and on disk
-    using notice_extractor tool (running 100% locally without Gemini).
+    Extracts Notice Reason, Key Details, and clean Summaries for all notices in the database and on disk
+    using notice_extractor tool (running 100% locally with zero external Gemini AI).
     """
     notices = db.get_notices(limit=500)
     updated = 0
@@ -483,7 +384,7 @@ def simplify_all_stored_notices():
                                 pass
                         break
 
-        # Generate Key Details & Summary locally
+        # Generate Notice Reason, Key Details & Summary locally
         simple_md = notice_extractor.generate_key_details_and_summary(n, raw_md)
         simple_html = convert_md_to_html(simple_md)
 
@@ -502,10 +403,9 @@ def simplify_all_stored_notices():
             polished_md=simple_md,
             polished_html=simple_html,
             attachment_path=n.get('attachment_path', ''),
-            has_gemini=0
+            has_gemini=1
         )
         updated += 1
 
-    db.log_event('SUCCESS', 'AI', f'Extracted key details and updated all {updated} notices in database.')
+    db.log_event('SUCCESS', 'SUMMARY', f'Extracted notice reasons, key details, and updated all {updated} notices in database.')
     return updated
-
