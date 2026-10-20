@@ -245,33 +245,22 @@ def polish_with_gemini(raw_md, notice, file_bytes=None, mime_type=None):
         db.log_event('INFO', 'AI', f"No GEMINI_API_KEY configured. Using direct notice portal link layout for Notice #{notice_id}.")
         return generate_structured_fallback_md(notice, raw_md)
 
-    prompt = f"""You are the official student communications officer for Raiganj University (রায়গঞ্জ বিশ্ববিদ্যালয়).
-Analyze the attached official university notice document/text.
-Polish and structure it into a clean, executive, student-friendly announcement.
+    prompt = f"""You are the official communications assistant for Raiganj University.
+Summarize the attached official university notice document/text into a simple, clear, concise notice summary.
 
 Notice Title: {title}
 Official Portal Link: {link}
 
-Please structure your response strictly in clean GitHub-Flavored Markdown with these sections:
-### 📌 Executive Summary (TL;DR)
-(2-3 clear, simple sentences explaining what this notice is about)
+Format your response in simple, clean Markdown using this structure:
+**Notice Overview:**
+(2-3 simple, factual sentences explaining what this notice is about)
 
-### 👥 Who is Affected?
-(e.g., UG Sem 4, PG Students, Ph.D. Scholars, All Departments, Job Applicants, etc.)
+**Key Details:**
+- **Who it applies to:** (e.g. All Students, UG Sem 4, PG, Ph.D., Department of Commerce, etc.)
+- **Important Dates / Deadlines:** (Dates mentioned in the notice, or 'Not specified' if none)
+- **Instructions:** (Short bullet points of what students need to do, if applicable)
 
-### ⚡ Key Action Items & Instructions
-(Step-by-step checklist of what students must do)
-
-### 📅 Important Dates & Deadlines
-(All dates, timings, or write 'Not specified' if none)
-
-### ⚠️ Fees / Venue / Office Contacts
-(Any fee amount, room/hall number, payment portal link, or warning)
-
-Guidelines:
-- Do NOT make up any dates or facts; extract accurately from the document.
-- If it is an examination schedule or holiday, highlight dates clearly.
-- Keep the language engaging, clear, and mobile-friendly.
+Keep the language clear, simple, and direct. Do not add marketing hype or unnecessary symbols.
 """
 
     parts = [{"text": prompt}]
@@ -360,33 +349,31 @@ def generate_structured_fallback_md(notice, raw_extracted_text=""):
     pub_date = notice.get('published_on', 'Recent')
     category = notice.get('category', 'General')
     notice_id = str(notice.get('id', 'N/A')).replace('/', '_')
-    link = notice.get('link', '')
-
-    if not link or link.strip().rstrip('/') in ['https://raiganjuniversity.ac.in', 'http://raiganjuniversity.ac.in']:
-        link = f"https://raiganjuniversity.ac.in/Website/ViewNotice/{notice_id}"
 
     content_excerpt = ""
     if raw_extracted_text and len(raw_extracted_text.strip()) > 30:
-        lines = [l.strip() for l in raw_extracted_text.splitlines() if l.strip() and not l.strip().startswith('#') and not l.strip().startswith('**')]
-        if lines:
-            sample = "\n".join(lines[:12])
-            content_excerpt = f"\n\n### 📄 Notice Highlights (Extracted via OCR)\n{sample}\n"
+        clean_lines = []
+        for l in raw_extracted_text.splitlines():
+            s = l.strip()
+            if not s or s.startswith('#') or s.startswith('**') or 'Downloaded from' in s or 'Copyright' in s or 'https://' in s or 'Official Notice' in s:
+                continue
+            if len(s) > 15 and s not in clean_lines:
+                clean_lines.append(s)
+        if clean_lines:
+            sample = "\n".join(f"- {line}" for line in clean_lines[:4])
+            content_excerpt = f"\n\n**Notice Highlights:**\n{sample}"
 
-    return f"""### 📌 Executive Summary
-Official notice published by **Raiganj University** under **{category}** regarding **{title}**.
+    return f"""**Notice Overview:**  
+Official announcement published by Raiganj University under **{category}**:  
+*{title}*
 
-### 👥 Who is Affected?
-Students and members associated with **{category}** notifications.
-
-### ⚡ Official Notice Direct Access & Instructions
-- **Reference:** Notice #{notice_id}
-- **Publication Date:** {pub_date}
-- **Direct Portal Link:** [{link}]({link})
-- Official circular file has been attached directly to this email.
+**Key Details:**  
+- **Category:** {category}  
+- **Published On:** {pub_date}  
+- **Document Attached:** Official circular file is attached to this email.  
 {content_excerpt}
-### 📅 Important Dates
-- **Published On:** {pub_date}
-"""
+
+Please refer to the attached document or official link for complete instructions."""
 
 def process_notice_complete(notice, force_ai=False):
     """
@@ -501,3 +488,47 @@ def process_notice_complete(notice, force_ai=False):
         'attachment_name': attachment_name,
         'has_gemini': has_gemini
     }
+
+def simplify_all_stored_notices():
+    """
+    Regenerates simple, clean markdown and HTML summaries for all notices in the database and on disk.
+    Strips away legacy bloated emoji headers and replaces with clean, concise summaries.
+    """
+    notices = db.get_notices(limit=500)
+    updated = 0
+    for n in notices:
+        nid = str(n.get('id', ''))
+        raw_md = n.get('raw_markdown', '')
+        md_file = os.path.join(NOTICES_MD_DIR, f"{nid}.md")
+        if not raw_md and os.path.exists(md_file):
+            try:
+                with open(md_file, 'r', encoding='utf-8') as f:
+                    raw_md = f.read()
+            except Exception:
+                pass
+
+        simple_md = generate_structured_fallback_md(n, raw_md)
+        simple_html = convert_md_to_html(simple_md)
+
+        # Update disk file
+        polished_file = os.path.join(NOTICES_MD_DIR, f"{nid}_polished.md")
+        try:
+            with open(polished_file, 'w', encoding='utf-8') as f:
+                f.write(simple_md)
+        except Exception:
+            pass
+
+        # Update database
+        db.update_notice_ai(
+            notice_id=nid,
+            raw_md=raw_md or n.get('raw_markdown', ''),
+            polished_md=simple_md,
+            polished_html=simple_html,
+            attachment_path=n.get('attachment_path', ''),
+            has_gemini=0
+        )
+        updated += 1
+
+    db.log_event('SUCCESS', 'AI', f'Simplified all {updated} notices in database to clean format.')
+    return updated
+
