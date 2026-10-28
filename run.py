@@ -38,7 +38,7 @@ def main():
 
     print(f"\n[+] Web Application: http://127.0.0.1:{port}")
     print("[+] Local SMTP Server: 127.0.0.1:2525 (Ready to capture/relay emails)")
-    print("[+] Automated Scheduler: Active (Running Daily at 00:00:00 IST)")
+    print("[+] Automated Scheduler: Active (Running Twice Daily at 7:00 AM & 7:00 PM IST)")
     print("[+] Notice Target: https://raiganjuniversity.ac.in/\n")
     print("Press Ctrl+C to terminate.\n")
 

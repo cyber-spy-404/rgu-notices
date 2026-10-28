@@ -84,13 +84,13 @@ def get_request_target_and_proxies(url):
     Resolves request target URL and proxy dictionary if cloud proxy / scraping API is configured.
     Supports SCRAPERAPI_KEY, SCRAPEOPS_API_KEY, or SCRAPER_PROXY / PROXY_URL.
     """
-    scraperapi_key = (os.getenv('SCRAPERAPI_KEY') or os.getenv('SCRAPER_API_KEY') or '').strip()
-    scrapeops_key = (os.getenv('SCRAPEOPS_API_KEY') or os.getenv('SCRAPEOPS_KEY') or '').strip()
-    proxy_url = os.getenv('SCRAPER_PROXY', '').strip() or os.getenv('PROXY_URL', '').strip()
+    scraperapi_key = (os.getenv('SCRAPERAPI_KEY') or os.getenv('SCRAPER_API_KEY') or '').strip().strip('"\'')
+    scrapeops_key = (os.getenv('SCRAPEOPS_API_KEY') or os.getenv('SCRAPEOPS_KEY') or '').strip().strip('"\'')
+    proxy_url = (os.getenv('SCRAPER_PROXY', '').strip() or os.getenv('PROXY_URL', '').strip()).strip('"\'')
 
     if scraperapi_key:
         from urllib.parse import quote
-        target = f"http://api.scraperapi.com?api_key={scraperapi_key}&url={quote(url, safe='')}&country_code=in"
+        target = f"https://api.scraperapi.com?api_key={scraperapi_key}&url={quote(url, safe='')}&country_code=in"
         return target, None
     elif scrapeops_key:
         from urllib.parse import quote
@@ -117,6 +117,15 @@ def fetch_page_with_retry(url, retries=2, timeout=REQUEST_TIMEOUT):
             else:
                 body_snippet = (resp.text[:120] if resp.text else '').strip()
                 if resp.status_code in (401, 403) and 'scraperapi' in target_url:
+                    # If geotargeting is restricted on plan, retry without country_code parameter
+                    if 'country' in body_snippet.lower() or 'plan' in body_snippet.lower() or 'geotargeting' in body_snippet.lower():
+                        retry_url = target_url.replace('&country_code=in', '')
+                        try:
+                            resp_fallback = requests.get(retry_url, headers=HEADERS, proxies=proxies, timeout=timeout)
+                            if resp_fallback.status_code == 200:
+                                return resp_fallback, None
+                        except Exception:
+                            pass
                     last_err = f"ScraperAPI Key Error (HTTP {resp.status_code}): {body_snippet or 'Check your SCRAPERAPI_KEY'}"
                 elif resp.status_code in (401, 403) and 'scrapeops' in target_url:
                     last_err = f"ScrapeOps Key Error (HTTP {resp.status_code}): {body_snippet or 'Check your SCRAPEOPS_API_KEY'}"

@@ -407,7 +407,7 @@ def get_all_notice_ids():
 
 def upsert_notice(n):
     """
-    Inserts or updates a notice in database (used for sync from GitHub Actions to PythonAnywhere).
+    Inserts or updates a notice in database (used for sync from GitHub Actions to Web App / Render).
     """
     conn = get_db()
     cursor = conn.cursor()

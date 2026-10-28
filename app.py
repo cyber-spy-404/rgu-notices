@@ -57,6 +57,8 @@ except Exception:
 
 # ----------------- Automatic Pending Mail Dispatch Worker ----------------- #
 _pending_dispatch_lock = threading.Lock()
+_last_smtp_restriction_log_time = 0
+_last_smtp_restriction_count = -1
 
 def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
     """
@@ -76,7 +78,14 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
             import email_dispatcher
             can_connect, reason = email_dispatcher.check_smtp_availability()
             if not can_connect and ('101' in reason or 'unreachable' in reason.lower() or 'blocked' in reason.lower() or 'denied' in reason.lower() or 'error code' in reason.lower()):
-                db.log_event('INFO', 'DISPATCH', f"[{source}] Outbound SMTP port is restricted on cloud host ({reason}). Safely preserving {len(unmailed)} notice(s) in queue for GitHub Actions dispatcher.")
+                global _last_smtp_restriction_log_time, _last_smtp_restriction_count
+                now_ts = time.time()
+                unmailed_len = len(unmailed)
+                # Only log when unmailed count changes or every 30 minutes to keep audit logs clean
+                if (now_ts - _last_smtp_restriction_log_time > 1800) or (unmailed_len != _last_smtp_restriction_count):
+                    _last_smtp_restriction_log_time = now_ts
+                    _last_smtp_restriction_count = unmailed_len
+                    db.log_event('INFO', 'DISPATCH', f"[{source}] Outbound SMTP port is restricted on cloud host ({reason}). Safely preserving {unmailed_len} notice(s) in queue for GitHub Actions dispatcher.")
                 return
 
             db.log_event('INFO', 'DISPATCH', f"[{source}] Detected {len(unmailed)} unmailed notice(s) in database. Starting instant delivery to students / Google Group...")
@@ -442,7 +451,7 @@ def api_sync_status():
 def api_sync_push_notices():
     """
     Receives newly discovered notices and their Gemini polish from GitHub Actions.
-    Upserts into the local PythonAnywhere database so the web dashboard updates instantly.
+    Upserts into the web app database so the dashboard updates instantly.
     """
     if not check_sync_auth():
         return jsonify({'success': False, 'error': 'Unauthorized: Invalid SYNC_TOKEN'}), 401
@@ -461,7 +470,7 @@ def api_sync_push_notices():
     return jsonify({
         'success': True,
         'saved_count': saved_count,
-        'message': f'Synced {saved_count} notice(s) to PythonAnywhere database.'
+        'message': f'Synced {saved_count} notice(s) to web app database.'
     })
 
 @app.route('/api/sync/mark-sent', methods=['POST'])

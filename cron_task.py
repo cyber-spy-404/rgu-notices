@@ -55,13 +55,13 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
             status_data = status_resp.json()
             seen_ids = set(str(i) for i in status_data.get('seen_ids', []))
             unmailed_from_server = status_data.get('unmailed_notices', [])
-            print(f" -> Successfully connected to PythonAnywhere.")
-            print(f" -> Found {len(seen_ids)} tracked notice IDs in PythonAnywhere database.")
+            print(f" -> Successfully connected to Web App.")
+            print(f" -> Found {len(seen_ids)} tracked notice IDs in Web App database.")
             print(f" -> Found {len(unmailed_from_server)} unmailed notice(s) waiting in queue.")
         else:
-            print(f" [!] Warning: PythonAnywhere status query returned HTTP {status_resp.status_code}: {status_resp.text}")
+            print(f" [!] Warning: Web App status query returned HTTP {status_resp.status_code}: {status_resp.text}")
     except Exception as e:
-        print(f" [!] Could not connect to PythonAnywhere ({e}). Proceeding with local cache.")
+        print(f" [!] Could not connect to Web App ({e}). Proceeding with local cache.")
 
     # Also check local seen_ids.txt cache if any
     if os.path.exists(db.SEEN_IDS_PATH):
@@ -76,6 +76,12 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
     print(f"\n[PHASE 2] Scraping Raiganj University Portal for New Notices...")
     scraped_notices = scraper.fetch_rgu_notices()
     print(f" -> Scraped {len(scraped_notices)} total notices from official university portal.")
+    if not scraped_notices:
+        diag = scraper.LAST_SCRAPE_DIAGNOSTICS
+        if diag.get('portal_error'):
+            print(f"    [!] Portal note: {diag.get('portal_error')}")
+        if diag.get('homepage_error'):
+            print(f"    [!] Homepage note: {diag.get('homepage_error')}")
 
     # Identify brand new notices
     new_notices = []
@@ -84,7 +90,7 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
         if nid not in seen_ids:
             new_notices.append(n)
 
-    print(f" -> Identified {len(new_notices)} NEW notice(s) not yet present in PythonAnywhere database.")
+    print(f" -> Identified {len(new_notices)} NEW notice(s) not yet present in Web App database.")
 
     # Phase 3: Download & extract key details locally, then push to web app
     pushed_notices = []
@@ -107,7 +113,7 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
                 notice['is_new'] = 1
                 pushed_notices.append(notice)
 
-        # Push to PythonAnywhere
+        # Push to Web App
         try:
             push_resp = requests.post(
                 f"{webapp_url}/api/sync/push-notices",
@@ -116,11 +122,11 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
                 timeout=30
             )
             if push_resp.status_code == 200:
-                print(f" -> Successfully pushed {len(pushed_notices)} notices to PythonAnywhere database!")
+                print(f" -> Successfully pushed {len(pushed_notices)} notices to Web App database!")
             else:
                 print(f" [!] Push failed with HTTP {push_resp.status_code}: {push_resp.text}")
         except Exception as push_err:
-            print(f" [!] Push error to PythonAnywhere: {push_err}")
+            print(f" [!] Push error to Web App: {push_err}")
 
         # Also save to local SQLite & seen_ids.txt for local cache
         for n in pushed_notices:
@@ -129,14 +135,14 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
             except Exception:
                 pass
     else:
-        print("\n[PHASE 3] No new notices on portal to push to PythonAnywhere.")
+        print("\n[PHASE 3] No new notices on portal to push to Web App.")
 
     # Phase 4: Mail ALL unmailed notices at this time
-    # Combine newly discovered notices + previously unmailed notices from PythonAnywhere
+    # Combine newly discovered notices + previously unmailed notices from Web App
     print(f"\n[PHASE 4] Preparing Batch Dispatch for All Unmailed Notices...")
     all_unmailed = {}
     
-    # Add unmailed notices from PythonAnywhere
+    # Add unmailed notices from Web App / Render
     for n in unmailed_from_server:
         all_unmailed[str(n.get('id'))] = n
         
@@ -201,8 +207,8 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
                     'error': str(dispatch_err)
                 })
 
-        # Phase 5: Update PythonAnywhere with the sent status
-        print(f"\n[PHASE 5] Updating PythonAnywhere with Dispatch Results...")
+        # Phase 5: Update Web App with the sent status
+        print(f"\n[PHASE 5] Updating Web App with Dispatch Results...")
         try:
             mark_resp = requests.post(
                 f"{webapp_url}/api/sync/mark-sent",
@@ -211,12 +217,12 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
                 timeout=25
             )
             if mark_resp.status_code == 200:
-                print(f" -> Successfully synced dispatch status to PythonAnywhere!")
+                print(f" -> Successfully synced dispatch status to Web App!")
                 print(f" -> Notices marked sent: {sum(1 for r in sent_records if r['status'] == 'sent')}/{len(sent_records)}")
             else:
                 print(f" [!] Mark-sent API returned HTTP {mark_resp.status_code}: {mark_resp.text}")
         except Exception as mark_err:
-            print(f" [!] Failed to notify PythonAnywhere of sent status: {mark_err}")
+            print(f" [!] Failed to notify Web App of sent status: {mark_err}")
     else:
         print(" -> Everything is up to date! No unmailed notices waiting.")
 

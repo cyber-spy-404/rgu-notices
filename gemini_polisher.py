@@ -26,13 +26,13 @@ def get_request_target_and_proxies(url):
     Resolves request target URL and proxy dictionary if cloud proxy / scraping API is configured.
     Supports SCRAPERAPI_KEY, SCRAPEOPS_API_KEY, or SCRAPER_PROXY / PROXY_URL.
     """
-    scraperapi_key = (os.getenv('SCRAPERAPI_KEY') or os.getenv('SCRAPER_API_KEY') or '').strip()
-    scrapeops_key = (os.getenv('SCRAPEOPS_API_KEY') or os.getenv('SCRAPEOPS_KEY') or '').strip()
-    proxy_url = os.getenv('SCRAPER_PROXY', '').strip() or os.getenv('PROXY_URL', '').strip()
+    scraperapi_key = (os.getenv('SCRAPERAPI_KEY') or os.getenv('SCRAPER_API_KEY') or '').strip().strip('"\'')
+    scrapeops_key = (os.getenv('SCRAPEOPS_API_KEY') or os.getenv('SCRAPEOPS_KEY') or '').strip().strip('"\'')
+    proxy_url = (os.getenv('SCRAPER_PROXY', '').strip() or os.getenv('PROXY_URL', '').strip()).strip('"\'')
 
     if scraperapi_key:
         from urllib.parse import quote
-        target = f"http://api.scraperapi.com?api_key={scraperapi_key}&url={quote(url, safe='')}&country_code=in"
+        target = f"https://api.scraperapi.com?api_key={scraperapi_key}&url={quote(url, safe='')}&country_code=in"
         return target, None
     elif scrapeops_key:
         from urllib.parse import quote
