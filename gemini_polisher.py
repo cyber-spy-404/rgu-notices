@@ -16,7 +16,9 @@ os.makedirs(NOTICES_MD_DIR, exist_ok=True)
 os.makedirs(NOTICES_FILES_DIR, exist_ok=True)
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Referer': 'https://raiganjuniversity.ac.in/'
 }
 
 def extract_docx_text(file_bytes):
@@ -100,7 +102,7 @@ def grab_notice_file_and_text(notice):
     file_bytes = None
 
     try:
-        resp = requests.get(link, headers=HEADERS, timeout=12)
+        resp = requests.get(link, headers=HEADERS, timeout=(12, 35))
         content = resp.content
         ctype = resp.headers.get('Content-Type', '').lower()
 
@@ -173,7 +175,7 @@ def grab_notice_file_and_text(notice):
 
             if target_pdf_url and target_pdf_url != link:
                 try:
-                    pdf_resp = requests.get(target_pdf_url, headers=HEADERS, timeout=20)
+                    pdf_resp = requests.get(target_pdf_url, headers=HEADERS, timeout=(12, 35))
                     if pdf_resp.content[:4] == b'%PDF' or 'application/pdf' in pdf_resp.headers.get('Content-Type', '').lower():
                         mime_type = 'application/pdf'
                         file_bytes = pdf_resp.content

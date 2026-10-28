@@ -1,10 +1,14 @@
 import smtplib
+import threading
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.utils import formatdate, make_msgid
 from datetime import datetime
 import database as db
+
+# Process-wide lock to serialize SMTP connections and prevent concurrent socket collisions
+_smtp_dispatch_lock = threading.Lock()
 
 import notice_extractor
 
@@ -326,22 +330,23 @@ def dispatch_notice_to_students(notice):
             except Exception as att_err:
                 db.log_event('WARNING', 'DISPATCH', f"Attachment warning ({att_err})")
 
-    server = None
-    try:
-        server, cfg = get_smtp_connection()
-        sender_email = cfg.get('sender_email', 'notices@raiganjuniversity.ac.in')
-        sender_name = cfg.get('sender_name', 'Raiganj University Notice Board')
+    with _smtp_dispatch_lock:
+        server = None
+        try:
+            server, cfg = get_smtp_connection()
+            sender_email = cfg.get('sender_email', 'notices@raiganjuniversity.ac.in')
+            sender_name = cfg.get('sender_name', 'Raiganj University Notice Board')
 
-        # Extract reason & audience for plain text fallback
-        reason_val = notice_extractor.extract_notice_reason(notice.get('title', ''), notice.get('category', 'General'), raw_md or '')
-        audience_list = notice_extractor.extract_target_audience(notice.get('title', ''), raw_md or '', notice.get('category', 'General'))
-        audience_val = ", ".join(audience_list)
+            # Extract reason & audience for plain text fallback
+            reason_val = notice_extractor.extract_notice_reason(notice.get('title', ''), notice.get('category', 'General'), raw_md or '')
+            audience_list = notice_extractor.extract_target_audience(notice.get('title', ''), raw_md or '', notice.get('category', 'General'))
+            audience_val = ", ".join(audience_list)
 
-        def build_formal_text(recipient_label):
-            att_text = f"\nAttachment: {attachment_name} (Attached to this email)\n" if attachment_name else ""
-            sum_text = f"\nSummary & Instructions:\n{polished_md}\n" if polished_md and polished_md.strip() else ""
+            def build_formal_text(recipient_label):
+                att_text = f"\nAttachment: {attachment_name} (Attached to this email)\n" if attachment_name else ""
+                sum_text = f"\nSummary & Instructions:\n{polished_md}\n" if polished_md and polished_md.strip() else ""
 
-            return f"""Dear {recipient_label},
+                return f"""Dear {recipient_label},
 
 An official notice has been published by Raiganj University.
 
@@ -361,38 +366,14 @@ Raiganj University
 P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
 """
 
-        if group_email:
-            # High-efficiency Google Group broadcast (1 email reaches 1000+ students)
-            db.log_event('INFO', 'DISPATCH', f'Broadcasting Notice #{notice.get("id")} to Google Group: {group_email}')
-            html = generate_notice_html(notice, student_name="Student", polished_html=polished_html, attachment_name=attachment_name, raw_text=raw_md)
-            text_content = build_formal_text("Students & Faculty")
-            
-            msg = MIMEMultipart('mixed')
-            apply_email_deliverability_headers(msg, sender_name, sender_email, f"RGU Department Students <{group_email}>", subject)
-
-            alt_part = MIMEMultipart('alternative')
-            alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
-            alt_part.attach(MIMEText(html, 'html', 'utf-8'))
-            msg.attach(alt_part)
-
-            # Attach actual PDF / document
-            attach_document(msg)
-
-            server.sendmail(sender_email, [group_email], msg.as_string())
-            sent_count = 1
-            db.log_event('SUCCESS', 'DISPATCH', f'Notice #{notice.get("id")} successfully broadcasted to Google Group {group_email} (with attachment: {attachment_name or "None"})!')
-            db.add_dispatch_record(notice.get('id'), notice.get('title'), 1, 'SUCCESS', f'Google Group: {group_email}')
-            return {'success': True, 'sent_count': 1, 'is_group': True}
-
-        # Otherwise send to individual enrolled students
-        db.log_event('INFO', 'DISPATCH', f'Starting email dispatch of Notice #{notice.get("id")} to {len(students)} active student(s)...')
-        for s in students:
-            try:
-                html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html, attachment_name=attachment_name, raw_text=raw_md)
-                text_content = build_formal_text(s.get('name', 'Student'))
+            if group_email:
+                # High-efficiency Google Group broadcast (1 email reaches 1000+ students)
+                db.log_event('INFO', 'DISPATCH', f'Broadcasting Notice #{notice.get("id")} to Google Group: {group_email}')
+                html = generate_notice_html(notice, student_name="Student", polished_html=polished_html, attachment_name=attachment_name, raw_text=raw_md)
+                text_content = build_formal_text("Students & Faculty")
                 
                 msg = MIMEMultipart('mixed')
-                apply_email_deliverability_headers(msg, sender_name, sender_email, f"{s.get('name', 'Student')} <{s['email']}>", subject)
+                apply_email_deliverability_headers(msg, sender_name, sender_email, f"RGU Department Students <{group_email}>", subject)
 
                 alt_part = MIMEMultipart('alternative')
                 alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
@@ -402,21 +383,91 @@ P.O. Raiganj, Dist. Uttar Dinajpur, West Bengal - 733134
                 # Attach actual PDF / document
                 attach_document(msg)
 
-                server.sendmail(sender_email, [s['email']], msg.as_string())
-                sent_count += 1
-            except Exception as item_err:
-                fail_count += 1
-                errors.append(f"{s['email']}: {str(item_err)}")
-    except Exception as conn_err:
-        fail_count += (len(students) if students else 1)
-        err_msg = str(conn_err)
-        errors.append(f"SMTP Connection failure: {err_msg}")
-    finally:
-        if server:
-            try:
-                server.quit()
-            except Exception:
-                pass
+                # Send with automatic reconnect retry on transient drop
+                sent_ok = False
+                last_send_err = None
+                for attempt in range(1, 3):
+                    try:
+                        if not server:
+                            server, cfg = get_smtp_connection()
+                        server.sendmail(sender_email, [group_email], msg.as_string())
+                        sent_ok = True
+                        break
+                    except Exception as s_err:
+                        last_send_err = s_err
+                        if server:
+                            try:
+                                server.quit()
+                            except Exception:
+                                pass
+                            server = None
+                        if attempt < 2:
+                            import time
+                            time.sleep(2)
+
+                if sent_ok:
+                    sent_count = 1
+                    db.log_event('SUCCESS', 'DISPATCH', f'Notice #{notice.get("id")} successfully broadcasted to Google Group {group_email} (with attachment: {attachment_name or "None"})!')
+                    db.add_dispatch_record(notice.get('id'), notice.get('title'), 1, 'SUCCESS', f'Google Group: {group_email}')
+                    return {'success': True, 'sent_count': 1, 'is_group': True}
+                else:
+                    raise last_send_err
+
+            # Otherwise send to individual enrolled students
+            db.log_event('INFO', 'DISPATCH', f'Starting email dispatch of Notice #{notice.get("id")} to {len(students)} active student(s)...')
+            for s in students:
+                student_ok = False
+                last_s_err = None
+                try:
+                    html = generate_notice_html(notice, student_name=s.get('name', 'Student'), polished_html=polished_html, attachment_name=attachment_name, raw_text=raw_md)
+                    text_content = build_formal_text(s.get('name', 'Student'))
+                    
+                    msg = MIMEMultipart('mixed')
+                    apply_email_deliverability_headers(msg, sender_name, sender_email, f"{s.get('name', 'Student')} <{s['email']}>", subject)
+
+                    alt_part = MIMEMultipart('alternative')
+                    alt_part.attach(MIMEText(text_content, 'plain', 'utf-8'))
+                    alt_part.attach(MIMEText(html, 'html', 'utf-8'))
+                    msg.attach(alt_part)
+
+                    # Attach actual PDF / document
+                    attach_document(msg)
+
+                    for attempt in range(1, 3):
+                        try:
+                            if not server:
+                                server, cfg = get_smtp_connection()
+                            server.sendmail(sender_email, [s['email']], msg.as_string())
+                            student_ok = True
+                            sent_count += 1
+                            break
+                        except Exception as s_err:
+                            last_s_err = s_err
+                            if server:
+                                try:
+                                    server.quit()
+                                except Exception:
+                                    pass
+                                server = None
+                            if attempt < 2:
+                                import time
+                                time.sleep(1.5)
+                    if not student_ok:
+                        fail_count += 1
+                        errors.append(f"{s['email']}: {str(last_s_err)}")
+                except Exception as item_err:
+                    fail_count += 1
+                    errors.append(f"{s['email']}: {str(item_err)}")
+        except Exception as conn_err:
+            fail_count += (len(students) if students else 1)
+            err_msg = str(conn_err)
+            errors.append(f"SMTP Connection failure: {err_msg}")
+        finally:
+            if server:
+                try:
+                    server.quit()
+                except Exception:
+                    pass
 
     is_cloud_blocked = any('101' in e or 'unreachable' in e.lower() for e in errors)
     status = 'SUCCESS' if fail_count == 0 else ('PARTIAL' if sent_count > 0 else ('DEFERRED' if is_cloud_blocked else 'FAILED'))

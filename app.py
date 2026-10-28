@@ -97,7 +97,7 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
                         pass
                     else:
                         db.mark_notice_emailed(notice['id'], 'failed')
-                    time.sleep(1.2)  # respectful SMTP pacing between emails
+                    time.sleep(1.5)  # respectful SMTP pacing between emails
                 except Exception as de:
                     db.log_event('ERROR', 'DISPATCH', f"Auto-dispatch error on notice #{notice.get('id')}: {de}")
                     db.mark_notice_emailed(notice['id'], 'failed')
@@ -109,6 +109,26 @@ def trigger_pending_mail_dispatch_async(source="WEB_ACCESS"):
             _pending_dispatch_lock.release()
 
     thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
+def start_unmailed_notices_poller():
+    """
+    Continuous background loop that runs every 2 minutes (120 seconds).
+    Always checks for any scraped but unmailed notices (email_status != 'sent')
+    and delivers them automatically to students / Google Group.
+    """
+    def _loop():
+        time.sleep(8)  # Brief initial sleep so server binds cleanly
+        while True:
+            try:
+                unmailed = db.get_unmailed_notices(limit=50)
+                if unmailed:
+                    trigger_pending_mail_dispatch_async("2MIN_POLLER")
+            except Exception as pe:
+                db.log_event('WARNING', 'QUEUE', f"2-minute unmailed poller loop note: {pe}")
+            time.sleep(120)  # Always scan and retry every 2 minutes
+
+    thread = threading.Thread(target=_loop, daemon=True, name="UnmailedNoticesPoller2Min")
     thread.start()
 
 def sync_and_deliver_on_startup():
@@ -124,6 +144,7 @@ def sync_and_deliver_on_startup():
 # Automatically check for unmailed notices and deliver on web server boot
 try:
     threading.Thread(target=sync_and_deliver_on_startup, daemon=True).start()
+    start_unmailed_notices_poller()
 except Exception as _e:
     pass
 
@@ -363,18 +384,28 @@ def api_cron_trigger():
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     })
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'HEAD'])
+@app.route('/health', methods=['GET', 'HEAD'])
+@app.route('/ping', methods=['GET', 'HEAD'])
 def api_health():
     """
-    Lightweight keep-alive ping endpoint to wake sleeping cloud containers (e.g. Render/Railway).
+    Ultra-lightweight keep-alive ping endpoint to wake sleeping cloud containers (e.g. Render/Railway).
+    Supports GET and HEAD methods. Returns minimal plain-text (2 bytes 'OK') to prevent cron-job.org
+    'output too large' limits.
     Immediately checks and delivers any pending unmailed notices whenever pinged.
     """
-    trigger_pending_mail_dispatch_async("HEALTH_PING")
-    return jsonify({
-        'status': 'awake',
-        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'service': 'Raiganj University Notice Dispatcher'
-    })
+    try:
+        trigger_pending_mail_dispatch_async("HEALTH_PING")
+    except Exception:
+        pass
+
+    if request.method == 'HEAD':
+        return Response('', status=200, mimetype='text/plain')
+
+    if 'application/json' in request.headers.get('Accept', ''):
+        return jsonify({'status': 'ok'}), 200
+
+    return Response('OK', status=200, mimetype='text/plain')
 
 # ----------------- Cloud / GitHub Actions Sync API ----------------- #
 

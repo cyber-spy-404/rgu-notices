@@ -53,7 +53,7 @@ def get_next_run_time():
     return candidates[-1]
 
 def check_pending_notices_queue():
-    """Periodically checks and delivers any unmailed/pending notices."""
+    """Periodically checks and delivers any unmailed/pending notices every 2 minutes."""
     try:
         unmailed = db.get_unmailed_notices(limit=50)
         if not unmailed:
@@ -64,7 +64,7 @@ def check_pending_notices_queue():
         if not can_connect and ('101' in reason or 'unreachable' in reason.lower() or 'blocked' in reason.lower() or 'denied' in reason.lower() or 'error code' in reason.lower()):
             return
 
-        db.log_event('INFO', 'SCHEDULER', f'Queue watcher detected {len(unmailed)} unmailed notice(s). Checking polish and starting instant delivery...')
+        db.log_event('INFO', 'SCHEDULER', f'2-Minute Queue watcher detected {len(unmailed)} unmailed notice(s). Checking polish and starting instant delivery...')
         import gemini_polisher
         import time
         for notice in unmailed:
@@ -79,7 +79,7 @@ def check_pending_notices_queue():
                     pass
                 else:
                     db.mark_notice_emailed(notice['id'], 'failed')
-                time.sleep(1.2)
+                time.sleep(1.5)
             except Exception as e:
                 db.log_event('ERROR', 'DISPATCH', f"Queue delivery error on notice #{notice.get('id')}: {e}")
                 db.mark_notice_emailed(notice['id'], 'failed')
@@ -98,19 +98,19 @@ def start_scheduler():
             misfire_grace_time=3600,
             replace_existing=True
         )
-        # Periodically deliver any pending notices every 15 minutes
+        # Periodically deliver any pending notices every 2 minutes
         scheduler.add_job(
             check_pending_notices_queue,
             'interval',
-            minutes=15,
+            minutes=2,
             id='pending_queue_watcher',
-            name='Raiganj University Pending Notice Delivery Watcher',
+            name='Raiganj University Pending Notice Delivery Watcher (Every 2 Minutes)',
             replace_existing=True
         )
         scheduler.start()
         next_run = get_next_run_time()
         next_str = next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else '7:00 AM/PM IST'
-        db.log_event('SUCCESS', 'SCHEDULER', f'Automated scheduler started. Twice-daily checks active (7:00 AM & 7:00 PM IST). Next run at {next_str}')
+        db.log_event('SUCCESS', 'SCHEDULER', f'Automated scheduler started. Twice-daily checks active (7:00 AM & 7:00 PM IST). 2-minute unmailed queue active. Next run at {next_str}')
 
 def get_scheduler_status():
     global _last_run_time, _last_result
@@ -132,6 +132,7 @@ def get_scheduler_status():
     return {
         'running': scheduler.running if scheduler else False,
         'cron': 'Twice Daily at 7:00 AM & 7:00 PM IST',
+        'unmailed_queue_interval': 'Every 2 Minutes',
         'last_run': _last_run_time,
         'next_run': next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else None,
         'server_time': now_ist.strftime('%Y-%m-%d %H:%M:%S'),
