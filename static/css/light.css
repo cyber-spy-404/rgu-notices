@@ -8,16 +8,16 @@
   color-scheme: light;
 
   /* Pristine Apple/Stripe Clean Porcelain Slate */
-  --bg-app: #f8fafc;
+  --bg-app: #f5f5f7;
   --bg-surface-0: #ffffff;
   --bg-surface-1: #ffffff;
-  --bg-surface-2: #f1f5f9;
-  --bg-surface-3: #e2e8f0;
+  --bg-surface-2: #ebebf0;
+  --bg-surface-3: #e5e5ea;
   --bg-surface-hover: #eef2f6;
   --bg-surface-active: #e2e8f0;
 
-  --card-bg: #ffffff;
-  --card-bg-elevated: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-bg-elevated: rgba(255, 255, 255, 0.95);
   --card-bg-subtle: #f8fafc;
   --input-bg: #ffffff;
   --input-focus-bg: #ffffff;
@@ -25,19 +25,19 @@
   --border-subtle: #f1f5f9;
   --border-default: #e2e8f0;
   --border-strong: #cbd5e1;
-  --border-interactive: #09090b;
+  --border-interactive: #0071e3;
 
   --text-white: #09090b;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #a1a1a6;
   --text-quaternary: #94a3b8;
 
   /* Executive Primary Action Tokens (Solid Pure Black in Light Mode) */
-  --primary: #09090b;
-  --primary-hover: #18181b;
+  --primary: #0071e3;
+  --primary-hover: #0077ed;
   --primary-text: #ffffff;
-  --primary-glow: rgba(9, 9, 11, 0.12);
+  --primary-glow: rgba(0, 113, 227, 0.22);
 
   --beam-color-1: transparent;
   --beam-color-2: transparent;
@@ -57,9 +57,11 @@
 
 /* Light Mode: Segmented Theme Switcher */
 [data-theme="light"] .theme-segmented-control {
-  background: #e2e8f0;
-  border: 1px solid #cbd5e1;
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+  background: rgba(118, 118, 128, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  padding: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="light"] .theme-seg-btn {
@@ -73,9 +75,11 @@
 
 [data-theme="light"] .theme-seg-btn.active {
   background: #ffffff;
-  color: #0f172a;
-  border-color: #cbd5e1;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  color: #1d1d1f;
+  border-radius: 7px;
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  font-weight: 500;
 }
 
 /* Light Mode: Navbar & Branding */
@@ -365,11 +369,18 @@
 
 /* Light Mode: Buttons */
 [data-theme="light"] .btn-primary {
-  background: #09090b !important;
+  background: #0071e3 !important;
   color: #ffffff !important;
-  border: 1px solid #09090b !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  font-weight: 700;
+  border: 1px solid #0071e3 !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25) !important;
+  font-weight: 500;
+}
+[data-theme="light"] .btn-primary:hover {
+  background: #0077ed !important;
+  border-color: #0077ed !important;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35) !important;
+  transform: translateY(-1px);
 }
 
 [data-theme="light"] .btn-primary:hover {
