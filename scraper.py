@@ -115,7 +115,13 @@ def fetch_page_with_retry(url, retries=2, timeout=REQUEST_TIMEOUT):
             if resp.status_code == 200:
                 return resp, None
             else:
-                last_err = f"HTTP {resp.status_code}"
+                body_snippet = (resp.text[:120] if resp.text else '').strip()
+                if resp.status_code in (401, 403) and 'scraperapi' in target_url:
+                    last_err = f"ScraperAPI Key Error (HTTP {resp.status_code}): {body_snippet or 'Check your SCRAPERAPI_KEY'}"
+                elif resp.status_code in (401, 403) and 'scrapeops' in target_url:
+                    last_err = f"ScrapeOps Key Error (HTTP {resp.status_code}): {body_snippet or 'Check your SCRAPEOPS_API_KEY'}"
+                else:
+                    last_err = f"HTTP {resp.status_code} ({body_snippet})" if body_snippet else f"HTTP {resp.status_code}"
         except requests.exceptions.ConnectTimeout:
             last_err = f"Connection timed out (after {timeout[0]}s)"
         except requests.exceptions.ReadTimeout:

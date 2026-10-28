@@ -53,38 +53,15 @@ def get_next_run_time():
     return candidates[-1]
 
 def check_pending_notices_queue():
-    """Periodically checks and delivers any unmailed/pending notices every 2 minutes."""
+    """
+    Periodically checks and delivers any unmailed/pending notices every 2 minutes.
+    Delegates to app's centralized unmailed worker to maintain single-thread dispatch lock.
+    """
     try:
-        unmailed = db.get_unmailed_notices(limit=50)
-        if not unmailed:
-            return
-
-        import email_dispatcher
-        can_connect, reason = email_dispatcher.check_smtp_availability()
-        if not can_connect and ('101' in reason or 'unreachable' in reason.lower() or 'blocked' in reason.lower() or 'denied' in reason.lower() or 'error code' in reason.lower()):
-            return
-
-        db.log_event('INFO', 'SCHEDULER', f'2-Minute Queue watcher detected {len(unmailed)} unmailed notice(s). Checking polish and starting instant delivery...')
-        import gemini_polisher
-        import time
-        for notice in unmailed:
-            try:
-                # Ensure notice is polished before mailing
-                if not notice.get('polished_markdown') and not notice.get('has_gemini_polish'):
-                    gemini_polisher.process_notice_complete(notice)
-                res = email_dispatcher.dispatch_notice_to_students(notice)
-                if res.get('success'):
-                    db.mark_notice_emailed(notice['id'], 'sent')
-                elif res.get('is_cloud_blocked'):
-                    pass
-                else:
-                    db.mark_notice_emailed(notice['id'], 'failed')
-                time.sleep(1.5)
-            except Exception as e:
-                db.log_event('ERROR', 'DISPATCH', f"Queue delivery error on notice #{notice.get('id')}: {e}")
-                db.mark_notice_emailed(notice['id'], 'failed')
+        from app import trigger_pending_mail_dispatch_async
+        trigger_pending_mail_dispatch_async("SCHEDULER_QUEUE")
     except Exception as err:
-        print(f"Pending queue interval error: {err}")
+        print(f"Pending queue interval note: {err}")
 
 def start_scheduler():
     global scheduler

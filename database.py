@@ -8,7 +8,7 @@ DB_PATH = os.path.join(DATA_DIR, 'rgu_smtp.db')
 SEEN_IDS_PATH = os.path.join(DATA_DIR, 'seen_ids.txt')
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -16,6 +16,13 @@ def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = get_db()
     cursor = conn.cursor()
+
+    # Enable WAL mode and normal synchronous for high concurrency and zero locks
+    try:
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.execute("PRAGMA synchronous=NORMAL;")
+    except Exception:
+        pass
 
     # Students table
     cursor.execute('''
@@ -171,13 +178,6 @@ def init_db():
             conn.commit()
         except Exception as e:
             print(f"Warning: seen_ids sync note: {e}")
-
-    # Mark all existing pre-loaded notices as sent since they have already been delivered to the Google Group
-    try:
-        cursor.execute("UPDATE notices SET email_status = 'sent', emailed_at = COALESCE(emailed_at, CURRENT_TIMESTAMP) WHERE email_status != 'sent'")
-        conn.commit()
-    except Exception as e:
-        print(f"Warning: notice status migration note: {e}")
 
     conn.close()
 
@@ -416,34 +416,40 @@ def upsert_notice(n):
         conn.close()
         return False
 
-    cursor.execute('''
-    INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, raw_markdown, polished_markdown, polished_html, has_gemini_polish)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-        title = excluded.title,
-        link = excluded.link,
-        published_on = excluded.published_on,
-        category = excluded.category,
-        email_status = excluded.email_status,
-        raw_markdown = CASE WHEN excluded.raw_markdown != '' THEN excluded.raw_markdown ELSE notices.raw_markdown END,
-        polished_markdown = CASE WHEN excluded.polished_markdown != '' THEN excluded.polished_markdown ELSE notices.polished_markdown END,
-        polished_html = CASE WHEN excluded.polished_html != '' THEN excluded.polished_html ELSE notices.polished_html END,
-        has_gemini_polish = CASE WHEN excluded.has_gemini_polish = 1 THEN 1 ELSE notices.has_gemini_polish END
-    ''', (
-        notice_id,
-        n.get('title', '').strip(),
-        n.get('link', '').strip(),
-        n.get('published_on', ''),
-        n.get('category', 'General'),
-        int(n.get('is_new', 0)),
-        n.get('email_status', 'pending'),
-        n.get('raw_markdown', ''),
-        n.get('polished_markdown', ''),
-        n.get('polished_html', ''),
-        int(n.get('has_gemini_polish', 0))
-    ))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute('''
+        INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, raw_markdown, polished_markdown, polished_html, has_gemini_polish)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            title = excluded.title,
+            link = excluded.link,
+            published_on = excluded.published_on,
+            category = excluded.category,
+            email_status = excluded.email_status,
+            raw_markdown = CASE WHEN excluded.raw_markdown != '' THEN excluded.raw_markdown ELSE notices.raw_markdown END,
+            polished_markdown = CASE WHEN excluded.polished_markdown != '' THEN excluded.polished_markdown ELSE notices.polished_markdown END,
+            polished_html = CASE WHEN excluded.polished_html != '' THEN excluded.polished_html ELSE notices.polished_html END,
+            has_gemini_polish = CASE WHEN excluded.has_gemini_polish = 1 THEN 1 ELSE notices.has_gemini_polish END
+        ''', (
+            notice_id,
+            n.get('title', '').strip(),
+            n.get('link', '').strip(),
+            n.get('published_on', ''),
+            n.get('category', 'General'),
+            int(n.get('is_new', 0)),
+            n.get('email_status', 'pending'),
+            n.get('raw_markdown', ''),
+            n.get('polished_markdown', ''),
+            n.get('polished_html', ''),
+            int(n.get('has_gemini_polish', 0))
+        ))
+        conn.commit()
+    except Exception as e:
+        log_event('ERROR', 'DB', f"Failed to upsert notice #{notice_id}: {e}")
+        conn.close()
+        return False
+    finally:
+        conn.close()
 
     # Append to seen_ids cache
     try:

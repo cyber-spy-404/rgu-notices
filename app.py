@@ -338,8 +338,10 @@ def check_sync_auth():
     """
     Validates sync token if configured in environment (SYNC_TOKEN or CRON_SECRET).
     Supports 'X-Sync-Token', 'X-Cron-Key', 'Authorization: Bearer <token>', or '?token=' / '?key=' query param.
+    Uses timing-safe constant-time string comparison.
     """
-    expected_token = os.getenv('SYNC_TOKEN') or os.getenv('CRON_SECRET')
+    import hmac
+    expected_token = (os.getenv('SYNC_TOKEN') or os.getenv('CRON_SECRET') or '').strip()
     if not expected_token:
         # Permit sync if no token configured
         return True
@@ -349,9 +351,17 @@ def check_sync_auth():
         request.headers.get('X-Cron-Key') or 
         request.args.get('token') or 
         request.args.get('key') or 
-        (request.headers.get('Authorization', '').startswith('Bearer ') and request.headers.get('Authorization', '')[7:].strip())
-    )
-    return provided == expected_token
+        (request.headers.get('Authorization', '').startswith('Bearer ') and request.headers.get('Authorization', '')[7:].strip()) or
+        ''
+    ).strip()
+
+    if not provided:
+        return False
+
+    try:
+        return hmac.compare_digest(provided, expected_token)
+    except Exception:
+        return False
 
 @app.route('/api/cron/trigger', methods=['GET', 'POST'])
 def api_cron_trigger():
