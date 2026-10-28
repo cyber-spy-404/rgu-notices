@@ -204,6 +204,33 @@ async function fetchSystemStatus() {
       }
     }
 
+    // Database Sync Badge in header & settings
+    const dbBadgeText = document.getElementById('dbBadgeText');
+    const dbBeacon = document.getElementById('dbBeacon');
+    const dbBadge = document.getElementById('dbBadge');
+    const cloudDbEngineDisplay = document.getElementById('cloudDbEngineDisplay');
+    const cloudDbTargetDisplay = document.getElementById('cloudDbTargetDisplay');
+
+    if (data.database) {
+      const isPg = Boolean(data.database.is_external);
+      const engineName = isPg ? 'PostgreSQL (Cloud)' : 'SQLite (Local)';
+      if (dbBadgeText) {
+        dbBadgeText.innerHTML = isPg 
+          ? `<i class="fa-solid fa-cloud"></i> Cloud DB` 
+          : `<i class="fa-solid fa-database"></i> DB: SQLite`;
+      }
+      if (dbBeacon) {
+        dbBeacon.className = isPg ? 'dot-beacon active' : 'dot-beacon';
+      }
+      if (dbBadge) {
+        dbBadge.title = isPg 
+          ? `Connected to External Cloud Database: ${data.database.database_url_masked}` 
+          : `Running on Local SQLite database (${data.database.db_path || 'data/rgu_smtp.db'}). Click to sync with Cloud DB.`;
+      }
+      if (cloudDbEngineDisplay) cloudDbEngineDisplay.innerText = engineName;
+      if (cloudDbTargetDisplay) cloudDbTargetDisplay.innerText = data.database.database_url_masked || 'rgu_smtp.db';
+    }
+
     // Dashboard info card
     document.getElementById('dashLastRun').innerText = data.stats.last_scraped_at || 'Never executed yet';
     document.getElementById('dashNextRun').innerText = data.scheduler.next_run || '7:00 AM / 7:00 PM IST';
@@ -1329,4 +1356,68 @@ function dispatchModalNotice() {
   if (!currentModalNoticeId) return;
   const title = document.getElementById('modalNoticeAiTitle')?.innerText || 'Notice';
   resendNotice(currentModalNoticeId, title);
+}
+
+// ----------------- Cloud Database Sync Controller ----------------- //
+async function testCloudDbConnection() {
+  const input = document.getElementById('cloudDbUrlInput');
+  const url = input ? input.value.trim() : '';
+  const resultDiv = document.getElementById('cloudDbTestResult');
+  if (resultDiv) {
+    resultDiv.innerHTML = `<span style="color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Testing database connectivity...</span>`;
+  }
+  try {
+    const res = await fetch('/api/db/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ database_url: url })
+    });
+    const data = await res.json();
+    if (resultDiv) {
+      if (data.success) {
+        resultDiv.innerHTML = `<div style="color: var(--apple-green, #30d158); padding: 0.5rem; background: rgba(48,209,88,0.1); border-radius: 8px; font-size: 0.85rem;"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(data.message)}</div>`;
+        showToast(data.message, 'success');
+      } else {
+        resultDiv.innerHTML = `<div style="color: var(--apple-red, #ff453a); padding: 0.5rem; background: rgba(255,69,58,0.1); border-radius: 8px; font-size: 0.85rem;"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(data.message || data.error)}</div>`;
+        showToast('Database connection failed', 'error');
+      }
+    }
+  } catch (err) {
+    if (resultDiv) {
+      resultDiv.innerHTML = `<div style="color: var(--apple-red, #ff453a); padding: 0.5rem; background: rgba(255,69,58,0.1); border-radius: 8px; font-size: 0.85rem;"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(err.message)}</div>`;
+    }
+  }
+}
+
+async function triggerDatabaseSync(mode = 'bidirectional') {
+  const btn = document.getElementById('btnSyncDb');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Syncing...`;
+  }
+  showToast(`Synchronizing notices, mailed/pending queue, and settings (${mode})...`, 'info');
+  try {
+    const res = await fetch('/api/db/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      await fetchSystemStatus();
+      await loadNotices();
+      await loadLogs();
+    } else {
+      showToast(data.error || 'Database sync failed', 'error');
+    }
+  } catch (err) {
+    showToast('Database sync error: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
 }

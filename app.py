@@ -189,6 +189,7 @@ def api_status():
     return jsonify({
         'status': 'ok',
         'server_time': datetime.now(kolkata_tz).strftime('%Y-%m-%d %H:%M:%S'),
+        'database': db.get_database_info(),
         'stats': stats,
         'scheduler': sched_status,
         'smtp_server': smtp_status,
@@ -725,6 +726,40 @@ def api_get_dispatches():
     limit = int(request.args.get('limit', 50))
     records = db.get_dispatch_history(limit=limit)
     return jsonify({'dispatches': records, 'count': len(records)})
+
+# ----------------- External Database Sync API ----------------- #
+
+@app.route('/api/db/status', methods=['GET'])
+def api_db_status():
+    """
+    Returns active database engine, connection health, and latency.
+    """
+    info = db.get_database_info()
+    test_res = db.test_database_connection()
+    info['health'] = test_res
+    return jsonify(info)
+
+@app.route('/api/db/test', methods=['POST'])
+def api_db_test():
+    """
+    Tests connection to a specified PostgreSQL database URL.
+    """
+    data = request.get_json() or {}
+    url = data.get('database_url', '').strip()
+    res = db.test_database_connection(url if url else None)
+    return jsonify(res)
+
+@app.route('/api/db/sync', methods=['POST'])
+def api_db_sync():
+    """
+    Executes on-demand database synchronization between local SQLite and external Cloud PostgreSQL.
+    Supports mode: 'bidirectional' (default), 'push', or 'pull'.
+    """
+    data = request.get_json() or {}
+    mode = data.get('mode', 'bidirectional')
+    url = data.get('database_url', '').strip() or None
+    res = db.sync_databases(mode=mode, target_pg_url=url)
+    return jsonify(res)
 
 # ----------------- Favicon & Error Handlers ----------------- #
 

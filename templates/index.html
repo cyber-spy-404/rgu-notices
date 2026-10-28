@@ -83,6 +83,10 @@
           <span class="dot-beacon active"></span>
           <span id="smtpBadgeText"><i class="fa-solid fa-users"></i> Google Group Active</span>
         </div>
+        <div class="status-pill" id="dbBadge" title="Active Database & Multi-Environment Sync Engine" onclick="switchTab('smtp')" style="cursor: pointer;">
+          <span class="dot-beacon active" id="dbBeacon"></span>
+          <span id="dbBadgeText"><i class="fa-solid fa-database"></i> DB: SQLite</span>
+        </div>
 
         <!-- Action Buttons -->
         <button class="btn btn-primary btn-sm" id="btnQuickScan" onclick="triggerScanNow()" title="Check for new university notices right now">
@@ -845,6 +849,53 @@
               </div>
             </div>
 
+            <!-- External Cloud Database Sync Card -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">
+                    <i class="fa-solid fa-cloud header-icon"></i>
+                    <span>Cloud Database Sync (PostgreSQL)</span>
+                  </div>
+                  <div class="card-desc">Seamless multi-environment synchronization between Local, Render, and GitHub Actions.</div>
+                </div>
+                <button class="btn btn-primary btn-xs" id="btnSyncDb" onclick="triggerDatabaseSync('bidirectional')" title="Sync notices & students between local SQLite and cloud DB">
+                  <i class="fa-solid fa-rotate"></i> Sync Databases
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="sync-engine-meta" style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--bg-surface-2, rgba(255,255,255,0.04)); border-radius: 12px;">
+                  <div>
+                    <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block;">Active Engine</span>
+                    <strong id="cloudDbEngineDisplay">SQLite (Local)</strong>
+                  </div>
+                  <div style="border-left: 1px solid var(--border-color); padding-left: 1rem;">
+                    <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); display: block;">Database Target</span>
+                    <span id="cloudDbTargetDisplay" style="font-family: monospace; font-size: 0.85rem;">Local Standalone</span>
+                  </div>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label class="form-label">External Database Connection String (PostgreSQL)</label>
+                  <input type="password" id="cloudDbUrlInput" class="form-input" placeholder="postgresql://user:password@host:5432/dbname?sslmode=require" autocomplete="off">
+                  <small class="form-help">Works with Neon.tech, Supabase, Render PostgreSQL, or Railway. Set as <code>DATABASE_URL</code> in your environment.</small>
+                </div>
+
+                <div class="d-flex gap-2" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="testCloudDbConnection()">
+                    <i class="fa-solid fa-plug"></i> Test Connection
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="triggerDatabaseSync('push')" title="Push local notices to cloud DB">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Push Local &rarr; Cloud
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="triggerDatabaseSync('pull')" title="Pull cloud notices to local SQLite">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Pull Cloud &rarr; Local
+                  </button>
+                </div>
+                <div id="cloudDbTestResult" style="margin-top: 0.75rem;"></div>
+              </div>
+            </div>
+
             <!-- Captured Outbox Emails -->
             <div class="card">
               <div class="card-header">
@@ -1217,6 +1268,6 @@
   <div class="toast-shelf" id="toastContainer"></div>
 
   <!-- Application Controller -->
-  <script src="/static/js/app.js?v=10.4"></script>
+  <script src="/static/js/app.js?v=13.0"></script>
 </body>
 </html>

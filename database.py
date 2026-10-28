@@ -1,33 +1,214 @@
 import sqlite3
 import os
 import json
+import re
 from datetime import datetime
 
 DATA_DIR = os.getenv('DATA_DIR') or os.path.join(os.path.dirname(__file__), 'data')
 DB_PATH = os.path.join(DATA_DIR, 'rgu_smtp.db')
 SEEN_IDS_PATH = os.path.join(DATA_DIR, 'seen_ids.txt')
 
+# ----------------- External Database Configuration & Adapters ----------------- #
+
+def is_postgres_configured():
+    """
+    Checks if an external PostgreSQL database (Supabase, Neon, Render Postgres, etc.)
+    is configured in the environment.
+    """
+    db_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('EXTERNAL_DB_URL') or ''
+    db_url = db_url.strip().strip('"\'')
+    return bool(db_url and ('postgres' in db_url or 'psql' in db_url))
+
+def get_database_url():
+    """
+    Returns sanitized PostgreSQL URL, converting postgres:// to postgresql:// if needed.
+    """
+    db_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('EXTERNAL_DB_URL') or ''
+    db_url = db_url.strip().strip('"\'')
+    if db_url.startswith('postgres://'):
+        db_url = 'postgresql://' + db_url[len('postgres://'):]
+    return db_url
+
+def mask_db_url(url):
+    """
+    Safely masks database credentials for display in logs and UI status.
+    """
+    if not url:
+        return 'Local SQLite (Standalone)'
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(url)
+        netloc = p.netloc
+        if '@' in netloc:
+            creds, hostport = netloc.split('@', 1)
+            user = creds.split(':')[0]
+            masked_netloc = f"{user}:••••@{hostport}"
+        else:
+            masked_netloc = netloc
+        return f"{p.scheme}://{masked_netloc}{p.path}"
+    except Exception:
+        return 'Cloud PostgreSQL (Active)'
+
+class PostgresCursorWrapper:
+    """
+    Wraps psycopg2 cursor to provide uniform parameter translation (? -> %s),
+    ANSI SQL syntax compatibility, and dict-like row access matching sqlite3.Row.
+    """
+    def __init__(self, pg_cursor):
+        self._cur = pg_cursor
+
+    def execute(self, query, params=None):
+        # 1. Translate ? parameter placeholder to %s
+        pg_query = query.replace('?', '%s')
+        
+        # 2. Translate SQLite DATE('now') to CURRENT_DATE
+        if "DATE('now')" in pg_query:
+            pg_query = pg_query.replace("DATE('now')", "CURRENT_DATE")
+
+        # 3. Skip SQLite PRAGMA commands
+        if pg_query.strip().upper().startswith('PRAGMA'):
+            return self
+
+        if params is None:
+            self._cur.execute(pg_query)
+        else:
+            self._cur.execute(pg_query, tuple(params) if isinstance(params, (list, tuple)) else params)
+        return self
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+    @property
+    def lastrowid(self):
+        try:
+            return getattr(self._cur, 'lastrowid', None)
+        except Exception:
+            return None
+
+    @property
+    def description(self):
+        return self._cur.description
+
+    def close(self):
+        return self._cur.close()
+
+class SQLiteCursorWrapper:
+    """
+    Wraps standard sqlite3 cursor with uniform execution and error handling.
+    """
+    def __init__(self, sq_cursor):
+        self._cur = sq_cursor
+
+    def execute(self, query, params=None):
+        if params is None:
+            self._cur.execute(query)
+        else:
+            self._cur.execute(query, tuple(params) if isinstance(params, (list, tuple)) else params)
+        return self
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+    @property
+    def lastrowid(self):
+        return self._cur.lastrowid
+
+    @property
+    def description(self):
+        return self._cur.description
+
+    def close(self):
+        return self._cur.close()
+
+class DBConnectionWrapper:
+    """
+    Universal database connection wrapper supporting both SQLite and PostgreSQL.
+    """
+    def __init__(self, raw_conn, is_postgres=False):
+        self._conn = raw_conn
+        self.is_postgres = is_postgres
+        self.row_factory = None
+
+    def cursor(self):
+        if self.is_postgres:
+            import psycopg2.extras
+            return PostgresCursorWrapper(self._conn.cursor(cursor_factory=psycopg2.extras.DictCursor))
+        return SQLiteCursorWrapper(self._conn.cursor())
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
+    def execute(self, query, params=None):
+        cur = self.cursor()
+        cur.execute(query, params)
+        return cur
+
 def get_db():
+    """
+    Acquires an active database connection.
+    If DATABASE_URL or POSTGRES_URL is configured, connects directly to external PostgreSQL.
+    Otherwise, seamlessly connects to local SQLite database.
+    """
+    if is_postgres_configured():
+        try:
+            import psycopg2
+            import psycopg2.extras
+            pg_url = get_database_url()
+            conn = psycopg2.connect(pg_url, connect_timeout=10)
+            return DBConnectionWrapper(conn, is_postgres=True)
+        except Exception as pge:
+            print(f"[!] External PostgreSQL connection note: {pge}. Using local SQLite fallback.")
+
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
-    return conn
+    return DBConnectionWrapper(conn, is_postgres=False)
 
 def init_db():
+    """
+    Initializes tables and schema across whichever database engine is currently active.
+    If external PostgreSQL is connected for the first time, automatically migrates
+    all notices, students, and settings from local SQLite to external PostgreSQL.
+    """
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = get_db()
     cursor = conn.cursor()
+    is_pg = conn.is_postgres
 
-    # Enable WAL mode and normal synchronous for high concurrency and zero locks
-    try:
-        cursor.execute("PRAGMA journal_mode=WAL;")
-        cursor.execute("PRAGMA synchronous=NORMAL;")
-    except Exception:
-        pass
+    auto_id = 'SERIAL PRIMARY KEY' if is_pg else 'INTEGER PRIMARY KEY AUTOINCREMENT'
 
-    # Students table
-    cursor.execute('''
+    if not is_pg:
+        # Enable WAL mode and normal synchronous for high SQLite concurrency
+        try:
+            cursor.execute("PRAGMA journal_mode=WAL;")
+            cursor.execute("PRAGMA synchronous=NORMAL;")
+        except Exception:
+            pass
+
+    # 1. Students table
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {auto_id},
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         department TEXT DEFAULT 'General',
@@ -37,7 +218,7 @@ def init_db():
     )
     ''')
 
-    # Notices table
+    # 2. Notices table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS notices (
         id TEXT PRIMARY KEY,
@@ -48,11 +229,16 @@ def init_db():
         is_new INTEGER DEFAULT 1,
         discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         emailed_at TIMESTAMP,
-        email_status TEXT DEFAULT 'pending'
+        email_status TEXT DEFAULT 'pending',
+        raw_markdown TEXT DEFAULT '',
+        polished_markdown TEXT DEFAULT '',
+        polished_html TEXT DEFAULT '',
+        attachment_path TEXT DEFAULT '',
+        has_gemini_polish INTEGER DEFAULT 0
     )
     ''')
 
-    # SMTP configuration table (singleton row id=1)
+    # 3. SMTP configuration table (singleton row id=1)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS smtp_config (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -67,43 +253,46 @@ def init_db():
         custom_password TEXT DEFAULT '',
         sender_email TEXT DEFAULT 'notices@raiganjuniversity.ac.in',
         sender_name TEXT DEFAULT 'Raiganj University Notice Board',
+        google_group_email TEXT DEFAULT '',
+        gemini_api_key TEXT DEFAULT '',
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
 
     # Insert default smtp config if not exists
     cursor.execute('''
-    INSERT OR IGNORE INTO smtp_config (id, mode, local_host, local_port, custom_host, custom_port, custom_use_tls, custom_use_ssl, custom_username, custom_password, sender_email, sender_name)
-    VALUES (1, 'googlegroup', '127.0.0.1', 2525, 'smtp.gmail.com', 587, 1, 0, '', '', 'notices@raiganjuniversity.ac.in', 'Raiganj University Notice Board')
+    INSERT INTO smtp_config (id, mode, local_host, local_port, custom_host, custom_port, custom_use_tls, custom_use_ssl, custom_username, custom_password, sender_email, sender_name, google_group_email, gemini_api_key)
+    VALUES (1, 'googlegroup', '127.0.0.1', 2525, 'smtp.gmail.com', 587, 1, 0, '', '', 'notices@raiganjuniversity.ac.in', 'Raiganj University Notice Board', '', '')
+    ON CONFLICT (id) DO NOTHING
     ''')
 
-    # Migration: Add google_group_email and gemini_api_key if not exists
-    try:
-        cursor.execute("ALTER TABLE smtp_config ADD COLUMN google_group_email TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        cursor.execute("ALTER TABLE smtp_config ADD COLUMN gemini_api_key TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
+    # Migration: Ensure columns exist if working on older SQLite DB
+    if not is_pg:
+        for col, col_type in [
+            ('google_group_email', "TEXT DEFAULT ''"),
+            ('gemini_api_key', "TEXT DEFAULT ''")
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE smtp_config ADD COLUMN {col} {col_type}")
+            except Exception:
+                pass
 
-    # Migration: Add AI and markdown columns to notices table
-    for col, col_type in [
-        ('raw_markdown', "TEXT DEFAULT ''"),
-        ('polished_markdown', "TEXT DEFAULT ''"),
-        ('polished_html', "TEXT DEFAULT ''"),
-        ('attachment_path', "TEXT DEFAULT ''"),
-        ('has_gemini_polish', "INTEGER DEFAULT 0")
-    ]:
-        try:
-            cursor.execute(f"ALTER TABLE notices ADD COLUMN {col} {col_type}")
-        except sqlite3.OperationalError:
-            pass
+        for col, col_type in [
+            ('raw_markdown', "TEXT DEFAULT ''"),
+            ('polished_markdown', "TEXT DEFAULT ''"),
+            ('polished_html', "TEXT DEFAULT ''"),
+            ('attachment_path', "TEXT DEFAULT ''"),
+            ('has_gemini_polish', "INTEGER DEFAULT 0")
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE notices ADD COLUMN {col} {col_type}")
+            except Exception:
+                pass
 
-    # Local SMTP inbox to inspect captured emails
-    cursor.execute('''
+    # 4. Local SMTP inbox to inspect captured emails
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS smtp_inbox (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {auto_id},
         sender TEXT,
         recipients TEXT,
         subject TEXT,
@@ -113,10 +302,10 @@ def init_db():
     )
     ''')
 
-    # System activity logs
-    cursor.execute('''
+    # 5. System activity logs
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {auto_id},
         level TEXT DEFAULT 'INFO',
         category TEXT DEFAULT 'SYSTEM',
         message TEXT NOT NULL,
@@ -125,10 +314,10 @@ def init_db():
     )
     ''')
 
-    # Dispatch history
-    cursor.execute('''
+    # 6. Dispatch history
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS dispatch_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {auto_id},
         notice_id TEXT,
         notice_title TEXT,
         recipient_count INTEGER DEFAULT 0,
@@ -140,44 +329,84 @@ def init_db():
 
     conn.commit()
 
-    # Seed full notices metadata from notices_seed.json
-    NOTICES_SEED_PATH = os.path.join(DATA_DIR, 'notices_seed.json')
-    if os.path.exists(NOTICES_SEED_PATH):
-        try:
-            with open(NOTICES_SEED_PATH, 'r', encoding='utf-8') as f:
-                seed_data = json.load(f)
-                for item in seed_data:
-                    cursor.execute('''
-                    INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at)
-                    VALUES (?, ?, ?, ?, ?, 0, 'sent', CURRENT_TIMESTAMP)
-                    ON CONFLICT(id) DO UPDATE SET
-                        title = excluded.title,
-                        link = excluded.link,
-                        published_on = excluded.published_on,
-                        category = excluded.category
-                    ''', (
-                        str(item.get('id')),
-                        item.get('title'),
-                        item.get('link'),
-                        item.get('published_on'),
-                        item.get('category', 'General')
-                    ))
-            conn.commit()
-        except Exception as se:
-            print(f"Seed notices note: {se}")
-    elif os.path.exists(SEEN_IDS_PATH):
-        try:
-            with open(SEEN_IDS_PATH, 'r', encoding='utf-8') as f:
-                for line in f:
-                    nid = line.strip()
-                    if nid:
+    # Automatic initial population:
+    # If the active DB (Postgres or SQLite) has 0 notices, populate from local SQLite or notices_seed.json
+    cursor.execute('SELECT COUNT(*) FROM notices')
+    cnt_row = cursor.fetchone()
+    notice_count = cnt_row[0] if cnt_row else 0
+
+    if notice_count == 0:
+        # Check if local SQLite exists and has notices to migrate to external PostgreSQL
+        migrated_from_sqlite = False
+        if is_pg and os.path.exists(DB_PATH):
+            try:
+                sq_conn = sqlite3.connect(DB_PATH)
+                sq_conn.row_factory = sqlite3.Row
+                sq_cur = sq_conn.cursor()
+                sq_cur.execute('SELECT * FROM notices')
+                sq_notices = sq_cur.fetchall()
+                if sq_notices:
+                    for ln in sq_notices:
+                        keys = ln.keys()
                         cursor.execute('''
-                        INSERT OR IGNORE INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at)
-                        VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 0, 'sent', CURRENT_TIMESTAMP)
-                        ''', (nid, f"Notice #{nid}", nid))
-            conn.commit()
-        except Exception as e:
-            print(f"Warning: seen_ids sync note: {e}")
+                        INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at, raw_markdown, polished_markdown, polished_html, has_gemini_polish)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT (id) DO NOTHING
+                        ''', (
+                            str(ln['id']), ln['title'], ln['link'], ln['published_on'], ln['category'],
+                            ln['is_new'], ln['email_status'], ln['emailed_at'],
+                            ln['raw_markdown'] if 'raw_markdown' in keys else '',
+                            ln['polished_markdown'] if 'polished_markdown' in keys else '',
+                            ln['polished_html'] if 'polished_html' in keys else '',
+                            ln['has_gemini_polish'] if 'has_gemini_polish' in keys else 0
+                        ))
+                    conn.commit()
+                    migrated_from_sqlite = True
+                    log_event('SUCCESS', 'MIGRATION', f"Seamless initial migration: Copied {len(sq_notices)} notice(s) from local SQLite into external Cloud PostgreSQL.")
+                sq_conn.close()
+            except Exception as me:
+                print(f"Initial migration note: {me}")
+
+        if not migrated_from_sqlite:
+            # Seed full notices metadata from notices_seed.json
+            NOTICES_SEED_PATH = os.path.join(DATA_DIR, 'notices_seed.json')
+            if os.path.exists(NOTICES_SEED_PATH):
+                try:
+                    with open(NOTICES_SEED_PATH, 'r', encoding='utf-8') as f:
+                        seed_data = json.load(f)
+                        for item in seed_data:
+                            cursor.execute('''
+                            INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at)
+                            VALUES (?, ?, ?, ?, ?, 0, 'sent', CURRENT_TIMESTAMP)
+                            ON CONFLICT(id) DO UPDATE SET
+                                title = excluded.title,
+                                link = excluded.link,
+                                published_on = excluded.published_on,
+                                category = excluded.category
+                            ''', (
+                                str(item.get('id')),
+                                item.get('title'),
+                                item.get('link'),
+                                item.get('published_on'),
+                                item.get('category', 'General')
+                            ))
+                    conn.commit()
+                except Exception as se:
+                    print(f"Seed notices note: {se}")
+            elif os.path.exists(SEEN_IDS_PATH):
+                try:
+                    with open(SEEN_IDS_PATH, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            nid = line.strip()
+                            if nid:
+                                cursor.execute('''
+                                INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at)
+                                VALUES (?, ?, 'https://raiganjuniversity.ac.in/Website/ViewNotice/' || ?, '', 'General', 0, 'sent', CURRENT_TIMESTAMP)
+                                ON CONFLICT (id) DO NOTHING
+                                ''', (nid, f"Notice #{nid}", nid))
+                    conn.commit()
+                except Exception as e:
+                    print(f"Warning: seen_ids sync note: {e}")
 
     conn.close()
 
@@ -195,9 +424,9 @@ def add_student(name, email, department='General', roll_no='', is_active=1):
         student_id = cursor.lastrowid
         log_event('SUCCESS', 'STUDENTS', f'Added student: {name.strip()} ({email.strip().lower()})')
         return {'success': True, 'id': student_id}
-    except sqlite3.IntegrityError:
-        return {'success': False, 'error': f'Student with email {email} already exists'}
     except Exception as e:
+        if 'unique' in str(e).lower() or 'duplicate' in str(e).lower() or 'integrity' in str(e).lower():
+            return {'success': False, 'error': f'Student with email {email} already exists'}
         return {'success': False, 'error': str(e)}
     finally:
         conn.close()
@@ -226,10 +455,11 @@ def bulk_add_students(students_list):
             VALUES (?, ?, ?, ?, 1)
             ''', (name, email, dept, roll))
             added += 1
-        except sqlite3.IntegrityError:
-            skipped += 1
         except Exception as e:
-            errors.append(f'{email}: {str(e)}')
+            if 'unique' in str(e).lower() or 'duplicate' in str(e).lower() or 'integrity' in str(e).lower():
+                skipped += 1
+            else:
+                errors.append(f'{email}: {str(e)}')
 
     conn.commit()
     conn.close()
@@ -709,7 +939,7 @@ def get_stats():
     cursor.execute('SELECT COUNT(*) FROM notices')
     total_notices = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM notices WHERE DATE(discovered_at) = DATE('now')")
+    cursor.execute("SELECT COUNT(*) FROM notices WHERE DATE(discovered_at) = CURRENT_DATE")
     new_notices_today = cursor.fetchone()[0]
 
     cursor.execute('SELECT COUNT(*) FROM smtp_inbox')
@@ -734,6 +964,155 @@ def get_stats():
         'last_scraped_at': last_scraped_at
     }
 
+# ----------------- External Database Management & Sync ----------------- #
+
+def get_database_info():
+    is_pg = is_postgres_configured()
+    url = get_database_url() if is_pg else None
+    return {
+        'type': 'PostgreSQL' if is_pg else 'SQLite',
+        'is_external': is_pg,
+        'database_url_masked': mask_db_url(url),
+        'db_path': DB_PATH if not is_pg else None
+    }
+
+def test_database_connection(url=None):
+    target_url = (url or get_database_url() or '').strip()
+    if not target_url:
+        return {'success': True, 'type': 'SQLite', 'message': 'Local SQLite database active and healthy.'}
+    try:
+        import time
+        import psycopg2
+        start = time.time()
+        conn = psycopg2.connect(target_url, connect_timeout=5)
+        cur = conn.cursor()
+        cur.execute('SELECT 1;')
+        cur.close()
+        conn.close()
+        latency_ms = round((time.time() - start) * 1000, 1)
+        return {
+            'success': True,
+            'type': 'PostgreSQL',
+            'latency_ms': latency_ms,
+            'message': f"Connected successfully to Cloud PostgreSQL ({latency_ms} ms latency)."
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'type': 'PostgreSQL',
+            'error': str(e),
+            'message': f"Could not connect to database: {str(e)}"
+        }
+
+def sync_databases(mode='bidirectional', target_pg_url=None):
+    """
+    Seamless synchronization between Local SQLite and External Cloud PostgreSQL:
+    - 'push': pushes all local notices, students, and settings to Cloud PostgreSQL
+    - 'pull': pulls all cloud notices, students, and settings to local SQLite
+    - 'bidirectional': merges both, ensuring mailed notices in either are marked sent in both
+    """
+    pg_url = target_pg_url or get_database_url()
+    if not pg_url:
+        return {'success': False, 'error': 'No external DATABASE_URL configured'}
+
+    import psycopg2
+    import psycopg2.extras
+
+    try:
+        pg_conn = psycopg2.connect(pg_url, connect_timeout=10)
+        pg_cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+        sq_conn = sqlite3.connect(DB_PATH)
+        sq_conn.row_factory = sqlite3.Row
+        sq_cur = sq_conn.cursor()
+
+        notices_synced = 0
+        students_synced = 0
+
+        # --- Sync Notices ---
+        if mode in ('push', 'bidirectional'):
+            sq_cur.execute('SELECT * FROM notices')
+            for row in sq_cur.fetchall():
+                keys = row.keys()
+                pg_cur.execute('''
+                INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at, raw_markdown, polished_markdown, polished_html, has_gemini_polish)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    email_status = CASE WHEN excluded.email_status = 'sent' THEN 'sent' ELSE notices.email_status END,
+                    emailed_at = CASE WHEN excluded.email_status = 'sent' THEN COALESCE(excluded.emailed_at, CURRENT_TIMESTAMP) ELSE notices.emailed_at END,
+                    polished_markdown = CASE WHEN excluded.polished_markdown != '' THEN excluded.polished_markdown ELSE notices.polished_markdown END,
+                    polished_html = CASE WHEN excluded.polished_html != '' THEN excluded.polished_html ELSE notices.polished_html END,
+                    has_gemini_polish = CASE WHEN excluded.has_gemini_polish = 1 THEN 1 ELSE notices.has_gemini_polish END
+                ''', (
+                    str(row['id']), row['title'], row['link'], row['published_on'], row['category'],
+                    row['is_new'], row['email_status'], row['emailed_at'],
+                    row['raw_markdown'] if 'raw_markdown' in keys else '',
+                    row['polished_markdown'] if 'polished_markdown' in keys else '',
+                    row['polished_html'] if 'polished_html' in keys else '',
+                    row['has_gemini_polish'] if 'has_gemini_polish' in keys else 0
+                ))
+                notices_synced += 1
+
+        if mode in ('pull', 'bidirectional'):
+            pg_cur.execute('SELECT * FROM notices')
+            for row in pg_cur.fetchall():
+                keys = row.keys()
+                sq_cur.execute('''
+                INSERT INTO notices (id, title, link, published_on, category, is_new, email_status, emailed_at, raw_markdown, polished_markdown, polished_html, has_gemini_polish)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (id) DO UPDATE SET
+                    email_status = CASE WHEN excluded.email_status = 'sent' THEN 'sent' ELSE notices.email_status END,
+                    emailed_at = CASE WHEN excluded.email_status = 'sent' THEN COALESCE(excluded.emailed_at, CURRENT_TIMESTAMP) ELSE notices.emailed_at END,
+                    polished_markdown = CASE WHEN excluded.polished_markdown != '' THEN excluded.polished_markdown ELSE notices.polished_markdown END,
+                    polished_html = CASE WHEN excluded.polished_html != '' THEN excluded.polished_html ELSE notices.polished_html END,
+                    has_gemini_polish = CASE WHEN excluded.has_gemini_polish = 1 THEN 1 ELSE notices.has_gemini_polish END
+                ''', (
+                    str(row['id']), row['title'], row['link'], row['published_on'], row['category'],
+                    row['is_new'], row['email_status'], row['emailed_at'],
+                    row['raw_markdown'] if 'raw_markdown' in keys else '',
+                    row['polished_markdown'] if 'polished_markdown' in keys else '',
+                    row['polished_html'] if 'polished_html' in keys else '',
+                    row['has_gemini_polish'] if 'has_gemini_polish' in keys else 0
+                ))
+                notices_synced += 1
+
+        # --- Sync Students ---
+        if mode in ('push', 'bidirectional'):
+            sq_cur.execute('SELECT * FROM students')
+            for s in sq_cur.fetchall():
+                pg_cur.execute('''
+                INSERT INTO students (name, email, department, roll_no, is_active)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (email) DO NOTHING
+                ''', (s['name'], s['email'], s['department'], s['roll_no'], s['is_active']))
+                students_synced += 1
+
+        if mode in ('pull', 'bidirectional'):
+            pg_cur.execute('SELECT * FROM students')
+            for s in pg_cur.fetchall():
+                sq_cur.execute('''
+                INSERT INTO students (name, email, department, roll_no, is_active)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (email) DO NOTHING
+                ''', (s['name'], s['email'], s['department'], s['roll_no'], s['is_active']))
+                students_synced += 1
+
+        pg_conn.commit()
+        sq_conn.commit()
+        pg_conn.close()
+        sq_conn.close()
+
+        msg = f"Database sync ({mode}) completed successfully: {notices_synced} notice record(s), {students_synced} student(s) synchronized."
+        log_event('SUCCESS', 'SYNC', msg)
+        return {'success': True, 'mode': mode, 'notices_synced': notices_synced, 'students_synced': students_synced, 'message': msg}
+    except Exception as e:
+        err = f"Database sync failed: {str(e)}"
+        log_event('ERROR', 'SYNC', err)
+        return {'success': False, 'error': err}
+
 if __name__ == '__main__':
     init_db()
+    info = get_database_info()
+    print(f"Active Database Engine: {info.get('type')}")
+    print(f"Database Target: {info.get('database_url_masked') or info.get('db_path')}")
     print("Database initialized successfully.")

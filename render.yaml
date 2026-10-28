@@ -1,3 +1,9 @@
+databases:
+  - name: rgu-notices-db
+    databaseName: rgunotices
+    user: rgunotices_user
+    plan: free
+
 services:
   - type: web
     name: rgu-notices
@@ -8,6 +14,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rgu-notices-db
+          property: connectionString
       - key: FLASK_SECRET_KEY
         generateValue: true
       - key: SYNC_TOKEN
@@ -21,4 +31,8 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: SCRAPERAPI_KEY
+        sync: false
+      - key: SCRAPER_API_KEY
         sync: false

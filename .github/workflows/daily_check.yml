@@ -50,6 +50,7 @@ jobs:
           SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
           SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FORCE_SEND_SAMPLE: ${{ github.event.inputs.force_send_sample }}
         run: |
           python cron_task.py
