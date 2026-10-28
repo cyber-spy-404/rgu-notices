@@ -21,6 +21,28 @@ HEADERS = {
     'Referer': 'https://raiganjuniversity.ac.in/'
 }
 
+def get_request_target_and_proxies(url):
+    """
+    Resolves request target URL and proxy dictionary if cloud proxy / scraping API is configured.
+    Supports SCRAPERAPI_KEY, SCRAPEOPS_API_KEY, or SCRAPER_PROXY / PROXY_URL.
+    """
+    scraperapi_key = os.getenv('SCRAPERAPI_KEY', '').strip()
+    scrapeops_key = os.getenv('SCRAPEOPS_API_KEY', '').strip()
+    proxy_url = os.getenv('SCRAPER_PROXY', '').strip() or os.getenv('PROXY_URL', '').strip()
+
+    if scraperapi_key:
+        from urllib.parse import quote
+        target = f"http://api.scraperapi.com?api_key={scraperapi_key}&url={quote(url, safe='')}&country_code=in"
+        return target, None
+    elif scrapeops_key:
+        from urllib.parse import quote
+        target = f"https://proxy.scrapeops.io/v1/?api_key={scrapeops_key}&url={quote(url, safe='')}&country=in"
+        return target, None
+    elif proxy_url:
+        return url, {'http': proxy_url, 'https': proxy_url}
+    
+    return url, None
+
 def extract_docx_text(file_bytes):
     """Extracts text from a .docx file without requiring external docx libraries."""
     try:
@@ -102,7 +124,8 @@ def grab_notice_file_and_text(notice):
     file_bytes = None
 
     try:
-        resp = requests.get(link, headers=HEADERS, timeout=(12, 35))
+        req_url, req_proxies = get_request_target_and_proxies(link)
+        resp = requests.get(req_url, headers=HEADERS, proxies=req_proxies, timeout=(12, 35))
         content = resp.content
         ctype = resp.headers.get('Content-Type', '').lower()
 
@@ -175,7 +198,8 @@ def grab_notice_file_and_text(notice):
 
             if target_pdf_url and target_pdf_url != link:
                 try:
-                    pdf_resp = requests.get(target_pdf_url, headers=HEADERS, timeout=(12, 35))
+                    pdf_target, pdf_proxies = get_request_target_and_proxies(target_pdf_url)
+                    pdf_resp = requests.get(pdf_target, headers=HEADERS, proxies=pdf_proxies, timeout=(12, 35))
                     if pdf_resp.content[:4] == b'%PDF' or 'application/pdf' in pdf_resp.headers.get('Content-Type', '').lower():
                         mime_type = 'application/pdf'
                         file_bytes = pdf_resp.content

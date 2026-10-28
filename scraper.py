@@ -1,3 +1,4 @@
+import os
 import re
 import time
 import requests
@@ -78,15 +79,39 @@ def extract_notice_id(href, badge_text, full_link, title):
     val = full_link or title or str(time.time())
     return str(abs(hash(val)))[:10]
 
+def get_request_target_and_proxies(url):
+    """
+    Resolves request target URL and proxy dictionary if cloud proxy / scraping API is configured.
+    Supports SCRAPERAPI_KEY, SCRAPEOPS_API_KEY, or SCRAPER_PROXY / PROXY_URL.
+    """
+    scraperapi_key = os.getenv('SCRAPERAPI_KEY', '').strip()
+    scrapeops_key = os.getenv('SCRAPEOPS_API_KEY', '').strip()
+    proxy_url = os.getenv('SCRAPER_PROXY', '').strip() or os.getenv('PROXY_URL', '').strip()
+
+    if scraperapi_key:
+        from urllib.parse import quote
+        target = f"http://api.scraperapi.com?api_key={scraperapi_key}&url={quote(url, safe='')}&country_code=in"
+        return target, None
+    elif scrapeops_key:
+        from urllib.parse import quote
+        target = f"https://proxy.scrapeops.io/v1/?api_key={scrapeops_key}&url={quote(url, safe='')}&country=in"
+        return target, None
+    elif proxy_url:
+        return url, {'http': proxy_url, 'https': proxy_url}
+    
+    return url, None
+
 def fetch_page_with_retry(url, retries=2, timeout=REQUEST_TIMEOUT):
     """
-    Fetches a web page with retries and resilient timeouts for slow university servers.
+    Fetches a web page with retries and resilient timeouts for university servers.
+    Supports optional Indian residential / cloud proxy (SCRAPERAPI_KEY, SCRAPEOPS_API_KEY, SCRAPER_PROXY).
     Returns (response_or_None, error_string_or_None)
     """
+    target_url, proxies = get_request_target_and_proxies(url)
     last_err = None
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=timeout)
+            resp = requests.get(target_url, headers=HEADERS, proxies=proxies, timeout=timeout)
             if resp.status_code == 200:
                 return resp, None
             else:
