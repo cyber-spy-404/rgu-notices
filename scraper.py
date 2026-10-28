@@ -317,17 +317,17 @@ def run_notice_check(force_email=False):
                 continue
 
             existing = db.get_notice_by_id(nid)
-            is_polished = bool(existing and (existing.get('polished_markdown') or existing.get('has_gemini_polish') == 1))
-            is_mailed = bool(existing and existing.get('email_status') == 'sent')
 
-            # If notice already exists, is already polished, and already mailed: skip
-            if existing and is_polished and is_mailed:
+            # If notice already exists in database and has already been sent, skip immediately
+            if existing and existing.get('email_status') == 'sent':
                 continue
 
             # If not in DB, add to DB
             if not existing:
                 db.save_notice(n)
                 existing = db.get_notice_by_id(nid)
+
+            is_polished = bool(existing and (existing.get('polished_markdown') or existing.get('has_gemini_polish') == 1))
 
             # If not polished, polish now (Gemini or direct link fallback)
             if not is_polished:

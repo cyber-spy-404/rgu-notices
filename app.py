@@ -282,13 +282,24 @@ def api_get_notices():
     notices = db.get_notices(limit=limit, search=search)
     return jsonify({'notices': notices, 'count': len(notices)})
 
+_scan_lock = threading.Lock()
+
 @app.route('/api/notices/scan-now', methods=['POST'])
 def api_scan_now():
     """
     Manually triggers notice check immediately.
+    Guarded by lock to prevent multiple concurrent scrapers.
     """
-    res = scraper.run_notice_check()
-    return jsonify(res)
+    if not _scan_lock.acquire(blocking=False):
+        return jsonify({
+            'status': 'already_running',
+            'message': 'A notice scan is currently in progress. Please check the logs in a moment.'
+        })
+    try:
+        res = scraper.run_notice_check()
+        return jsonify(res)
+    finally:
+        _scan_lock.release()
 
 @app.route('/api/notices/dispatch-pending', methods=['POST'])
 def api_dispatch_pending():
