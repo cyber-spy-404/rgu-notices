@@ -177,11 +177,25 @@ def fetch_rgu_notices():
             items = soup.select('table tr, .table tr, .list-group-item')
 
         for item in items:
+            attr_id = item.get('data-notice-id', '').strip() if hasattr(item, 'get') else ''
             a_tag = item.find('a', href=lambda h: h and ('ViewNotice' in h or 'notice' in h.lower() or 'file' in h.lower() or '.pdf' in h.lower()))
-            if not a_tag:
-                continue
+            
+            if a_tag:
+                title = a_tag.get_text(strip=True)
+                href = a_tag.get('href', '')
+                full_link = urljoin(BASE_URL, href)
+            else:
+                h3 = item.find('h3') or item.find('.notice-title')
+                title = h3.get_text(strip=True) if h3 else ''
+                href = f"/Website/ViewNotice/{attr_id}" if attr_id else ''
+                full_link = urljoin(BASE_URL, href)
 
-            title = a_tag.get_text(strip=True)
+            # Clean residual HTML tags
+            import html as pyhtml
+            title = re.sub(r'<[^>]+>', '', title)
+            title = pyhtml.unescape(title).strip()
+            title = re.sub(r'<[^>]+>', '', title).strip()
+
             if not title or len(title) < 4:
                 continue
 
@@ -189,14 +203,15 @@ def fetch_rgu_notices():
             if title.lower() in ['view all notices', 'all notices', 'more notices', 'view all', 'notices', 'download', 'click here']:
                 continue
 
-            href = a_tag.get('href', '')
-            full_link = urljoin(BASE_URL, href)
-
             # Badge check
             badge = item.find('span', class_='badge')
             badge_text = badge.get_text(strip=True) if badge else ""
 
-            notice_id = extract_notice_id(href, badge_text, full_link, title)
+            # Prioritize official data-notice-id serial number if present
+            if attr_id:
+                notice_id = attr_id
+            else:
+                notice_id = extract_notice_id(href, badge_text, full_link, title)
             if notice_id in seen_ids:
                 continue
             seen_ids.add(notice_id)
