@@ -3,6 +3,9 @@ import os
 import json
 import re
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DATA_DIR = os.getenv('DATA_DIR') or os.path.join(os.path.dirname(__file__), 'data')
 DB_PATH = os.path.join(DATA_DIR, 'rgu_smtp.db')
