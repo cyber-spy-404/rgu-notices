@@ -65,3 +65,5 @@ logs/
 .DS_Store
 Thumbs.db
 scratch/
+.neon
+node_modules/

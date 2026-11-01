@@ -195,7 +195,8 @@ def api_status():
         'smtp_server': smtp_status,
         'smtp_mode': smtp_cfg.get('mode', 'googlegroup'),
         'sender_email': smtp_cfg.get('sender_email'),
-        'google_group_email': group_email
+        'google_group_email': group_email,
+        'db_engine': db.get_db_engine()
     })
 
 # ----------------- Student Management API ----------------- #

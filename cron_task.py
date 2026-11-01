@@ -236,8 +236,71 @@ def run_cloud_sync_workflow(webapp_url, sync_token):
         'dispatched': len(sent_records)
     }
 
+def run_external_db_workflow(database_url, webapp_url=None):
+    """
+    Direct External Database Workflow (e.g. PostgreSQL via GitHub Actions / Cloud Runner):
+    - Connects directly to external DB (Supabase / Neon / Render Postgres)
+    - Automatically initializes DB tables and seeds if empty
+    - Scrapes official Raiganj University portal
+    - Identifies genuinely new notices, polishes markdown & extracts reason/audience
+    - Saves new notices directly into external DB
+    - Dispatches all unmailed notices to Google Group / Students via Gmail SMTP
+    - Marks notices sent in external DB
+    - If webapp_url provided, pings webapp to wake container and keep it active
+    """
+    print("\n[EXTERNAL DB MODE] Direct connection to external database active.")
+    print(f" -> Active Database Engine: {db.get_db_engine()}")
+
+    # Ensure tables and schema are initialized
+    db.init_db()
+
+    # Check current DB counts
+    stats = db.get_stats()
+    print(f" -> Current DB Stats: {stats['total_notices']} notices tracked, {stats['unmailed_notices']} unmailed.")
+
+    # Wake up web service if sleeping (e.g. Render free tier cold start)
+    if webapp_url:
+        print(f"\n[PHASE 0] Waking up Web Service: {webapp_url}...")
+        try:
+            wake_resp = requests.get(f"{webapp_url.rstrip('/')}/api/health", headers={'User-Agent': 'RGU-Notice-Engine/2.0'}, timeout=30)
+            print(f" -> Web server responded with HTTP {wake_resp.status_code}.")
+        except Exception as wake_err:
+            print(f" -> Wakeup ping note: {wake_err}")
+
+    # Run notice scrape and dispatch cycle
+    print(f"\n[PHASE 1] Running Raiganj University Notice Scrape & Instant Dispatch...")
+    result = scraper.run_notice_check()
+
+    print(f" -> Scrape Status: {result.get('status')}")
+    print(f" -> Result Message: {result.get('message')}")
+    print(f" -> Total Scraped from Portal: {result.get('total_scraped', 0)}")
+    print(f" -> New Notices Handled: {result.get('new_count', 0)}")
+    print(f" -> Notices Dispatched: {result.get('sent_ok', 0)}/{result.get('dispatch_count', 0)}")
+
+    # Check if force send sample is enabled (for live testing from GitHub Actions)
+    force_test = os.getenv('FORCE_SEND_SAMPLE', '').strip().lower() in ['true', '1', 'yes']
+    if result.get('dispatch_count', 0) == 0 and force_test:
+        print("\n -> [TEST MODE ACTIVATED] 'force_send_sample' is TRUE.")
+        recent = db.get_recent_ai_notice()
+        if recent:
+            print(f" -> Sending live test email for Notice #{recent.get('id')}: '{recent.get('title')}'")
+            res = email_dispatcher.dispatch_notice_to_students(recent)
+            if res.get('success'):
+                print(" -> [SUCCESS] Test notice dispatched successfully to recipient!")
+            else:
+                print(f" -> [FAILED] Test notice dispatch error: {res.get('message', res.get('errors'))}")
+
+    # Print summary
+    updated_stats = db.get_stats()
+    print("\n" + "=" * 60)
+    print("Twice-Daily Notice Engine Workflow Completed Successfully")
+    print(f"Database: {db.get_db_engine()}")
+    print(f"Total Notices in DB: {updated_stats['total_notices']} (Unmailed: {updated_stats['unmailed_notices']})")
+    print("=" * 60)
+    return result
+
 def run_local_workflow():
-    print("\n[LOCAL MODE] WEBAPP_URL not specified. Running local database check & dispatch...")
+    print("\n[LOCAL MODE] Running local database check & dispatch...")
     db.init_db()
     result = scraper.run_notice_check()
 
@@ -259,12 +322,13 @@ def main():
     print(f"Raiganj University Twice-Daily Notice Engine (7:00 AM & 7:00 PM IST) [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
     print("=" * 60)
 
-    db.init_db()
-
+    database_url = db.get_database_url()
     webapp_url = os.getenv('WEBAPP_URL', '').strip()
     sync_token = os.getenv('SYNC_TOKEN', '').strip() or os.getenv('CRON_SECRET', '').strip()
 
-    if webapp_url:
+    if database_url:
+        run_external_db_workflow(database_url, webapp_url)
+    elif webapp_url:
         run_cloud_sync_workflow(webapp_url, sync_token)
     else:
         run_local_workflow()

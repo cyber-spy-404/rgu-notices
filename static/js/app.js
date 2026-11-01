@@ -232,6 +232,10 @@ async function fetchSystemStatus() {
     }
 
     // Dashboard info card
+    const dbBadgeText = document.getElementById('dbBadgeText');
+    if (dbBadgeText && data.db_engine) {
+      dbBadgeText.innerHTML = `<i class="fa-solid fa-database"></i> ${escapeHtml(data.db_engine)}`;
+    }
     document.getElementById('dashLastRun').innerText = data.stats.last_scraped_at || 'Never executed yet';
     document.getElementById('dashNextRun').innerText = data.scheduler.next_run || '7:00 AM / 7:00 PM IST';
     document.getElementById('dashSmtpChannel').innerText = data.google_group_email 
