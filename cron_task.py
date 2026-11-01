@@ -249,7 +249,8 @@ def run_external_db_workflow(database_url, webapp_url=None):
     - If webapp_url provided, pings webapp to wake container and keep it active
     """
     print("\n[EXTERNAL DB MODE] Direct connection to external database active.")
-    print(f" -> Active Database Engine: {db.get_db_engine()}")
+    engine_name = getattr(db, "get_db_engine", lambda: "PostgreSQL" if os.getenv("DATABASE_URL") else "SQLite")()
+    print(f" -> Active Database Engine: {engine_name}")
 
     # Ensure tables and schema are initialized
     db.init_db()
@@ -294,7 +295,8 @@ def run_external_db_workflow(database_url, webapp_url=None):
     updated_stats = db.get_stats()
     print("\n" + "=" * 60)
     print("Twice-Daily Notice Engine Workflow Completed Successfully")
-    print(f"Database: {db.get_db_engine()}")
+    engine_name = getattr(db, "get_db_engine", lambda: "PostgreSQL" if os.getenv("DATABASE_URL") else "SQLite")()
+    print(f"Database: {engine_name}")
     print(f"Total Notices in DB: {updated_stats['total_notices']} (Unmailed: {updated_stats['unmailed_notices']})")
     print("=" * 60)
     return result
@@ -322,7 +324,7 @@ def main():
     print(f"Raiganj University Twice-Daily Notice Engine (7:00 AM & 7:00 PM IST) [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
     print("=" * 60)
 
-    database_url = db.get_database_url()
+    database_url = os.getenv("DATABASE_URL", "").strip() or getattr(db, "get_database_url", lambda: "")()
     webapp_url = os.getenv('WEBAPP_URL', '').strip()
     sync_token = os.getenv('SYNC_TOKEN', '').strip() or os.getenv('CRON_SECRET', '').strip()
 

@@ -13,6 +13,19 @@ SEEN_IDS_PATH = os.path.join(DATA_DIR, 'seen_ids.txt')
 
 # ----------------- External Database Configuration & Adapters ----------------- #
 
+def is_postgres():
+    return is_postgres_configured()
+
+def get_db_engine():
+    info = get_database_info()
+    if info.get('is_external'):
+        masked = info.get('database_url_masked') or 'PostgreSQL'
+        return f"PostgreSQL ({masked})"
+    return f"SQLite ({os.path.basename(DB_PATH)})"
+
+def migrate_sqlite_to_external():
+    return sync_databases(mode='push')
+
 def is_postgres_configured():
     """
     Checks if an external PostgreSQL database (Supabase, Neon, Render Postgres, etc.)
