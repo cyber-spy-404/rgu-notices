@@ -81,3 +81,16 @@ RGU SMTP/
 └── templates/
     └── index.html          # Web UI Dashboard
 ```
+
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are warmly welcomed! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, coding standards, and our pull request guidelines.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
