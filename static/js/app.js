@@ -232,7 +232,6 @@ async function fetchSystemStatus() {
     }
 
     // Dashboard info card
-    const dbBadgeText = document.getElementById('dbBadgeText');
     if (dbBadgeText && data.db_engine) {
       dbBadgeText.innerHTML = `<i class="fa-solid fa-database"></i> ${escapeHtml(data.db_engine)}`;
     }
