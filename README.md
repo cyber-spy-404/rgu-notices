@@ -1,8 +1,13 @@
 # 🏛️ Raiganj University Notice & SMTP Dispatcher
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/)
+[![Schedule](https://img.shields.io/badge/Schedule-7:00%20AM%20%26%207:00%20PM%20IST-orange.svg)](#)
+
 An automated, modern web application and SMTP dispatch system for **Raiganj University (রায়গঞ্জ বিশ্ববিদ্যালয়)** students.
 
-The application automatically checks [raiganjuniversity.ac.in](https://raiganjuniversity.ac.in/) **everyday at 00:00 (midnight)** for new notices and announcements. If new notices are found, it dispatches an alert email to all enrolled student emails. If no new notices are found, it logs the check and automatically reschedules the next check for the next 00:00.
+The application automatically checks [raiganjuniversity.ac.in](https://raiganjuniversity.ac.in/) **twice daily at 7:00 AM and 7:00 PM IST** for new notices and announcements. If new notices are found, it polishes them with Gemini AI and dispatches an alert email with attached PDF/documents to all enrolled student emails and the Google Group.
 
 ---
 
